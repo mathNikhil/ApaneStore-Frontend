@@ -1,3 +1,5 @@
+// Mock orders data and helper functions
+
 export const mockOrders = [
   {
     id: 'CKW-1703123456789',
@@ -57,28 +59,11 @@ export const mockOrders = [
     ],
     total: 555,
     deliveryAddress: 'C-78, Royal Palm Estate, Sector 56, Gurgaon'
-  },
-  {
-    id: 'CKW-1703123456792',
-    date: '2026-07-10',
-    status: 'processing',
-    statusText: 'Processing',
-    items: [
-      {
-        name: 'Traditional MP Wheat',
-        weight: '10kg',
-        quantity: 1,
-        price: 580,
-        total: 580
-      }
-    ],
-    total: 580,
-    deliveryAddress: 'A-102, Green Valley Apartments, Sector 45, Gurgaon'
   }
 ];
 
-export const getOrderStatusColor = (status) => {
-  const colors = {
+export const getOrderStatusColor = function(status) {
+  var colors = {
     delivered: 'bg-green-100 text-green-800',
     'out-for-delivery': 'bg-blue-100 text-blue-800',
     pending: 'bg-yellow-100 text-yellow-800',
@@ -88,8 +73,8 @@ export const getOrderStatusColor = (status) => {
   return colors[status] || 'bg-gray-100 text-gray-800';
 };
 
-export const getOrderStatusIcon = (status) => {
-  const icons = {
+export const getOrderStatusIcon = function(status) {
+  var icons = {
     delivered: 'check_circle',
     'out-for-delivery': 'local_shipping',
     pending: 'hourglass_top',

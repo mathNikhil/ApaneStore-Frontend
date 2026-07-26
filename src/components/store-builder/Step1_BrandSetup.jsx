@@ -151,7 +151,7 @@ const Step1_BrandSetup = () => {
   return (
     <StoreBuilderLayout
       currentStep={1}
-      totalSteps={7}
+      totalSteps={8}
       title="Brand configuration"
       subtitle="Complete these details to personalize your Apna eStore store identity."
     >

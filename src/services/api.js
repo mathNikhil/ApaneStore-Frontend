@@ -44,6 +44,11 @@ export const authAPI = {
     verifyOTP: (data) => apiRequest('/api/auth/otp/verify', 'POST', data),
 };
 
+export const tenantAPI = {
+    getMe: () => apiRequest('/api/tenants/me'),
+    updateMe: (data) => apiRequest('/api/tenants/me', 'PUT', data),
+};
+
 export const storeAPI = {
     getAll: () => apiRequest('/api/stores'),
     getById: (id) => apiRequest(`/api/stores/${id}`),

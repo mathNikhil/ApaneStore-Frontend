@@ -1,3 +1,4 @@
+import API_BASE_URL from '../../config/api';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminSidebar from '../../components/admin/AdminSidebar';
@@ -19,7 +20,7 @@ const AdminTenants = () => {
 
     const fetchTenants = async () => {
         try {
-            const response = await fetch('http://localhost:5002/api/admin/tenants', {
+            const response = await fetch(`${API_BASE_URL}/api/admin/tenants`, {
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }
             });
             const result = await response.json();
@@ -38,7 +39,7 @@ const AdminTenants = () => {
         if (!window.confirm(`Are you sure you want to ${action} this tenant?`)) return;
         
         try {
-            const response = await fetch(`http://localhost:5002/api/admin/tenants/${id}/toggle`, {
+            const response = await fetch(`${API_BASE_URL}/api/admin/tenants/${id}/toggle`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -59,7 +60,7 @@ const AdminTenants = () => {
         if (!window.confirm(`⚠️ Are you sure you want to permanently delete "${name}"?`)) return;
         
         try {
-            const response = await fetch(`http://localhost:5002/api/admin/tenants/${id}`, {
+            const response = await fetch(`${API_BASE_URL}/api/admin/tenants/${id}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('adminToken')}`

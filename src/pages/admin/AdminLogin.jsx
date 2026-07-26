@@ -1,3 +1,4 @@
+import API_BASE_URL from '../../config/api';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -14,7 +15,7 @@ const AdminLogin = () => {
         setError('');
 
         try {
-            const response = await fetch('http://localhost:5002/api/admin/login', {
+            const response = await fetch(`${API_BASE_URL}/api/admin/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password })

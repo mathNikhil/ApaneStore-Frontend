@@ -439,7 +439,7 @@ const Step2_ProductConfig = () => {
   };
 
   return (
-    <StoreBuilderLayout currentStep={2} totalSteps={7} title="Product listing" subtitle="Step 2 of 7">
+    <StoreBuilderLayout currentStep={2} totalSteps={8} title="Product listing" subtitle="Step 2 of 8">
       {/* Quick Preview Button */}
       <div className="mb-6">
         <button

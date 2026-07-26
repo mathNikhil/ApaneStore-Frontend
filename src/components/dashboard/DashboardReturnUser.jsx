@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import TopAppBar from '../Common/TopAppBar';
 import BottomNav from '../Common/BottomNav';
 import StoreCard from './StoreCard';
+import API_BASE_URL from '../../config/api';
 import { useAuth } from '../../Context/AuthContext';
 
 const DashboardReturnUser = () => {
@@ -23,7 +24,7 @@ const DashboardReturnUser = () => {
     const fetchStores = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:5002/api/stores', {
+            const response = await fetch(`${API_BASE_URL}/api/stores`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }

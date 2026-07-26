@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useMemo } from 'react';
 import { storeAPI } from '../services/api';
 
 const StoreBuilderContext = createContext();
@@ -110,6 +110,23 @@ const DEFAULT_PROFILE_DATA = {
   feedbackLinks: { facebookReviews: '', instagramFeedback: '' },
 };
 
+const DEFAULT_RETURN_DATA = {
+  isEnabled: true,
+  returnWindowDays: 7,
+  restockingFeePercent: 0,
+  returnShippingMethod: 'customer-pays',
+  requirePhotos: false,
+  requireReason: true,
+  allowedReasons: [
+    'wrong_size',
+    'damaged',
+    'not_as_described',
+    'changed_mind',
+    'wrong_product',
+  ],
+  rules: [],
+};
+
 export const StoreBuilderProvider = ({ children }) => {
   // Helper functions for localStorage
   // NOTE: these keys are NOT store-scoped. With multi-store support, they act
@@ -155,6 +172,9 @@ export const StoreBuilderProvider = ({ children }) => {
   const [profileData, setProfileData] = useState(() => loadFromStorage('profileData', DEFAULT_PROFILE_DATA));
   useEffect(() => { saveToStorage('profileData', profileData); }, [profileData]);
 
+  const [returnData, setReturnData] = useState(() => loadFromStorage('returnData', DEFAULT_RETURN_DATA));
+  useEffect(() => { saveToStorage('returnData', returnData); }, [returnData]);
+
   // ============================================
   // BACKEND SYNC — multi-store aware
   // The URL (via the store-builder route wrapper) is the single source of
@@ -184,6 +204,7 @@ export const StoreBuilderProvider = ({ children }) => {
     address: addressData,
     order: orderData,
     profile: profileData,
+    return: returnData,
   });
 
   const applyConfig = (config = {}) => {
@@ -194,6 +215,7 @@ export const StoreBuilderProvider = ({ children }) => {
     setAddressData(config.address || DEFAULT_ADDRESS_DATA);
     setOrderData(config.order || DEFAULT_ORDER_DATA);
     setProfileData(config.profile || DEFAULT_PROFILE_DATA);
+    setReturnData(config.return || DEFAULT_RETURN_DATA);
   };
 
   // Load a specific, existing store by id — used when the URL has a real storeId.
@@ -231,32 +253,50 @@ export const StoreBuilderProvider = ({ children }) => {
 
   // Immediate save, bypassing the debounce — used by "Save & Close" and by
   // Ready-to-Publish. Returns the storeId (existing or newly created).
+  const inFlightSaveRef = useRef(null);
+
   const saveNow = async () => {
+    // If a save is already in progress, piggyback on it instead of starting
+    // a second one — this is what was causing duplicate stores: two calls
+    // both reading storeId as null before the first one's setStoreId had
+    // committed, so both took the "create" branch.
+    if (inFlightSaveRef.current) {
+      return inFlightSaveRef.current;
+    }
+
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     setSyncStatus('saving');
     const config = buildConfig();
-    try {
-      let id = storeId;
-      if (id) {
-        await storeAPI.update(id, { storeName: brandData.brandName, config });
-      } else {
-        const subdomain = `${slugify(brandData.brandName)}-${Math.floor(Math.random() * 9000 + 1000)}`;
-        const result = await storeAPI.create({
-          storeName: brandData.brandName || 'My Store',
-          subdomain,
-          config,
-        });
-        id = result?.data?.id;
-        if (id) setStoreId(id);
+
+    const savePromise = (async () => {
+      try {
+        let id = storeId;
+        if (id) {
+          await storeAPI.update(id, { storeName: brandData.brandName, config });
+        } else {
+          const subdomain = `${slugify(brandData.brandName)}-${Math.floor(Math.random() * 9000 + 1000)}`;
+          const result = await storeAPI.create({
+            storeName: brandData.brandName || 'My Store',
+            subdomain,
+            config,
+          });
+          id = result?.data?.id;
+          if (id) setStoreId(id);
+        }
+        lastSavedSnapshot.current = config;
+        setSyncStatus('saved');
+        return id;
+      } catch (e) {
+        console.error('Failed to save store to backend:', e);
+        setSyncStatus('error');
+        throw e;
+      } finally {
+        inFlightSaveRef.current = null;
       }
-      lastSavedSnapshot.current = config;
-      setSyncStatus('saved');
-      return id;
-    } catch (e) {
-      console.error('Failed to save store to backend:', e);
-      setSyncStatus('error');
-      throw e;
-    }
+    })();
+
+    inFlightSaveRef.current = savePromise;
+    return savePromise;
   };
 
   // Revert to the last known-saved state — used by "Close Without Saving".
@@ -287,16 +327,21 @@ export const StoreBuilderProvider = ({ children }) => {
 
     return () => clearTimeout(saveTimerRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [brandData, productData, cartData, paymentData, addressData, orderData, profileData, ready]);
+  }, [brandData, productData, cartData, paymentData, addressData, orderData, profileData, returnData, ready]);
 
   // ============================================
   // COMBINED DATA FOR PREVIEW
   // ============================================
-  const getAllBuilderData = () => buildConfig();
+  const memoizedConfig = useMemo(
+    () => buildConfig(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [brandData, productData, cartData, paymentData, addressData, orderData, profileData, returnData]
+  );
+  const getAllBuilderData = () => memoizedConfig;
 
   // Clear all data (dev/testing helper — does not touch the backend)
   const clearAllData = () => {
-    const keys = ['brandData', 'productData', 'cartData', 'paymentData', 'addressData', 'orderData', 'profileData'];
+    const keys = ['brandData', 'productData', 'cartData', 'paymentData', 'addressData', 'orderData', 'profileData', 'returnData'];
     keys.forEach(key => localStorage.removeItem(`apnaestore_builder_${key}`));
     skipNextSave.current = true;
     setTimeout(() => { skipNextSave.current = false; }, 0);
@@ -313,6 +358,7 @@ export const StoreBuilderProvider = ({ children }) => {
         addressData, setAddressData,
         orderData, setOrderData,
         profileData, setProfileData,
+        returnData, setReturnData,
         getAllBuilderData,
         clearAllData,
         storeId,

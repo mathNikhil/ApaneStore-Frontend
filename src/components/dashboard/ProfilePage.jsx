@@ -1,12 +1,36 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import TopAppBar from '../Common/TopAppBar';
 import BottomNav from '../Common/BottomNav';
 import { useAuth } from '../../Context/AuthContext';
+import { tenantAPI } from '../../services/api';
 
 const ProfilePage = () => {
   const navigate = useNavigate();
   const { logout } = useAuth();
+
+  const [tenant, setTenant] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState({ companyName: '', email: '' });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const result = await tenantAPI.getMe();
+        if (result.success) {
+          setTenant(result.data);
+          setForm({ companyName: result.data.company_name || '', email: result.data.email || '' });
+        }
+      } catch (e) {
+        console.error('Failed to load profile:', e);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
 
   const handleSignOut = async () => {
     await logout();
@@ -15,32 +39,128 @@ const ProfilePage = () => {
     window.location.href = '/';
   };
 
+  const startEditing = () => {
+    setForm({ companyName: tenant?.company_name || '', email: tenant?.email || '' });
+    setError('');
+    setEditing(true);
+  };
+
+  const handleSave = async () => {
+    if (!form.companyName.trim()) {
+      setError('Business name cannot be empty');
+      return;
+    }
+    setSaving(true);
+    setError('');
+    try {
+      const result = await tenantAPI.updateMe({ companyName: form.companyName.trim(), email: form.email.trim() });
+      if (result.success) {
+        setTenant(result.data);
+        setEditing(false);
+      } else {
+        setError(result.error || 'Failed to save changes');
+      }
+    } catch (e) {
+      setError('Failed to save changes — check your connection');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Placeholder emails look like phone@placeholder.apnaestore.local — from
+  // auto-registration via OTP login, before the tenant has set a real one.
+  const isPlaceholderEmail = tenant?.email?.endsWith('@placeholder.apnaestore.local');
+
   return (
     <div className="min-h-screen bg-[#f7f9fc] pb-24">
       <TopAppBar title="Profile" />
 
       <main className="max-w-3xl mx-auto px-4 pt-6 space-y-6">
-        {/* Profile Header Card - Matching your HTML */}
-        <section className="bg-white p-6 rounded-xl border border-[#E9EDEF] shadow-[0_4px_4px_rgba(0,0,0,0.02)] flex items-center justify-between hover-lift">
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <img 
-                className="w-20 h-20 rounded-full object-cover border-2 border-[#25D366]"
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuB9Cw26q0GqCGY20n-St7-09KIOZcpayczVg9QpjpvIXWSJVoIg-XDFZWszPWwo3QRzQFYsrNEIry6V2_DUQEZdGAp1XDiSlno_mbl4XXVsCEsM9eo9VO3kyw4-s2f0clXaxnzEsWDGKi5TVbWu0CbOMCUyP7bCkWdLAB1TqmOWgJRI9FVpFivi7lEwK8lFj7bzOJ-BKJVzqblC_q6OKvZSNeqzFa9KGQPTmJZbreIWZJMHGQX9msGrFgY0mg6oZFvr0X73cpBFvZo"
-                alt="Amit Sharma"
-              />
-              <div className="absolute bottom-0 right-0 w-5 h-5 bg-[#006d2f] rounded-full border-2 border-white"></div>
+        {/* Profile Header Card */}
+        <section className="bg-white p-6 rounded-xl border border-[#E9EDEF] shadow-[0_4px_4px_rgba(0,0,0,0.02)] hover-lift">
+          {loading ? (
+            <div className="flex items-center justify-center py-6">
+              <span className="material-symbols-outlined animate-spin text-2xl text-[#556067]">progress_activity</span>
             </div>
-            <div>
-              <h2 className="font-bold text-lg text-[#191c1e]">Amit Sharma</h2>
-              <p className="text-[#556067] text-sm">amit@organicflour.com</p>
-              <p className="text-[#556067] text-sm font-medium">+91 98765 43210</p>
+          ) : editing ? (
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#6c7b6b] mb-1">Business Name</label>
+                <input
+                  type="text"
+                  value={form.companyName}
+                  onChange={(e) => setForm(f => ({ ...f, companyName: e.target.value }))}
+                  className="w-full px-3 py-2 border border-[#bbcbb9] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#25D366]"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#6c7b6b] mb-1">Email</label>
+                <input
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => setForm(f => ({ ...f, email: e.target.value }))}
+                  placeholder="you@example.com"
+                  className="w-full px-3 py-2 border border-[#bbcbb9] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#25D366]"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#6c7b6b] mb-1">Mobile Number</label>
+                <input
+                  type="text"
+                  value={tenant?.phone || ''}
+                  disabled
+                  className="w-full px-3 py-2 border border-[#eceef1] bg-[#f7f9fc] rounded-lg text-sm text-[#9aa5a1] cursor-not-allowed"
+                />
+                <p className="text-xs text-[#9aa5a1] mt-1">This is your login number and can't be changed here.</p>
+              </div>
+              {error && <p className="text-sm text-[#ba1a1a]">{error}</p>}
+              <div className="flex gap-2 pt-1">
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="flex-1 py-2.5 rounded-xl bg-[#25D366] text-[#005523] font-bold text-sm hover:brightness-105 active:scale-[0.98] transition-all disabled:opacity-60"
+                >
+                  {saving ? 'Saving...' : 'Save Changes'}
+                </button>
+                <button
+                  onClick={() => setEditing(false)}
+                  disabled={saving}
+                  className="px-4 py-2.5 rounded-xl bg-[#eceef1] text-[#556067] font-semibold text-sm hover:bg-[#d9e4ec] transition-all disabled:opacity-60"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
-          </div>
-          <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#eceef1] text-[#006d2f] font-bold text-sm hover:bg-[#d9e4ec] active:scale-[0.98] transition-all">
-  <span className="material-symbols-outlined text-lg">edit</span>
-  Edit
-</button>
+          ) : (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <div className="w-20 h-20 rounded-full bg-[#eceef1] border-2 border-[#25D366] flex items-center justify-center">
+                    <span className="material-symbols-outlined text-3xl text-[#556067]">storefront</span>
+                  </div>
+                  <div className="absolute bottom-0 right-0 w-5 h-5 bg-[#006d2f] rounded-full border-2 border-white"></div>
+                </div>
+                <div>
+                  <h2 className="font-bold text-lg text-[#191c1e]">{tenant?.company_name || 'My Store'}</h2>
+                  <p className="text-[#556067] text-sm">
+                    {isPlaceholderEmail ? (
+                      <span className="italic text-[#9aa5a1]">No email set yet</span>
+                    ) : (
+                      tenant?.email
+                    )}
+                  </p>
+                  <p className="text-[#556067] text-sm font-medium">{tenant?.phone}</p>
+                </div>
+              </div>
+              <button
+                onClick={startEditing}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#eceef1] text-[#006d2f] font-bold text-sm hover:bg-[#d9e4ec] active:scale-[0.98] transition-all"
+              >
+                <span className="material-symbols-outlined text-lg">edit</span>
+                Edit
+              </button>
+            </div>
+          )}
         </section>
 
         {/* Information Sections Grid - Matching your HTML */}

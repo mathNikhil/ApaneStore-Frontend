@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import API_BASE_URL from '../../config/api';
 
 const StoreCard = ({ store, onNavigate }) => {
     const navigate = useNavigate();
@@ -17,7 +18,7 @@ const StoreCard = ({ store, onNavigate }) => {
     const fetchStorePanels = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5002/api/admin/stores/${store.id}/panels`, {
+            const response = await fetch(`${API_BASE_URL}/api/admin/stores/${store.id}/panels`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }

@@ -1,6 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import { Routes, Route, Navigate, Outlet, useParams } from 'react-router-dom';
-import { useStoreBuilder } from '../../Context/StoreBuilderContext';
+import React from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import Step1_BrandSetup from './Step1_BrandSetup';
 import Step2_ProductConfig from './Step2_ProductConfig';
 import Step3_CartConfig from './Step3_CartConfig';
@@ -8,6 +7,7 @@ import Step4_PaymentConfig from './Step4_PaymentConfig';
 import Step5_AddressConfig from './Step5_AddressConfig';
 import Step6_OrderTrackerConfig from './Step6_OrderTrackerConfig';
 import Step7_ProfileConfig from './Step7_ProfileConfig';
+import Step8_ReturnPolicy from './Step8_ReturnPolicy';
 import FinalStorePreview from './FinalStorePreview';
 
 // Reads :storeId from the URL and loads that exact store (or starts a fresh
@@ -46,19 +46,17 @@ const StoreBuilderGate = () => {
 const StoreBuilderRouter = () => {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/store-builder/new/step/1" replace />} />
-      <Route path="/:storeId" element={<StoreBuilderGate />}>
-        <Route path="step/1" element={<Step1_BrandSetup />} />
-        <Route path="step/2" element={<Step2_ProductConfig />} />
-        <Route path="step/3" element={<Step3_CartConfig />} />
-        <Route path="step/4" element={<Step4_PaymentConfig />} />
-        <Route path="step/5" element={<Step5_AddressConfig />} />
-        <Route path="step/6" element={<Step6_OrderTrackerConfig />} />
-        <Route path="step/7" element={<Step7_ProfileConfig />} />
-        <Route path="preview" element={<FinalStorePreview />} />
-        <Route path="*" element={<Navigate to="step/1" replace />} />
-      </Route>
-      <Route path="*" element={<Navigate to="/store-builder/new/step/1" replace />} />
+      <Route path="/" element={<Navigate to="/store-builder/step/1" replace />} />
+      <Route path="/step/1" element={<Step1_BrandSetup />} />
+      <Route path="/step/2" element={<Step2_ProductConfig />} />
+      <Route path="/step/3" element={<Step3_CartConfig />} />
+      <Route path="/step/4" element={<Step4_PaymentConfig />} />
+      <Route path="/step/5" element={<Step5_AddressConfig />} />
+      <Route path="/step/6" element={<Step6_OrderTrackerConfig />} />
+      <Route path="/step/7" element={<Step7_ProfileConfig />} />
+      <Route path="/step/8" element={<Step8_ReturnPolicy />} />
+      <Route path="/preview" element={<FinalStorePreview />} />
+      <Route path="*" element={<Navigate to="/store-builder/step/1" replace />} />
     </Routes>
   );
 };

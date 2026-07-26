@@ -37,7 +37,7 @@ const Step3_CartConfig = () => {
   };
 
   return (
-    <StoreBuilderLayout currentStep={3} totalSteps={7} title="Cart Configuration" subtitle="Step 3 of 7">
+    <StoreBuilderLayout currentStep={3} totalSteps={8} title="Cart Configuration" subtitle="Step 3 of 8">
       <Card className="mb-6">
         <div className="flex items-center gap-2 mb-4">
           <span className="material-symbols-outlined text-[#006d2f] filled">local_shipping</span>

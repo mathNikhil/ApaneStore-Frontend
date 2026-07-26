@@ -62,7 +62,7 @@ const Step5_AddressConfig = () => {
   ];
 
   return (
-    <StoreBuilderLayout currentStep={5} totalSteps={7} title="Address Configuration" subtitle="Step 5 of 7">
+    <StoreBuilderLayout currentStep={5} totalSteps={8} title="Address Configuration" subtitle="Step 5 of 8">
       <Card className="mb-6">
         <h2 className="font-label-md text-label-md text-[#3c4a3d] mb-4 tracking-wider uppercase text-xs">Address Management</h2>
 

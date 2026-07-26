@@ -8,6 +8,7 @@ import Step4_PaymentConfig from './Step4_PaymentConfig';
 import Step5_AddressConfig from './Step5_AddressConfig';
 import Step6_OrderTrackerConfig from './Step6_OrderTrackerConfig';
 import Step7_ProfileConfig from './Step7_ProfileConfig';
+import Step8_ReturnPolicy from './Step8_ReturnPolicy';
 import FinalStorePreview from './FinalStorePreview';
 
 // Reads :storeId from the URL and loads that exact store (or starts a fresh
@@ -55,6 +56,7 @@ const StoreBuilderRouter = () => {
         <Route path="step/5" element={<Step5_AddressConfig />} />
         <Route path="step/6" element={<Step6_OrderTrackerConfig />} />
         <Route path="step/7" element={<Step7_ProfileConfig />} />
+        <Route path="step/8" element={<Step8_ReturnPolicy />} />
         <Route path="preview" element={<FinalStorePreview />} />
         <Route path="*" element={<Navigate to="step/1" replace />} />
       </Route>

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import PreviewHeader from './PreviewHeader';
 import PreviewFooter from './PreviewFooter';
 import PreviewCustomerAuth from './PreviewCustomerAuth';
@@ -25,19 +25,7 @@ const StorefrontApp = ({ builderData, storeId, device = 'desktop', className = '
   const [rootNode, setRootNode] = useState(null);
   useEffect(() => { setRootNode(rootRef.current); }, []);
 
-  const {
-    storeData,
-    addToCart,
-    removeFromCart,
-    updateQuantity,
-    getCartItemCount,
-    addAddress,
-    updateAddress,
-    deleteAddress,
-    setDefaultAddress,
-    placeOrder,
-    cancelOrder,
-  } = usePreviewData({
+  const flattenedData = useMemo(() => ({
     brandName: builderData.brand.brandName,
     tagline: builderData.brand.tagline,
     logo: builderData.brand.logo,
@@ -101,7 +89,22 @@ const StorefrontApp = ({ builderData, storeId, device = 'desktop', className = '
     aboutUs: builderData.profile.aboutUs,
     socialLinks: builderData.profile.socialLinks,
     feedbackLinks: builderData.profile.feedbackLinks,
-  });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [builderData]);
+
+  const {
+    storeData,
+    addToCart,
+    removeFromCart,
+    updateQuantity,
+    getCartItemCount,
+    addAddress,
+    updateAddress,
+    deleteAddress,
+    setDefaultAddress,
+    placeOrder,
+    cancelOrder,
+  } = usePreviewData(flattenedData);
 
   const handleAddToCart = (productId, variationId, sizeId) => {
     const allProducts = storeData.products || [];

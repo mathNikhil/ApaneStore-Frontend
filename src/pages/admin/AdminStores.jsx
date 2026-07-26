@@ -1,3 +1,4 @@
+import API_BASE_URL from '../../config/api';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminSidebar from '../../components/admin/AdminSidebar';
@@ -19,7 +20,7 @@ const AdminStores = () => {
 
     const fetchStores = async () => {
         try {
-            const response = await fetch('http://localhost:5002/api/admin/stores', {
+            const response = await fetch(`${API_BASE_URL}/api/admin/stores`, {
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }
             });
             const result = await response.json();

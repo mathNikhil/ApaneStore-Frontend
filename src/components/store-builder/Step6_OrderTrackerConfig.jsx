@@ -40,7 +40,7 @@ const Step6_OrderTrackerConfig = () => {
   ];
 
   return (
-    <StoreBuilderLayout currentStep={6} totalSteps={7} title="Order Configuration" subtitle="Step 6 of 7">
+    <StoreBuilderLayout currentStep={6} totalSteps={8} title="Order Configuration" subtitle="Step 6 of 8">
       <Card className="mb-6">
         <div className="flex items-center gap-2 mb-4">
           <div className="w-10 h-10 rounded-lg bg-[#ffdad6] text-[#93000a] flex items-center justify-center">
