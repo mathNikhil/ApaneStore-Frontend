@@ -1,254 +1,227 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import TopAppBar from '../Common/TopAppBar';
-import BottomNav from '../Common/BottomNav';
 import { useAuth } from '../../Context/AuthContext';
 import { tenantAPI } from '../../services/api';
+import TopAppBar from '../common/TopAppBar';
+import BottomNav from '../common/BottomNav';
+import Card from '../common/Card';
 
 const ProfilePage = () => {
-  const navigate = useNavigate();
-  const { logout } = useAuth();
+    const { token, user } = useAuth();
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState(null);
+    const [success, setSuccess] = useState(null);
+    const [profile, setProfile] = useState({
+        company_name: '',
+        email: '',
+        phone: '',
+        business_type: '',
+        subscription_tier: 'trial',
+        store_count: 0
+    });
 
-  const [tenant, setTenant] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ companyName: '', email: '' });
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
+    // Debug: Check if token exists
+    useEffect(() => {
+        console.log('🔑 ProfilePage - Token from context:', !!token);
+        console.log('🔑 ProfilePage - Token value:', token);
+        console.log('👤 ProfilePage - User:', user);
+        console.log('🔑 ProfilePage - Token from localStorage:', localStorage.getItem('token'));
+    }, [token, user]);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const result = await tenantAPI.getMe();
-        if (result.success) {
-          setTenant(result.data);
-          setForm({ companyName: result.data.company_name || '', email: result.data.email || '' });
+    const fetchProfile = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            
+            console.log('📡 Fetching profile...');
+            const response = await tenantAPI.getMe();
+            console.log('📡 Profile response:', response);
+            
+            if (response.success) {
+                setProfile(response.data);
+            }
+        } catch (err) {
+            console.error('❌ Profile fetch error:', err);
+            setError(err.message || 'Failed to load profile');
+        } finally {
+            setLoading(false);
         }
-      } catch (e) {
-        console.error('Failed to load profile:', e);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
+    };
 
-  const handleSignOut = async () => {
-    await logout();
-    // Full reload on the way out so every context (auth + store builder)
-    // resets cleanly — important if a different tenant logs in next.
-    window.location.href = '/';
-  };
+    useEffect(() => {
+        if (token) {
+            fetchProfile();
+        } else {
+            console.warn('⚠️ No token available, cannot fetch profile');
+            setError('No authentication token found. Please login again.');
+            setLoading(false);
+        }
+    }, [token]);
 
-  const startEditing = () => {
-    setForm({ companyName: tenant?.company_name || '', email: tenant?.email || '' });
-    setError('');
-    setEditing(true);
-  };
+    const handleSave = async () => {
+        try {
+            setSaving(true);
+            setError(null);
+            setSuccess(null);
+            
+            console.log('📡 Saving profile with token:', !!token);
+            
+            const dataToSave = {
+                company_name: profile.company_name,
+                email: profile.email,
+                phone: profile.phone,
+                business_type: profile.business_type
+            };
+            
+            console.log('📡 Data to save:', dataToSave);
+            
+            const response = await tenantAPI.updateMe(dataToSave);
+            
+            console.log('📡 Save response:', response);
+            
+            if (response.success) {
+                setSuccess('Profile updated successfully!');
+                setProfile(response.data);
+                setTimeout(() => setSuccess(null), 3000);
+            } else {
+                setError(response.message || 'Failed to save changes');
+            }
+        } catch (err) {
+            console.error('❌ Save error:', err);
+            setError(err.message || 'Failed to save changes');
+        } finally {
+            setSaving(false);
+        }
+    };
 
-  const handleSave = async () => {
-    if (!form.companyName.trim()) {
-      setError('Business name cannot be empty');
-      return;
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setProfile(prev => ({ ...prev, [name]: value }));
+    };
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-[#f7f9fc] flex items-center justify-center">
+                <span className="material-symbols-outlined animate-spin text-2xl">progress_activity</span>
+                <span className="ml-2 text-gray-500">Loading...</span>
+            </div>
+        );
     }
-    setSaving(true);
-    setError('');
-    try {
-      const result = await tenantAPI.updateMe({ companyName: form.companyName.trim(), email: form.email.trim() });
-      if (result.success) {
-        setTenant(result.data);
-        setEditing(false);
-      } else {
-        setError(result.error || 'Failed to save changes');
-      }
-    } catch (e) {
-      setError('Failed to save changes — check your connection');
-    } finally {
-      setSaving(false);
-    }
-  };
 
-  // Placeholder emails look like phone@placeholder.apnaestore.local — from
-  // auto-registration via OTP login, before the tenant has set a real one.
-  const isPlaceholderEmail = tenant?.email?.endsWith('@placeholder.apnaestore.local');
+    return (
+        <div className="min-h-screen bg-[#f7f9fc] pb-24 lg:pb-0">
+            <TopAppBar title="Profile" showProfile={false} />
+            
+            <main className="max-w-3xl mx-auto px-4 pt-6 space-y-6">
+                {success && (
+                    <div className="p-4 bg-green-50 border border-green-200 rounded-lg text-green-700">
+                        ✅ {success}
+                    </div>
+                )}
+                {error && (
+                    <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+                        ❌ {error}
+                    </div>
+                )}
 
-  return (
-    <div className="min-h-screen bg-[#f7f9fc] pb-24">
-      <TopAppBar title="Profile" />
+                <Card>
+                    <div className="flex items-center justify-between mb-4">
+                        <div>
+                            <h2 className="font-bold text-lg text-gray-800">Business Profile</h2>
+                            <p className="text-sm text-gray-500">Manage your business information</p>
+                        </div>
+                        <div className="flex gap-2">
+                            <button 
+                                onClick={fetchProfile}
+                                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                            >
+                                Refresh
+                            </button>
+                            <button 
+                                onClick={handleSave}
+                                disabled={saving}
+                                className="px-4 py-2 bg-[#25D366] text-[#005523] font-bold rounded-lg hover:brightness-105 transition-colors disabled:opacity-50"
+                            >
+                                {saving ? 'Saving...' : 'Save Changes'}
+                            </button>
+                        </div>
+                    </div>
 
-      <main className="max-w-3xl mx-auto px-4 pt-6 space-y-6">
-        {/* Profile Header Card */}
-        <section className="bg-white p-6 rounded-xl border border-[#E9EDEF] shadow-[0_4px_4px_rgba(0,0,0,0.02)] hover-lift">
-          {loading ? (
-            <div className="flex items-center justify-center py-6">
-              <span className="material-symbols-outlined animate-spin text-2xl text-[#556067]">progress_activity</span>
-            </div>
-          ) : editing ? (
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-[#6c7b6b] mb-1">Business Name</label>
-                <input
-                  type="text"
-                  value={form.companyName}
-                  onChange={(e) => setForm(f => ({ ...f, companyName: e.target.value }))}
-                  className="w-full px-3 py-2 border border-[#bbcbb9] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#25D366]"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-[#6c7b6b] mb-1">Email</label>
-                <input
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => setForm(f => ({ ...f, email: e.target.value }))}
-                  placeholder="you@example.com"
-                  className="w-full px-3 py-2 border border-[#bbcbb9] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#25D366]"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-[#6c7b6b] mb-1">Mobile Number</label>
-                <input
-                  type="text"
-                  value={tenant?.phone || ''}
-                  disabled
-                  className="w-full px-3 py-2 border border-[#eceef1] bg-[#f7f9fc] rounded-lg text-sm text-[#9aa5a1] cursor-not-allowed"
-                />
-                <p className="text-xs text-[#9aa5a1] mt-1">This is your login number and can't be changed here.</p>
-              </div>
-              {error && <p className="text-sm text-[#ba1a1a]">{error}</p>}
-              <div className="flex gap-2 pt-1">
-                <button
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="flex-1 py-2.5 rounded-xl bg-[#25D366] text-[#005523] font-bold text-sm hover:brightness-105 active:scale-[0.98] transition-all disabled:opacity-60"
-                >
-                  {saving ? 'Saving...' : 'Save Changes'}
-                </button>
-                <button
-                  onClick={() => setEditing(false)}
-                  disabled={saving}
-                  className="px-4 py-2.5 rounded-xl bg-[#eceef1] text-[#556067] font-semibold text-sm hover:bg-[#d9e4ec] transition-all disabled:opacity-60"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="relative">
-                  <div className="w-20 h-20 rounded-full bg-[#eceef1] border-2 border-[#25D366] flex items-center justify-center">
-                    <span className="material-symbols-outlined text-3xl text-[#556067]">storefront</span>
-                  </div>
-                  <div className="absolute bottom-0 right-0 w-5 h-5 bg-[#006d2f] rounded-full border-2 border-white"></div>
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Business Name</label>
+                            <input
+                                type="text"
+                                name="company_name"
+                                value={profile.company_name || ''}
+                                onChange={handleChange}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                placeholder="Enter business name"
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                <input
+                                    type="email"
+                                    name="email"
+                                    value={profile.email || ''}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                    placeholder="Enter email"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                                <input
+                                    type="text"
+                                    name="phone"
+                                    value={profile.phone || ''}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                    disabled
+                                />
+                                <p className="text-xs text-gray-400 mt-1">This is your login number and can't be changed here</p>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Business Type</label>
+                            <input
+                                type="text"
+                                name="business_type"
+                                value={profile.business_type || ''}
+                                onChange={handleChange}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                placeholder="e.g., Retail, Wholesale, Manufacturing"
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-200">
+                            <div>
+                                <label className="block text-sm text-gray-500">Plan</label>
+                                <p className="font-semibold capitalize">{profile.subscription_tier || 'Trial'}</p>
+                            </div>
+                            <div>
+                                <label className="block text-sm text-gray-500">Stores</label>
+                                <p className="font-semibold">{profile.store_count || 0}</p>
+                            </div>
+                        </div>
+                    </div>
+                </Card>
+
+                {/* Debug info - remove in production */}
+                <div className="text-xs text-gray-400 p-4 bg-gray-50 rounded-lg">
+                    <p>Token exists: {!!token ? '✅ Yes' : '❌ No'}</p>
+                    <p>Token value: {token ? token.substring(0, 30) + '...' : 'null'}</p>
+                    <p>User: {user ? user.company_name || user.phone : 'null'}</p>
                 </div>
-                <div>
-                  <h2 className="font-bold text-lg text-[#191c1e]">{tenant?.company_name || 'My Store'}</h2>
-                  <p className="text-[#556067] text-sm">
-                    {isPlaceholderEmail ? (
-                      <span className="italic text-[#9aa5a1]">No email set yet</span>
-                    ) : (
-                      tenant?.email
-                    )}
-                  </p>
-                  <p className="text-[#556067] text-sm font-medium">{tenant?.phone}</p>
-                </div>
-              </div>
-              <button
-                onClick={startEditing}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#eceef1] text-[#006d2f] font-bold text-sm hover:bg-[#d9e4ec] active:scale-[0.98] transition-all"
-              >
-                <span className="material-symbols-outlined text-lg">edit</span>
-                Edit
-              </button>
-            </div>
-          )}
-        </section>
+            </main>
 
-        {/* Information Sections Grid - Matching your HTML */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Support Details */}
-          <section className="bg-white p-5 rounded-xl border border-[#E9EDEF] shadow-[0_4px_4px_rgba(0,0,0,0.02)] space-y-4 hover-lift">
-            <div className="flex items-center gap-2 border-b border-[#eceef1] pb-2">
-              <span className="material-symbols-outlined text-[#006d2f] filled">contact_support</span>
-              <h3 className="font-bold text-[#191c1e]">Support Details</h3>
-            </div>
-            <div className="space-y-3">
-              <div className="flex flex-col">
-                <span className="text-[10px] uppercase tracking-wider text-[#6c7b6b] font-bold">Phone</span>
-                <span className="text-[#191c1e] font-medium text-sm">+91 800 555 0199</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[10px] uppercase tracking-wider text-[#6c7b6b] font-bold">Email</span>
-                <span className="text-[#191c1e] font-medium text-sm">support@organicflour.com</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[10px] uppercase tracking-wider text-[#6c7b6b] font-bold">Business Hours</span>
-                <span className="text-[#191c1e] font-medium text-sm">09:00 AM - 08:00 PM</span>
-              </div>
-            </div>
-          </section>
-
-          {/* Social Links */}
-          <section className="bg-white p-5 rounded-xl border border-[#E9EDEF] shadow-[0_4px_4px_rgba(0,0,0,0.02)] space-y-4 hover-lift">
-            <div className="flex items-center gap-2 border-b border-[#eceef1] pb-2">
-              <span className="material-symbols-outlined text-[#006d2f] filled">share</span>
-              <h3 className="font-bold text-[#191c1e]">Social Presence</h3>
-            </div>
-            <div className="flex items-center justify-center gap-6 py-2">
-              <a href="#" className="w-12 h-12 flex items-center justify-center rounded-full bg-[#f2f4f7] hover:bg-[#d9e4ec] transition-all active:scale-95 border border-[#bbcbb9]/30 shadow-sm" aria-label="Facebook">
-                <svg className="w-6 h-6" fill="#1877F2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"></path>
-                </svg>
-              </a>
-              <a href="#" className="w-12 h-12 flex items-center justify-center rounded-full bg-[#f2f4f7] hover:bg-[#d9e4ec] transition-all active:scale-95 border border-[#bbcbb9]/30 shadow-sm" aria-label="Instagram">
-                <svg className="w-6 h-6" fill="#E4405F" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"></path>
-                </svg>
-              </a>
-            </div>
-          </section>
-
-          {/* Public Feedback - Matching your HTML */}
-          <section className="bg-white p-5 rounded-xl border border-[#E9EDEF] shadow-[0_4px_4px_rgba(0,0,0,0.02)] space-y-4 md:col-span-2 hover-lift">
-            <div className="flex items-center gap-2 border-b border-[#eceef1] pb-2">
-              <span className="material-symbols-outlined text-[#006d2f] filled">reviews</span>
-              <h3 className="font-bold text-[#191c1e]">Public Feedback</h3>
-            </div>
-            <div className="flex flex-wrap gap-4">
-              {/* Facebook Reviews */}
-              <div className="flex-1 min-w-[140px] bg-[#25D366]/10 p-4 rounded-xl border border-[#25D366]/20">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[10px] font-bold text-[#006d2f] uppercase">Facebook</span>
-                  <span className="material-symbols-outlined text-[#006d2f] text-sm">thumb_up</span>
-                </div>
-                <div className="text-2xl font-bold text-[#005523]">4.8<span className="text-xs font-normal text-[#556067] ml-1">/ 5</span></div>
-                <p className="text-[10px] text-[#556067]">Based on 128 reviews</p>
-              </div>
-              {/* Instagram Feedback */}
-              <div className="flex-1 min-w-[140px] bg-[#d9e4ec] p-4 rounded-xl border border-[#bbcbb9]/30">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[10px] font-bold text-[#556067] uppercase">Instagram</span>
-                  <span className="material-symbols-outlined text-[#556067] text-sm">chat_bubble</span>
-                </div>
-                <div className="text-2xl font-bold text-[#5b666d]">92%</div>
-                <p className="text-[10px] text-[#556067]">Positive sentiment rate</p>
-              </div>
-            </div>
-          </section>
+            <BottomNav />
         </div>
-
-        {/* Sign Out Button - Matching your HTML */}
-        <div className="pt-8 pb-12">
-          <button onClick={handleSignOut} className="w-full flex items-center justify-center gap-2 py-4 rounded-xl border-2 border-[#ba1a1a]/20 text-[#ba1a1a] font-bold hover:bg-[#ffdad6]/50 active:scale-[0.98] transition-all">
-  <span className="material-symbols-outlined">logout</span>
-  Sign Out
-</button>
-          <p className="text-center text-[#6c7b6b] text-[11px] mt-6">App Version 2.4.0 • Apna eStore Merchant Pro</p>
-        </div>
-      </main>
-
-      <BottomNav />
-    </div>
-  );
+    );
 };
 
 export default ProfilePage;

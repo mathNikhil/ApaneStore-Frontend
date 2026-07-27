@@ -1,6 +1,10 @@
 import API_BASE_URL from '../config/api';
 
-const getToken = () => localStorage.getItem('token');
+const getToken = () => {
+    const token = localStorage.getItem('token');
+    console.log('🔑 getToken() called, token exists:', !!token);
+    return token;
+};
 
 const apiRequest = async (endpoint, method = 'GET', data = null) => {
     const options = {
@@ -13,6 +17,9 @@ const apiRequest = async (endpoint, method = 'GET', data = null) => {
     const token = getToken();
     if (token) {
         options.headers['Authorization'] = `Bearer ${token}`;
+        console.log('🔑 Authorization header set for:', endpoint);
+    } else {
+        console.warn('⚠️ No token found for request to:', endpoint);
     }
 
     if (data) {
@@ -20,10 +27,17 @@ const apiRequest = async (endpoint, method = 'GET', data = null) => {
     }
 
     try {
-        const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+        const url = `${API_BASE_URL}${endpoint}`;
+        console.log('📡 Making request to:', url);
+        
+        const response = await fetch(url, options);
         const result = await response.json();
+        
+        console.log('📡 Response status:', response.status);
+        console.log('📡 Response data:', result);
+        
         if (!response.ok) {
-            throw new Error(result.error || 'Something went wrong');
+            throw new Error(result.error || result.message || 'Something went wrong');
         }
         return result;
     } catch (error) {
@@ -72,9 +86,6 @@ export const healthAPI = {
     check: () => apiRequest('/health'),
 };
 
-// Store-scoped customer auth — completely separate from the tenant's own
-// session. Uses its own fetch (not apiRequest) so it never attaches or
-// overwrites the tenant's 'token' in localStorage.
 export const customerAuthAPI = {
     sendOTP: async (storeId, phone) => {
         const response = await fetch(`${API_BASE_URL}/api/store/${storeId}/auth/otp/send`, {

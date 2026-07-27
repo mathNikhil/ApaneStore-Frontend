@@ -229,31 +229,51 @@ const Step2_ProductConfig = () => {
     }));
   };
 
+  // Reads a File as a base64 data URL — unlike URL.createObjectURL(), this
+  // actually survives being saved to the backend and reloaded elsewhere
+  // (blob: URLs are only valid in the tab/session that created them).
+  const readFileAsDataURL = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
   // Product Image functions - Max 20 images
-  const handleImageUpload = (categoryId, productId, e) => {
+  const handleImageUpload = async (categoryId, productId, e) => {
     const files = Array.from(e.target.files);
     const maxImages = 20;
+    e.target.value = '';
 
-    setCategories(categories.map(cat => {
+    const currentProduct = categories
+      .find(c => c.id === categoryId)?.products
+      .find(p => p.id === productId);
+    const currentImages = currentProduct?.images || [];
+    if (currentImages.length >= maxImages) {
+      alert(`Maximum ${maxImages} images allowed per product`);
+      return;
+    }
+    const remainingSlots = maxImages - currentImages.length;
+    const filesToProcess = files.slice(0, remainingSlots);
+
+    const newImages = await Promise.all(
+      filesToProcess.map(async (file) => ({
+        id: generateId(),
+        url: await readFileAsDataURL(file),
+      }))
+    );
+
+    setCategories(prevCategories => prevCategories.map(cat => {
       if (cat.id === categoryId) {
         return {
           ...cat,
           products: cat.products.map(p => {
             if (p.id === productId) {
-              const currentImages = p.images || [];
-              if (currentImages.length >= maxImages) { 
-                alert(`Maximum ${maxImages} images allowed per product`); 
-                return p; 
-              }
-              const remainingSlots = maxImages - currentImages.length;
-              const newImages = files.slice(0, remainingSlots).map(file => ({ 
-                id: generateId(), 
-                url: URL.createObjectURL(file), 
-                file 
-              }));
-              return { 
-                ...p, 
-                images: [...currentImages, ...newImages] 
+              return {
+                ...p,
+                images: [...(p.images || []), ...newImages]
               };
             }
             return p;
@@ -262,7 +282,6 @@ const Step2_ProductConfig = () => {
       }
       return cat;
     }));
-    e.target.value = '';
   };
 
   const removeImage = (categoryId, productId, imageId) => {
@@ -283,11 +302,14 @@ const Step2_ProductConfig = () => {
   };
 
   // Variation Image function — single image per variant, replaces any existing one
-  const handleVariationImageUpload = (categoryId, productId, variationId, e) => {
+  const handleVariationImageUpload = async (categoryId, productId, variationId, e) => {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
 
-    setCategories(categories.map(cat => {
+    const dataUrl = await readFileAsDataURL(file);
+
+    setCategories(prevCategories => prevCategories.map(cat => {
       if (cat.id === categoryId) {
         return {
           ...cat,
@@ -299,7 +321,7 @@ const Step2_ProductConfig = () => {
                   if (v.id === variationId) {
                     return {
                       ...v,
-                      image: { id: generateId(), url: URL.createObjectURL(file), file }
+                      image: { id: generateId(), url: dataUrl }
                     };
                   }
                   return v;
@@ -312,7 +334,6 @@ const Step2_ProductConfig = () => {
       }
       return cat;
     }));
-    e.target.value = '';
   };
 
   const removeVariationImage = (categoryId, productId, variationId) => {

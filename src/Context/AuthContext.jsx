@@ -14,6 +14,9 @@ export const AuthProvider = ({ children }) => {
             setUser(JSON.parse(storedUser));
         }
         setLoading(false);
+        
+        console.log('🔐 AuthProvider initialized, token:', !!token);
+        console.log('🔐 User:', user);
     }, [token]);
 
     const login = async (identifier, password) => {
@@ -32,20 +35,35 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    // Passwordless login: verifies the OTP, and on success the backend
-    // returns a real tenant + token (auto-creating the tenant on first login).
     const loginWithOTP = async (phone, otp, purpose = 'login') => {
         try {
+            console.log('🔐 loginWithOTP called:', { phone, otp, purpose });
+            
             const result = await authAPI.verifyOTP({ phone, otp, purpose });
+            
+            console.log('🔐 OTP Response:', result);
+            
             if (result.success && result.data?.token) {
-                setUser(result.data.tenant);
-                setToken(result.data.token);
+                console.log('✅ Token received, saving...');
+                
+                // Save to localStorage
                 localStorage.setItem('token', result.data.token);
                 localStorage.setItem('user', JSON.stringify(result.data.tenant));
+                
+                // Verify it was saved
+                console.log('✅ Token saved to localStorage:', !!localStorage.getItem('token'));
+                console.log('✅ User saved to localStorage:', !!localStorage.getItem('user'));
+                
+                setUser(result.data.tenant);
+                setToken(result.data.token);
+                
                 return { success: true, isNewTenant: result.data.isNewTenant };
             }
+            
+            console.log('❌ No token in response:', result);
             return { success: false, error: result.error || 'OTP verification failed' };
         } catch (error) {
+            console.error('❌ OTP verification error:', error);
             return { success: false, error: error.message };
         }
     };
