@@ -2,7 +2,8 @@ import axios from 'axios';
 
 class StorageService {
     constructor() {
-        this.apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+        // ✅ Use import.meta.env instead of process.env
+        this.apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5002';
     }
 
     /**
@@ -32,7 +33,7 @@ class StorageService {
 
         try {
             const response = await axios.post(
-                `${this.apiUrl}/images/upload`,
+                `${this.apiUrl}/api/images/upload`,
                 formData,
                 {
                     headers: {
@@ -85,7 +86,7 @@ class StorageService {
 
         try {
             const response = await axios.post(
-                `${this.apiUrl}/images/upload-multiple`,
+                `${this.apiUrl}/api/images/upload-multiple`,
                 formData,
                 {
                     headers: {
@@ -110,10 +111,10 @@ class StorageService {
     /**
      * Delete an image
      */
-    async deleteImage(filePath) {
+    async deleteImage(publicId) {
         try {
-            const response = await axios.delete(`${this.apiUrl}/images/delete`, {
-                data: { filePath }
+            const response = await axios.delete(`${this.apiUrl}/api/images/delete`, {
+                data: { publicId }
             });
             return response.data;
         } catch (error) {
@@ -127,7 +128,7 @@ class StorageService {
      */
     async deleteProductImages(tenantId, storeId, productId) {
         try {
-            const response = await axios.delete(`${this.apiUrl}/images/product-images`, {
+            const response = await axios.delete(`${this.apiUrl}/api/images/product-images`, {
                 data: { tenantId, storeId, productId }
             });
             return response.data;
@@ -142,7 +143,7 @@ class StorageService {
      */
     async getStorageUsage(tenantId) {
         try {
-            const response = await axios.get(`${this.apiUrl}/images/usage/${tenantId}`);
+            const response = await axios.get(`${this.apiUrl}/api/images/usage/${tenantId}`);
             return response.data;
         } catch (error) {
             console.error('Get storage usage failed:', error);

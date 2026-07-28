@@ -8,10 +8,11 @@ import Input from '../Common/Input';
 const Step1_BrandSetup = () => {
   const navigate = useNavigate();
   const { brandData, setBrandData } = useStoreBuilder();
+  const [validationError, setValidationError] = useState('');
 
   // Load from context on mount
   const [formData, setFormData] = useState({
-    brandName: brandData.brandName || 'Organic Flour Co.',
+    brandName: brandData.brandName || '',
     tagline: brandData.tagline || 'Fresh, Organic & Delivered to Your Doorstep',
     colors: brandData.colors || {
       primary: '#25D366',
@@ -36,6 +37,20 @@ const Step1_BrandSetup = () => {
   const fileInputRef = useRef(null);
   const fontInputRef = useRef(null);
 
+  // After the Brand Name input field, add this:
+{formData.brandName && (
+    <div className="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
+        <p className="text-xs text-gray-500">
+            Your store URL: <span className="font-semibold text-green-600">
+                {formData.brandName.toLowerCase().replace(/[^a-z0-9]/g, '-')}.apnaestore.com
+            </span>
+        </p>
+        <p className="text-xs text-gray-400 mt-1">
+            This will be your store's subdomain
+        </p>
+    </div>
+)}
+
   // Save to context whenever formData or logo changes
   useEffect(() => {
     setBrandData({
@@ -46,7 +61,35 @@ const Step1_BrandSetup = () => {
       fonts: formData.typography,
       baseFontSize: formData.typography.baseFontSize,
     });
-  }, [formData, logoPreview]);
+  }, [formData, logoPreview, setBrandData]);
+
+  // ✅ Validate store name before proceeding
+  const validateStoreName = () => {
+    if (!formData.brandName || formData.brandName.trim() === '') {
+      setValidationError('Store name is required');
+      return false;
+    }
+    setValidationError('');
+    return true;
+  };
+
+  // ✅ Override the default continue behavior
+  const handleContinue = () => {
+    if (validateStoreName()) {
+      // Proceed to next step
+      navigate('/store-builder/step/2');
+    }
+  };
+
+  // ✅ Override the default close behavior
+  const handleClose = () => {
+    if (!formData.brandName || formData.brandName.trim() === '') {
+      setValidationError('Please enter a store name before closing');
+      return;
+    }
+    // Save and navigate to dashboard
+    navigate('/dashboard');
+  };
 
   // Available free fonts
   const freeFonts = [
@@ -70,6 +113,10 @@ const Step1_BrandSetup = () => {
       }));
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
+    }
+    // Clear validation error when user types
+    if (name === 'brandName' && validationError) {
+      setValidationError('');
     }
   };
 
@@ -154,7 +201,34 @@ const Step1_BrandSetup = () => {
       totalSteps={8}
       title="Brand configuration"
       subtitle="Complete these details to personalize your Apna eStore store identity."
+      onContinue={handleContinue}
+      onClose={handleClose}
     >
+      {/* Brand Name - Required */}
+      <div className="space-y-4 mb-6">
+        <label className="font-label-md text-label-md text-[#3c4a3d] uppercase tracking-wider text-xs">
+          Brand Name <span className="text-red-500">*</span>
+        </label>
+        <Input 
+          name="brandName" 
+          value={formData.brandName} 
+          onChange={handleChange} 
+          placeholder="Enter brand name" 
+          className={`bg-white border ${validationError ? 'border-red-500' : 'border-[#bbcbb9]'} rounded-lg`}
+          required
+        />
+        {validationError && (
+          <p className="text-red-500 text-xs mt-1">{validationError}</p>
+        )}
+        <p className="text-xs text-gray-400">This will be your store name and is required to continue.</p>
+      </div>
+
+      {/* Store Tagline */}
+      <div className="space-y-4 mb-6">
+        <label className="font-label-md text-label-md text-[#3c4a3d] uppercase tracking-wider text-xs">Store Tagline</label>
+        <Input name="tagline" value={formData.tagline} onChange={handleChange} placeholder="Enter tagline" className="bg-white border border-[#bbcbb9] rounded-lg" />
+      </div>
+
       {/* Logo Upload */}
       <div className="space-y-4 mb-6">
         <label className="font-label-md text-label-md text-[#3c4a3d] uppercase tracking-wider text-xs">Logo Upload</label>
@@ -198,18 +272,6 @@ const Step1_BrandSetup = () => {
         </div>
       </div>
 
-      {/* Brand Name */}
-      <div className="space-y-4 mb-6">
-        <label className="font-label-md text-label-md text-[#3c4a3d] uppercase tracking-wider text-xs">Brand Name</label>
-        <Input name="brandName" value={formData.brandName} onChange={handleChange} placeholder="Enter brand name" className="bg-white border border-[#bbcbb9] rounded-lg" />
-      </div>
-
-      {/* Store Tagline */}
-      <div className="space-y-4 mb-6">
-        <label className="font-label-md text-label-md text-[#3c4a3d] uppercase tracking-wider text-xs">Store Tagline</label>
-        <Input name="tagline" value={formData.tagline} onChange={handleChange} placeholder="Enter tagline" className="bg-white border border-[#bbcbb9] rounded-lg" />
-      </div>
-
       {/* Brand Colors - One Click Color Picker */}
       <div className="space-y-4 mb-6">
         <label className="font-label-md text-label-md text-[#3c4a3d] uppercase tracking-wider text-xs">Brand Colors</label>
@@ -231,7 +293,6 @@ const Step1_BrandSetup = () => {
                     }}
                     title={`Click to change ${color.label} color`}
                   />
-                  {/* Custom styling for color picker */}
                   <style>{`
                     input[type="color"]::-webkit-color-swatch-wrapper {
                       padding: 0;

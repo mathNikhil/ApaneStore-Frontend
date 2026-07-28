@@ -1,376 +1,414 @@
-import React, { createContext, useContext, useState, useEffect, useRef, useMemo } from 'react';
-import { storeAPI } from '../services/api';
+import React, { createContext, useContext, useState } from 'react';
+import axios from 'axios';
 
 const StoreBuilderContext = createContext();
 
 export const useStoreBuilder = () => {
-  const context = useContext(StoreBuilderContext);
-  if (!context) {
-    throw new Error('useStoreBuilder must be used within StoreBuilderProvider');
-  }
-  return context;
-};
-
-// Default shape for each step — pulled out to module scope so both the
-// initial state AND "start a new store" / "discard changes" can reuse the
-// exact same defaults without duplicating them in three places.
-const DEFAULT_BRAND_DATA = {
-  brandName: 'Organic Flour Co.',
-  tagline: 'Fresh, Organic & Delivered to Your Doorstep',
-  logo: null,
-  colors: {
-    primary: '#25D366',
-    secondary: '#111B21',
-    tertiary: '#008069',
-    background: '#FFFFFF',
-    button: '#25D366',
-    buttonLabel: '#005523',
-    font: '#191C1E',
-  },
-  fonts: { heading: 'Inter', body: 'Inter' },
-  baseFontSize: '16px',
-};
-
-const DEFAULT_PRODUCT_DATA = {
-  categories: [],
-  enableImageZoom: true,
-  banner: {
-    image: null,
-    tagline: 'Fresh, Organic & Delivered',
-    subtitle: '100% Natural Stone-Ground Flour',
-    cta: 'Shop Now',
-    height: 400,
-    bgColor: '#25D366',
-    showText: true,
-    showCta: true,
-    textAlignment: 'center',
-    textColor: '#FFFFFF',
-  },
-};
-
-const DEFAULT_CART_DATA = {
-  freeDelivery: true,
-  freeDeliveryThreshold: 500,
-  deliveryCharge: 40,
-  showProgressBar: true,
-  showDeliveryMessage: true,
-  enableGST: true,
-  gstRate: 5,
-  taxLabel: 'GST',
-  showGSTBreakdownCart: true,
-  showGSTBreakdownCheckout: true,
-};
-
-const DEFAULT_PAYMENT_DATA = {
-  codEnabled: true,
-  upiEnabled: true,
-  cardEnabled: false,
-  netBankingEnabled: false,
-  upiId: '',
-  upiAppName: 'GPay/PhonePe',
-  showQRCode: true,
-  showUPIId: true,
-  defaultPayment: 'cod',
-};
-
-const DEFAULT_ADDRESS_DATA = {
-  maxAddresses: 3,
-  allowDefaultAddress: true,
-  showAddressLabels: true,
-  allowAddressEditing: true,
-  allowAddressDeletion: true,
-  fields: {
-    recipientName: true,
-    recipientMobile: true,
-    addressLine1: true,
-    addressLine2: false,
-    city: true,
-    state: true,
-    pincode: true,
-    landmark: false,
-  },
-};
-
-const DEFAULT_ORDER_DATA = {
-  enableCancellation: true,
-  cancellationWindow: 2,
-  cancelOnlyConfirmed: true,
-  showCancelReason: true,
-  sendCancelEmail: true,
-  showStatusTimeline: true,
-  showEstimatedDelivery: true,
-};
-
-const DEFAULT_PROFILE_DATA = {
-  officeNumber: '+91 8800244169',
-  supportTime: '9:00 AM - 6:00 PM',
-  supportEmail: 'support@chakki.com',
-  aboutUs: 'We help small businesses create their own e-commerce stores easily.',
-  socialLinks: { facebook: '', instagram: '', twitter: '', youtube: '' },
-  feedbackLinks: { facebookReviews: '', instagramFeedback: '' },
-};
-
-const DEFAULT_RETURN_DATA = {
-  isEnabled: true,
-  returnWindowDays: 7,
-  restockingFeePercent: 0,
-  returnShippingMethod: 'customer-pays',
-  requirePhotos: false,
-  requireReason: true,
-  allowedReasons: [
-    'wrong_size',
-    'damaged',
-    'not_as_described',
-    'changed_mind',
-    'wrong_product',
-  ],
-  rules: [],
+    const context = useContext(StoreBuilderContext);
+    if (!context) {
+        throw new Error('useStoreBuilder must be used within StoreBuilderProvider');
+    }
+    return context;
 };
 
 export const StoreBuilderProvider = ({ children }) => {
-  // Helper functions for localStorage
-  // NOTE: these keys are NOT store-scoped. With multi-store support, they act
-  // as a "last edited" quick-resume cache — real source of truth is always
-  // the backend once storeId is known (loadStore() below overwrites this on
-  // every store switch, so cross-store leakage is at most a brief flash).
-  const loadFromStorage = (key, defaultValue) => {
-    try {
-      const saved = localStorage.getItem(`apnaestore_builder_${key}`);
-      if (saved) return JSON.parse(saved);
-      return defaultValue;
-    } catch {
-      return defaultValue;
-    }
-  };
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002';
 
-  const saveToStorage = (key, data) => {
-    try {
-      localStorage.setItem(`apnaestore_builder_${key}`, JSON.stringify(data));
-    } catch (e) {
-      console.error('Error saving to localStorage:', e);
-    }
-  };
+    // Step 1: Brand Data
+    const [brandData, setBrandData] = useState({
+        brandName: '',
+        tagline: '',
+        logoUrl: null,
+        bannerUrl: null,
+        logoPublicId: null,
+        bannerPublicId: null,
+        brandColors: {
+            primary: '#25D366',
+            secondary: '#111B21',
+            tertiary: '#008069',
+        },
+        headingFont: 'Inter',
+        bodyFont: 'Inter',
+        baseFontSize: '16px',
+    });
 
-  const [brandData, setBrandData] = useState(() => loadFromStorage('brandData', DEFAULT_BRAND_DATA));
-  useEffect(() => { saveToStorage('brandData', brandData); }, [brandData]);
+    // Step 2: Product Data
+    const [productData, setProductData] = useState({
+        categories: [],
+        products: [],
+    });
 
-  const [productData, setProductData] = useState(() => loadFromStorage('productData', DEFAULT_PRODUCT_DATA));
-  useEffect(() => { saveToStorage('productData', productData); }, [productData]);
+    // Step 3: Cart Data
+    const [cartData, setCartData] = useState({
+        freeDelivery: true,
+        freeDeliveryThreshold: 500,
+        deliveryCharge: 40,
+        showProgressBar: true,
+        showDeliveryMessage: true,
+        enableGST: true,
+        gstRate: 5,
+        taxLabel: 'GST',
+        showGSTBreakdownCart: true,
+        showGSTBreakdownCheckout: true,
+    });
 
-  const [cartData, setCartData] = useState(() => loadFromStorage('cartData', DEFAULT_CART_DATA));
-  useEffect(() => { saveToStorage('cartData', cartData); }, [cartData]);
+    // Step 4: Payment Data
+    const [paymentData, setPaymentData] = useState({
+        codEnabled: true,
+        upiEnabled: true,
+        cardEnabled: false,
+        netBankingEnabled: false,
+        upiId: '8800244169@upi',
+        upiAppName: 'GPay/PhonePe',
+        showQRCode: true,
+        showUPIId: true,
+        defaultPayment: 'cod',
+    });
 
-  const [paymentData, setPaymentData] = useState(() => loadFromStorage('paymentData', DEFAULT_PAYMENT_DATA));
-  useEffect(() => { saveToStorage('paymentData', paymentData); }, [paymentData]);
+    // Step 5: Address Data
+    const [addressData, setAddressData] = useState({
+        maxAddresses: 3,
+        allowDefaultAddress: true,
+        showAddressLabels: true,
+        allowAddressEditing: true,
+        allowAddressDeletion: true,
+        fields: {
+            recipientName: true,
+            recipientMobile: true,
+            addressLine1: true,
+            addressLine2: false,
+            city: true,
+            state: true,
+            pincode: true,
+            landmark: false,
+        },
+    });
 
-  const [addressData, setAddressData] = useState(() => loadFromStorage('addressData', DEFAULT_ADDRESS_DATA));
-  useEffect(() => { saveToStorage('addressData', addressData); }, [addressData]);
+    // Step 6: Order Data
+    const [orderData, setOrderData] = useState({
+        enableCancellation: true,
+        cancellationWindow: 2,
+        cancelOnlyConfirmed: true,
+        showCancelReason: true,
+        sendCancelEmail: true,
+        showStatusTimeline: true,
+        showEstimatedDelivery: true,
+    });
 
-  const [orderData, setOrderData] = useState(() => loadFromStorage('orderData', DEFAULT_ORDER_DATA));
-  useEffect(() => { saveToStorage('orderData', orderData); }, [orderData]);
+    // Step 7: Profile Data
+    const [profileData, setProfileData] = useState({
+        officeNumber: '+91 8800244169',
+        supportTime: '9:00 AM - 6:00 PM',
+        supportEmail: 'support@chakki.com',
+        aboutUs: 'We help small businesses create their own e-commerce stores easily.',
+        socialLinks: {
+            facebook: '',
+            instagram: '',
+            twitter: '',
+            youtube: '',
+        },
+        feedbackLinks: {
+            facebookReviews: '',
+            instagramFeedback: '',
+        },
+    });
 
-  const [profileData, setProfileData] = useState(() => loadFromStorage('profileData', DEFAULT_PROFILE_DATA));
-  useEffect(() => { saveToStorage('profileData', profileData); }, [profileData]);
+    // Step 8: Return Data
+    const [returnData, setReturnData] = useState({
+        isEnabled: true,
+        returnWindowDays: 7,
+        restockingFeePercent: 0,
+        returnShippingMethod: 'customer-pays',
+        requirePhotos: false,
+        requireReason: true,
+        allowedReasons: [
+            'wrong_size',
+            'damaged',
+            'not_as_described',
+            'changed_mind',
+            'wrong_product',
+        ],
+        rules: [],
+    });
 
-  const [returnData, setReturnData] = useState(() => loadFromStorage('returnData', DEFAULT_RETURN_DATA));
-  useEffect(() => { saveToStorage('returnData', returnData); }, [returnData]);
+    // Uploaded images tracking
+    const [uploadedImages, setUploadedImages] = useState({
+        logo: null,
+        banner: null,
+        products: {},
+        categories: {},
+    });
 
-  // ============================================
-  // BACKEND SYNC — multi-store aware
-  // The URL (via the store-builder route wrapper) is the single source of
-  // truth for WHICH store is being edited. This context exposes loadStore /
-  // startNewStore / saveNow / discardChanges; the route-level component
-  // decides which to call based on the :storeId URL param.
-  // ============================================
-  const [storeId, setStoreId] = useState(null);
-  const [syncStatus, setSyncStatus] = useState('idle'); // idle | loading | saving | saved | error
-  const [ready, setReady] = useState(false); // true once loadStore/startNewStore has run for the current URL
-  const skipNextSave = useRef(true); // don't autosave right after we just loaded/reset
-  const lastSavedSnapshot = useRef(null); // last known-good backend state, for "discard changes"
-  const saveTimerRef = useRef(null);
+    // Store ID for saving
+    const [currentStoreId, setCurrentStoreId] = useState(null);
 
-  const slugify = (text) =>
-    (text || 'my-store')
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '')
-      .slice(0, 40) || 'my-store';
+    // ✅ These are the functions components will use
+    const updateBrandData = (data) => {
+        setBrandData(prev => ({ ...prev, ...data }));
+    };
 
-  const buildConfig = () => ({
-    brand: brandData,
-    products: productData,
-    cart: cartData,
-    payment: paymentData,
-    address: addressData,
-    order: orderData,
-    profile: profileData,
-    return: returnData,
-  });
+    const updateProductData = (data) => {
+        setProductData(prev => ({ ...prev, ...data }));
+    };
 
-  const applyConfig = (config = {}) => {
-    setBrandData(config.brand || DEFAULT_BRAND_DATA);
-    setProductData(config.products || DEFAULT_PRODUCT_DATA);
-    setCartData(config.cart || DEFAULT_CART_DATA);
-    setPaymentData(config.payment || DEFAULT_PAYMENT_DATA);
-    setAddressData(config.address || DEFAULT_ADDRESS_DATA);
-    setOrderData(config.order || DEFAULT_ORDER_DATA);
-    setProfileData(config.profile || DEFAULT_PROFILE_DATA);
-    setReturnData(config.return || DEFAULT_RETURN_DATA);
-  };
+    const updateCartData = (data) => {
+        setCartData(prev => ({ ...prev, ...data }));
+    };
 
-  // Load a specific, existing store by id — used when the URL has a real storeId.
-  const loadStore = async (id) => {
-    setReady(false);
-    setSyncStatus('loading');
-    skipNextSave.current = true;
-    try {
-      const result = await storeAPI.getById(id);
-      const store = result?.data;
-      const config = store?.config || {};
-      applyConfig(config);
-      setStoreId(id);
-      lastSavedSnapshot.current = config;
-      setSyncStatus('idle');
-    } catch (e) {
-      console.error('Failed to load store from backend:', e);
-      setSyncStatus('error');
-    } finally {
-      setTimeout(() => { skipNextSave.current = false; setReady(true); }, 0);
-    }
-  };
+    const updatePaymentData = (data) => {
+        setPaymentData(prev => ({ ...prev, ...data }));
+    };
 
-  // Reset to a blank slate — used when the URL says "new" (Launch New Store).
-  // Nothing is created in the backend until the first save.
-  const startNewStore = () => {
-    setReady(false);
-    skipNextSave.current = true;
-    setStoreId(null);
-    lastSavedSnapshot.current = null;
-    applyConfig({});
-    setSyncStatus('idle');
-    setTimeout(() => { skipNextSave.current = false; setReady(true); }, 0);
-  };
+    const updateAddressData = (data) => {
+        setAddressData(prev => ({ ...prev, ...data }));
+    };
 
-  // Immediate save, bypassing the debounce — used by "Save & Close" and by
-  // Ready-to-Publish. Returns the storeId (existing or newly created).
-  const inFlightSaveRef = useRef(null);
+    const updateOrderData = (data) => {
+        setOrderData(prev => ({ ...prev, ...data }));
+    };
 
-  const saveNow = async () => {
-    // If a save is already in progress, piggyback on it instead of starting
-    // a second one — this is what was causing duplicate stores: two calls
-    // both reading storeId as null before the first one's setStoreId had
-    // committed, so both took the "create" branch.
-    if (inFlightSaveRef.current) {
-      return inFlightSaveRef.current;
-    }
+    const updateProfileData = (data) => {
+        setProfileData(prev => ({ ...prev, ...data }));
+    };
 
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    setSyncStatus('saving');
-    const config = buildConfig();
+    const updateReturnData = (data) => {
+        setReturnData(prev => ({ ...prev, ...data }));
+    };
 
-    const savePromise = (async () => {
-      try {
-        let id = storeId;
-        if (id) {
-          await storeAPI.update(id, { storeName: brandData.brandName, config });
-        } else {
-          const subdomain = `${slugify(brandData.brandName)}-${Math.floor(Math.random() * 9000 + 1000)}`;
-          const result = await storeAPI.create({
-            storeName: brandData.brandName || 'My Store',
-            subdomain,
-            config,
-          });
-          id = result?.data?.id;
-          if (id) setStoreId(id);
+    const addProductImages = (productId, images) => {
+        setUploadedImages(prev => ({
+            ...prev,
+            products: {
+                ...prev.products,
+                [productId]: [...(prev.products[productId] || []), ...images]
+            }
+        }));
+    };
+
+    const removeProductImage = (productId, imageToRemove) => {
+        setUploadedImages(prev => ({
+            ...prev,
+            products: {
+                ...prev.products,
+                [productId]: (prev.products[productId] || []).filter(img => img.url !== imageToRemove.url)
+            }
+        }));
+    };
+
+    const getStoreImages = () => {
+        return {
+            logo: brandData.logoUrl,
+            banner: brandData.bannerUrl,
+            products: uploadedImages.products,
+            categories: uploadedImages.categories,
+        };
+    };
+
+    // ✅ SAVE STORE - This is the function that saves the store to the database
+    const saveStore = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            
+            if (!token) {
+                console.error('❌ No token found');
+                return { success: false, error: 'Not authenticated' };
+            }
+
+            // ✅ Validate store name
+            if (!brandData.brandName || brandData.brandName.trim() === '') {
+                return { success: false, error: 'Store name is required' };
+            }
+
+            // ✅ Build store data from all context states
+            const storeData = {
+                storeName: brandData.brandName,
+                tagline: brandData.tagline || '',
+                logoUrl: brandData.logoUrl || null,
+                bannerUrl: brandData.bannerUrl || null,
+                brandColors: brandData.brandColors || {
+                    primary: '#25D366',
+                    secondary: '#111B21',
+                    tertiary: '#008069',
+                },
+                fonts: {
+                    heading: brandData.headingFont || 'Inter',
+                    body: brandData.bodyFont || 'Inter',
+                },
+                baseFontSize: brandData.baseFontSize || '16px',
+                categories: productData.categories || [],
+                cartSettings: cartData,
+                paymentSettings: paymentData,
+                addressSettings: addressData,
+                orderSettings: orderData,
+                profileSettings: profileData,
+                returnSettings: returnData,
+                images: uploadedImages || {},
+            };
+
+            console.log('📝 Saving store data:', storeData);
+
+            let response;
+            
+            if (currentStoreId) {
+                // ✅ Update existing store
+                console.log('🔄 Updating existing store:', currentStoreId);
+                response = await axios.put(
+                    `${API_URL}/api/stores/${currentStoreId}`,
+                    storeData,
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json',
+                        }
+                    }
+                );
+            } else {
+                // ✅ Create new store
+                console.log('🆕 Creating new store');
+                response = await axios.post(
+                    `${API_URL}/api/stores`,
+                    storeData,
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json',
+                        }
+                    }
+                );
+                
+                // ✅ Save the new store ID
+                if (response.data?.data?.id) {
+                    setCurrentStoreId(response.data.data.id);
+                    console.log('✅ New store ID saved:', response.data.data.id);
+                }
+            }
+
+            console.log('✅ Store saved successfully:', response.data);
+            return { success: true, data: response.data };
+
+        } catch (error) {
+            console.error('❌ Save store error:', error);
+            
+            // ✅ Handle specific error cases
+            if (error.response?.status === 409) {
+                return { 
+                    success: false, 
+                    error: 'This store name is already taken. Please choose a different name.' 
+                };
+            }
+            
+            return { 
+                success: false, 
+                error: error.response?.data?.error || error.message || 'Failed to save store' 
+            };
         }
-        lastSavedSnapshot.current = config;
-        setSyncStatus('saved');
-        return id;
-      } catch (e) {
-        console.error('Failed to save store to backend:', e);
-        setSyncStatus('error');
-        throw e;
-      } finally {
-        inFlightSaveRef.current = null;
-      }
-    })();
+    };
 
-    inFlightSaveRef.current = savePromise;
-    return savePromise;
-  };
+    // ✅ GET STORE - Load existing store data
+    const loadStore = async (storeId) => {
+        try {
+            const token = localStorage.getItem('token');
+            
+            if (!token) {
+                console.error('❌ No token found');
+                return { success: false, error: 'Not authenticated' };
+            }
 
-  // Revert to the last known-saved state — used by "Close Without Saving".
-  const discardChanges = () => {
-    skipNextSave.current = true;
-    if (lastSavedSnapshot.current) {
-      applyConfig(lastSavedSnapshot.current);
-    } else {
-      applyConfig({});
-    }
-    setTimeout(() => { skipNextSave.current = false; }, 0);
-  };
+            const response = await axios.get(
+                `${API_URL}/api/stores/${storeId}`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    }
+                }
+            );
 
-  // Debounced autosave: any change to builder data pushes to the backend a
-  // beat after the tenant stops typing/clicking.
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token || !ready || skipNextSave.current) return;
+            if (response.data?.data) {
+                const store = response.data.data;
+                const config = store.config || {};
+                
+                // ✅ Populate all context states from the saved store
+                if (config.brand?.storeName) updateBrandData({ brandName: config.brand.storeName });
+                if (config.brand?.tagline) updateBrandData({ tagline: config.brand.tagline });
+                if (config.brand?.logoUrl) updateBrandData({ logoUrl: config.brand.logoUrl });
+                if (config.brand?.bannerUrl) updateBrandData({ bannerUrl: config.brand.bannerUrl });
+                if (config.brand?.brandColors) updateBrandData({ brandColors: config.brand.brandColors });
+                if (config.brand?.fonts) {
+                    updateBrandData({ 
+                        headingFont: config.brand.fonts.heading || 'Inter',
+                        bodyFont: config.brand.fonts.body || 'Inter',
+                    });
+                }
+                if (config.brand?.baseFontSize) updateBrandData({ baseFontSize: config.brand.baseFontSize });
+                
+                if (config.products?.categories) updateProductData({ categories: config.products.categories });
+                if (config.cart) updateCartData(config.cart);
+                if (config.payment) updatePaymentData(config.payment);
+                if (config.address) updateAddressData(config.address);
+                if (config.order) updateOrderData(config.order);
+                if (config.profile) updateProfileData(config.profile);
+                if (config.return) updateReturnData(config.return);
+                
+                setCurrentStoreId(storeId);
+                console.log('✅ Store loaded successfully:', store);
+                return { success: true, data: store };
+            }
 
-    setSyncStatus('saving');
-    saveTimerRef.current = setTimeout(async () => {
-      try {
-        await saveNow();
-      } catch (e) {
-        // saveNow already sets syncStatus('error') and logs
-      }
-    }, 1200);
+            return { success: false, error: 'Store not found' };
 
-    return () => clearTimeout(saveTimerRef.current);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [brandData, productData, cartData, paymentData, addressData, orderData, profileData, returnData, ready]);
+        } catch (error) {
+            console.error('❌ Load store error:', error);
+            return { 
+                success: false, 
+                error: error.response?.data?.error || error.message || 'Failed to load store' 
+            };
+        }
+    };
 
-  // ============================================
-  // COMBINED DATA FOR PREVIEW
-  // ============================================
-  const memoizedConfig = useMemo(
-    () => buildConfig(),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [brandData, productData, cartData, paymentData, addressData, orderData, profileData, returnData]
-  );
-  const getAllBuilderData = () => memoizedConfig;
-
-  // Clear all data (dev/testing helper — does not touch the backend)
-  const clearAllData = () => {
-    const keys = ['brandData', 'productData', 'cartData', 'paymentData', 'addressData', 'orderData', 'profileData', 'returnData'];
-    keys.forEach(key => localStorage.removeItem(`apnaestore_builder_${key}`));
-    skipNextSave.current = true;
-    setTimeout(() => { skipNextSave.current = false; }, 0);
-    applyConfig({});
-  };
-
-  return (
-    <StoreBuilderContext.Provider
-      value={{
-        brandData, setBrandData,
-        productData, setProductData,
-        cartData, setCartData,
-        paymentData, setPaymentData,
-        addressData, setAddressData,
-        orderData, setOrderData,
-        profileData, setProfileData,
-        returnData, setReturnData,
-        getAllBuilderData,
-        clearAllData,
-        storeId,
-        syncStatus,
-        ready,
+    // ✅ Value object to provide to components
+    const value = {
+        // State
+        brandData,
+        productData,
+        cartData,
+        paymentData,
+        addressData,
+        orderData,
+        profileData,
+        returnData,
+        uploadedImages,
+        currentStoreId,
+        // Setter functions for components that need direct access
+        setBrandData,
+        setProductData,
+        setCartData,
+        setPaymentData,
+        setAddressData,
+        setOrderData,
+        setProfileData,
+        setReturnData,
+        // Update functions
+        updateBrandData,
+        updateProductData,
+        updateCartData,
+        updatePaymentData,
+        updateAddressData,
+        updateOrderData,
+        updateProfileData,
+        updateReturnData,
+        // Image functions
+        addProductImages,
+        removeProductImage,
+        getStoreImages,
+        // Store operations
+        saveStore,
         loadStore,
-        startNewStore,
-        saveNow,
-        discardChanges,
-      }}
-    >
-      {children}
-    </StoreBuilderContext.Provider>
-  );
+        setCurrentStoreId,
+    };
+
+    return (
+        <StoreBuilderContext.Provider value={value}>
+            {children}
+        </StoreBuilderContext.Provider>
+    );
 };
