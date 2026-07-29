@@ -6,7 +6,7 @@ import BottomNav from '../common/BottomNav';
 import Card from '../common/Card';
 
 const ProfilePage = () => {
-    const { token, user } = useAuth();
+    const { token, user, logout } = useAuth();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState(null);
@@ -20,22 +20,12 @@ const ProfilePage = () => {
         store_count: 0
     });
 
-    // Debug: Check if token exists
-    useEffect(() => {
-        console.log('🔑 ProfilePage - Token from context:', !!token);
-        console.log('🔑 ProfilePage - Token value:', token);
-        console.log('👤 ProfilePage - User:', user);
-        console.log('🔑 ProfilePage - Token from localStorage:', localStorage.getItem('token'));
-    }, [token, user]);
-
     const fetchProfile = async () => {
         try {
             setLoading(true);
             setError(null);
             
-            console.log('📡 Fetching profile...');
             const response = await tenantAPI.getMe();
-            console.log('📡 Profile response:', response);
             
             if (response.success) {
                 setProfile(response.data);
@@ -52,7 +42,6 @@ const ProfilePage = () => {
         if (token) {
             fetchProfile();
         } else {
-            console.warn('⚠️ No token available, cannot fetch profile');
             setError('No authentication token found. Please login again.');
             setLoading(false);
         }
@@ -64,8 +53,6 @@ const ProfilePage = () => {
             setError(null);
             setSuccess(null);
             
-            console.log('📡 Saving profile with token:', !!token);
-            
             const dataToSave = {
                 company_name: profile.company_name,
                 email: profile.email,
@@ -73,11 +60,7 @@ const ProfilePage = () => {
                 business_type: profile.business_type
             };
             
-            console.log('📡 Data to save:', dataToSave);
-            
             const response = await tenantAPI.updateMe(dataToSave);
-            
-            console.log('📡 Save response:', response);
             
             if (response.success) {
                 setSuccess('Profile updated successfully!');
@@ -97,6 +80,12 @@ const ProfilePage = () => {
     const handleChange = (e) => {
         const { name, value } = e.target;
         setProfile(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleLogout = async () => {
+        if (window.confirm('Are you sure you want to logout?')) {
+            await logout();
+        }
     };
 
     if (loading) {
@@ -124,6 +113,7 @@ const ProfilePage = () => {
                     </div>
                 )}
 
+                {/* Business Profile Card */}
                 <Card>
                     <div className="flex items-center justify-between mb-4">
                         <div>
@@ -211,11 +201,66 @@ const ProfilePage = () => {
                     </div>
                 </Card>
 
-                {/* Debug info - remove in production */}
-                <div className="text-xs text-gray-400 p-4 bg-gray-50 rounded-lg">
-                    <p>Token exists: {!!token ? '✅ Yes' : '❌ No'}</p>
-                    <p>Token value: {token ? token.substring(0, 30) + '...' : 'null'}</p>
-                    <p>User: {user ? user.company_name || user.phone : 'null'}</p>
+                {/* About Us Card */}
+                <Card>
+                    <div className="flex items-center gap-2 mb-4">
+                        <span className="material-symbols-outlined text-[#006d2f]">info</span>
+                        <h3 className="font-bold text-gray-800">About ApnaEstore</h3>
+                    </div>
+                    <div className="text-sm text-gray-600 space-y-2">
+                        <p>
+                            ApnaEstore is a complete e-commerce platform that helps you build, manage, and grow your online store. 
+                            With our intuitive store builder, you can create a professional online store without any coding knowledge.
+                        </p>
+                        <p>
+                            From product management to order tracking, we provide all the tools you need to succeed in the digital marketplace.
+                        </p>
+                    </div>
+                </Card>
+
+                {/* Support Details Card */}
+                <Card>
+                    <div className="flex items-center gap-2 mb-4">
+                        <span className="material-symbols-outlined text-[#006d2f]">support_agent</span>
+                        <h3 className="font-bold text-gray-800">Support Details</h3>
+                    </div>
+                    <div className="space-y-3 text-sm">
+                        <div className="flex items-center gap-3">
+                            <span className="material-symbols-outlined text-gray-400 text-base">email</span>
+                            <div>
+                                <p className="text-gray-500 text-xs">Email</p>
+                                <p className="font-medium text-gray-800">support@apnaestore.com</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <span className="material-symbols-outlined text-gray-400 text-base">phone</span>
+                            <div>
+                                <p className="text-gray-500 text-xs">Phone</p>
+                                <p className="font-medium text-gray-800">+91 8800244169</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <span className="material-symbols-outlined text-gray-400 text-base">schedule</span>
+                            <div>
+                                <p className="text-gray-500 text-xs">Working Hours</p>
+                                <p className="font-medium text-gray-800">9:00 AM - 6:00 PM (Mon-Sat)</p>
+                            </div>
+                        </div>
+                    </div>
+                </Card>
+
+                {/* Logout Button */}
+                <div className="pt-4">
+                    <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-red-50 hover:bg-red-100 border-2 border-red-200 text-red-600 font-semibold rounded-xl transition-all active:scale-[0.98]"
+                    >
+                        <span className="material-symbols-outlined">logout</span>
+                        Logout
+                    </button>
+                    <p className="text-center text-xs text-gray-400 mt-4">
+                        App Version 1.0.0 • ApnaEstore Pro
+                    </p>
                 </div>
             </main>
 

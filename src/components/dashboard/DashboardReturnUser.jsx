@@ -268,13 +268,16 @@ const DashboardReturnUser = ({ stores = [], onStoreUpdate }) => {
                                             Store Admin Panel
                                         </button>
                                         
-                                        <button 
-                                            onClick={() => navigate(`/store-builder/step/1?storeId=${store.id}`)}
-                                            className="px-4 py-2 bg-[#eceef1] text-[#006d2f] font-semibold text-sm rounded-xl hover:bg-[#d9e4ec] active:scale-[0.98] transition-all flex items-center gap-2"
-                                        >
-                                            <span className="material-symbols-outlined text-base">edit</span>
-                                            Edit Store
-                                        </button>
+                                       <button 
+    onClick={() => {
+        console.log('📝 Editing store:', store.id);
+        navigate(`/store-builder/step/1?storeId=${store.id}`);
+    }}
+    className="px-4 py-2 bg-[#eceef1] text-[#006d2f] font-semibold text-sm rounded-xl hover:bg-[#d9e4ec] active:scale-[0.98] transition-all flex items-center gap-2"
+>
+    <span className="material-symbols-outlined text-base">edit</span>
+    Edit Store
+</button>
                                         
                                         <button 
                                             onClick={() => window.open(`http://${store.subdomain}.apnaestore.com`, '_blank')}
@@ -346,7 +349,7 @@ const DashboardReturnUser = ({ stores = [], onStoreUpdate }) => {
                     <div className="bg-white rounded-2xl border border-[#bbcbb9] shadow-sm p-6">
                         <h3 className="font-bold text-[#191c1e] mb-4">Store Status Guide</h3>
                         <div className="space-y-3">
-                            <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
+                            <div clasName="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
                                 <span className="material-symbols-outlined text-green-600">check_circle</span>
                                 <div>
                                     <p className="text-sm font-medium text-green-700">Published ✅</p>

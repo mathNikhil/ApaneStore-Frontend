@@ -6,6 +6,31 @@ import Card from '../Common/Card';
 import Input from '../Common/Input';
 import Toggle from '../Common/Toggle';
 
+// ✅ Image Guideline Component - Compact & Integrated
+const ImageGuidelineBadge = ({ size, format, maxSize, ratio }) => (
+  <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-gray-500">
+    <span className="flex items-center gap-0.5">
+      <span className="material-symbols-outlined text-sm">crop</span>
+      <span className="font-medium">{size}</span>
+    </span>
+    <span className="text-gray-300">|</span>
+    <span className="flex items-center gap-0.5">
+      <span className="material-symbols-outlined text-sm">description</span>
+      <span>{format}</span>
+    </span>
+    <span className="text-gray-300">|</span>
+    <span className="flex items-center gap-0.5">
+      <span className="material-symbols-outlined text-sm">sd_storage</span>
+      <span>{maxSize}</span>
+    </span>
+    <span className="text-gray-300">|</span>
+    <span className="flex items-center gap-0.5">
+      <span className="material-symbols-outlined text-sm">aspect_ratio</span>
+      <span>{ratio}</span>
+    </span>
+  </div>
+);
+
 const Step2_ProductConfig = () => {
   const navigate = useNavigate();
   const { productData, setProductData } = useStoreBuilder();
@@ -680,11 +705,25 @@ const Step2_ProductConfig = () => {
               </button>
             </div>
 
+            {/* ✅ Category Image Upload with integrated guidelines */}
+            <div className="mb-3">
+              <label className="font-label-md text-label-md text-[#3c4a3d] block uppercase tracking-wider text-xs mb-1">Category Image</label>
+              <div className="flex items-center gap-3">
+                <div className="w-16 h-16 rounded-lg bg-[#f2f4f7] border-2 border-dashed border-[#bbcbb9] flex items-center justify-center text-[#556067] hover:text-[#006d2f] hover:border-[#006d2f] cursor-pointer transition-colors">
+                  <span className="material-symbols-outlined">add_a_photo</span>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-600">Upload Category Image</p>
+                  <ImageGuidelineBadge size="200×200px" format="JPG/PNG" maxSize="70KB" ratio="1:1" />
+                </div>
+              </div>
+            </div>
+
             <div className="space-y-3">
               {category.products.map((product) => (
                 <Card key={product.id} className="bg-white border border-[#bbcbb9]/10">
                   <div className="flex items-start gap-4">
-                    {/* Product Images - Max 20 */}
+                    {/* ✅ Product Images with integrated guidelines */}
                     <div className="flex-shrink-0">
                       <div className="grid grid-cols-3 gap-1 w-24">
                         {product.images && product.images.map((img) => (
@@ -718,9 +757,13 @@ const Step2_ProductConfig = () => {
                           className="hidden"
                         />
                       </div>
-                      <span className="text-[10px] text-[#bbcbb9] mt-1 block text-center">
-                        {product.images?.length || 0}/20
-                      </span>
+                      {/* ✅ Integrated image guidelines */}
+                      <div className="mt-1">
+                        <p className="text-[10px] text-gray-400">
+                          {product.images?.length || 0}/20 • 
+                          <span className="ml-1">400×400px • 200KB • 1:1</span>
+                        </p>
+                      </div>
                     </div>
 
                     {/* Product Details */}
@@ -808,7 +851,7 @@ const Step2_ProductConfig = () => {
                           </button>
                         </div>
 
-                        {/* Variation Image — single thumbnail, shown with the variant name on preview */}
+                        {/* ✅ Variation Image with integrated guidelines */}
                         <div className="mt-2 flex items-center gap-2">
                           {variation.image ? (
                             <div className="relative w-10 h-10 rounded bg-[#f2f4f7] border border-[#bbcbb9] overflow-hidden group">
@@ -838,9 +881,10 @@ const Step2_ProductConfig = () => {
                             onChange={(e) => handleVariationImageUpload(category.id, product.id, variation.id, e)}
                             className="hidden"
                           />
-                          <span className="text-[10px] text-[#bbcbb9]">
-                            {variation.image ? 'Shown as thumbnail with variant name' : 'Optional — shows next to variant name'}
-                          </span>
+                          <div>
+                            <p className="text-xs text-gray-500">Variant Image</p>
+                            <p className="text-[10px] text-gray-400">100×100px • 30KB • 1:1</p>
+                          </div>
                         </div>
 
                         {/* Sizes */}
@@ -977,7 +1021,7 @@ const Step2_ProductConfig = () => {
         ))}
       </Card>
 
-      {/* Hero Banner Section */}
+      {/* ✅ Hero Banner Section with integrated guidelines */}
       <Card className="mb-6">
         <div className="flex items-center gap-2 mb-4">
           <span className="material-symbols-outlined text-[#006d2f]">image</span>
@@ -1005,7 +1049,12 @@ const Step2_ProductConfig = () => {
               <div className="absolute inset-0 flex flex-col items-center justify-center text-[#556067] group-hover:text-[#006d2f] transition-colors">
                 <span className="material-symbols-outlined text-3xl mb-1">upload_file</span>
                 <span className="font-caption text-caption text-xs">Upload banner image</span>
-                <span className="font-caption text-caption text-xs opacity-60">Recommended: 1200×400px</span>
+                <div className="flex gap-3 mt-1 text-[10px] text-gray-400">
+                  <span>📐 1200×375px</span>
+                  <span>📄 PNG/JPG</span>
+                  <span>📦 300KB</span>
+                  <span>📐 16:5</span>
+                </div>
               </div>
             )}
             <input
@@ -1024,6 +1073,7 @@ const Step2_ProductConfig = () => {
               className="hidden"
             />
           </div>
+        
         </div>
 
         <div className="space-y-3">

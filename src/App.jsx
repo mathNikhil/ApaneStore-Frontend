@@ -31,6 +31,8 @@ function App() {
             {/* Tenant Routes (Protected) */}
             <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+            
+            {/* ✅ FIX: Add /* to match any nested routes */}
             <Route path="/store-builder/*" element={<ProtectedRoute><StoreBuilderRouter /></ProtectedRoute>} />
             
             {/* Super Admin Routes */}

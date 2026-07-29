@@ -142,6 +142,12 @@ export const StoreBuilderProvider = ({ children }) => {
     // Store ID for saving
     const [currentStoreId, setCurrentStoreId] = useState(null);
 
+    // ✅ Current step in store builder
+    const [currentStep, setCurrentStep] = useState(1);
+
+    // ✅ Ready state
+    const [ready, setReady] = useState(true);
+
     // ✅ These are the functions components will use
     const updateBrandData = (data) => {
         setBrandData(prev => ({ ...prev, ...data }));
@@ -204,7 +210,46 @@ export const StoreBuilderProvider = ({ children }) => {
         };
     };
 
-    // ✅ SAVE STORE - This is the function that saves the store to the database
+    // ✅ START NEW STORE
+    const startNewStore = () => {
+        console.log('🆕 Starting new store');
+        setCurrentStoreId(null);
+        setCurrentStep(1);
+        setReady(true);
+        
+        setBrandData({
+            brandName: '',
+            tagline: '',
+            logoUrl: null,
+            bannerUrl: null,
+            logoPublicId: null,
+            bannerPublicId: null,
+            brandColors: {
+                primary: '#25D366',
+                secondary: '#111B21',
+                tertiary: '#008069',
+            },
+            headingFont: 'Inter',
+            bodyFont: 'Inter',
+            baseFontSize: '16px',
+        });
+        
+        setProductData({
+            categories: [],
+            products: [],
+        });
+        
+        setUploadedImages({
+            logo: null,
+            banner: null,
+            products: {},
+            categories: {},
+        });
+        
+        return { success: true };
+    };
+
+    // ✅ SAVE STORE
     const saveStore = async () => {
         try {
             const token = localStorage.getItem('token');
@@ -214,12 +259,10 @@ export const StoreBuilderProvider = ({ children }) => {
                 return { success: false, error: 'Not authenticated' };
             }
 
-            // ✅ Validate store name
             if (!brandData.brandName || brandData.brandName.trim() === '') {
                 return { success: false, error: 'Store name is required' };
             }
 
-            // ✅ Build store data from all context states
             const storeData = {
                 storeName: brandData.brandName,
                 tagline: brandData.tagline || '',
@@ -243,6 +286,7 @@ export const StoreBuilderProvider = ({ children }) => {
                 profileSettings: profileData,
                 returnSettings: returnData,
                 images: uploadedImages || {},
+                lastBuilderStep: currentStep,
             };
 
             console.log('📝 Saving store data:', storeData);
@@ -250,7 +294,6 @@ export const StoreBuilderProvider = ({ children }) => {
             let response;
             
             if (currentStoreId) {
-                // ✅ Update existing store
                 console.log('🔄 Updating existing store:', currentStoreId);
                 response = await axios.put(
                     `${API_URL}/api/stores/${currentStoreId}`,
@@ -263,7 +306,6 @@ export const StoreBuilderProvider = ({ children }) => {
                     }
                 );
             } else {
-                // ✅ Create new store
                 console.log('🆕 Creating new store');
                 response = await axios.post(
                     `${API_URL}/api/stores`,
@@ -276,7 +318,6 @@ export const StoreBuilderProvider = ({ children }) => {
                     }
                 );
                 
-                // ✅ Save the new store ID
                 if (response.data?.data?.id) {
                     setCurrentStoreId(response.data.data.id);
                     console.log('✅ New store ID saved:', response.data.data.id);
@@ -289,7 +330,6 @@ export const StoreBuilderProvider = ({ children }) => {
         } catch (error) {
             console.error('❌ Save store error:', error);
             
-            // ✅ Handle specific error cases
             if (error.response?.status === 409) {
                 return { 
                     success: false, 
@@ -304,7 +344,7 @@ export const StoreBuilderProvider = ({ children }) => {
         }
     };
 
-    // ✅ GET STORE - Load existing store data
+    // ✅ LOAD STORE
     const loadStore = async (storeId) => {
         try {
             const token = localStorage.getItem('token');
@@ -313,6 +353,8 @@ export const StoreBuilderProvider = ({ children }) => {
                 console.error('❌ No token found');
                 return { success: false, error: 'Not authenticated' };
             }
+
+            console.log('📡 Loading store:', storeId);
 
             const response = await axios.get(
                 `${API_URL}/api/stores/${storeId}`,
@@ -323,34 +365,85 @@ export const StoreBuilderProvider = ({ children }) => {
                 }
             );
 
+            console.log('📡 Store response:', response.data);
+
             if (response.data?.data) {
                 const store = response.data.data;
                 const config = store.config || {};
                 
-                // ✅ Populate all context states from the saved store
-                if (config.brand?.storeName) updateBrandData({ brandName: config.brand.storeName });
-                if (config.brand?.tagline) updateBrandData({ tagline: config.brand.tagline });
-                if (config.brand?.logoUrl) updateBrandData({ logoUrl: config.brand.logoUrl });
-                if (config.brand?.bannerUrl) updateBrandData({ bannerUrl: config.brand.bannerUrl });
-                if (config.brand?.brandColors) updateBrandData({ brandColors: config.brand.brandColors });
-                if (config.brand?.fonts) {
-                    updateBrandData({ 
-                        headingFont: config.brand.fonts.heading || 'Inter',
-                        bodyFont: config.brand.fonts.body || 'Inter',
+                console.log('📡 Store config:', config);
+                
+                // Populate Brand Data
+                if (config.brand?.storeName) {
+                    setBrandData({
+                        brandName: config.brand.storeName || '',
+                        tagline: config.brand.tagline || '',
+                        logoUrl: config.brand.logoUrl || null,
+                        bannerUrl: config.brand.bannerUrl || null,
+                        logoPublicId: null,
+                        bannerPublicId: null,
+                        brandColors: config.brand.brandColors || {
+                            primary: '#25D366',
+                            secondary: '#111B21',
+                            tertiary: '#008069',
+                        },
+                        headingFont: config.brand.fonts?.heading || 'Inter',
+                        bodyFont: config.brand.fonts?.body || 'Inter',
+                        baseFontSize: config.brand.baseFontSize || '16px',
                     });
                 }
-                if (config.brand?.baseFontSize) updateBrandData({ baseFontSize: config.brand.baseFontSize });
                 
-                if (config.products?.categories) updateProductData({ categories: config.products.categories });
-                if (config.cart) updateCartData(config.cart);
-                if (config.payment) updatePaymentData(config.payment);
-                if (config.address) updateAddressData(config.address);
-                if (config.order) updateOrderData(config.order);
-                if (config.profile) updateProfileData(config.profile);
-                if (config.return) updateReturnData(config.return);
+                // Populate Product Data
+                if (config.products?.categories) {
+                    setProductData({ 
+                        categories: config.products.categories || [],
+                        products: []
+                    });
+                }
                 
+                // Populate Cart Data
+                if (config.cart) {
+                    setCartData(prev => ({ ...prev, ...config.cart }));
+                }
+                
+                // Populate Payment Data
+                if (config.payment) {
+                    setPaymentData(prev => ({ ...prev, ...config.payment }));
+                }
+                
+                // Populate Address Data
+                if (config.address) {
+                    setAddressData(prev => ({ ...prev, ...config.address }));
+                }
+                
+                // Populate Order Data
+                if (config.order) {
+                    setOrderData(prev => ({ ...prev, ...config.order }));
+                }
+                
+                // Populate Profile Data
+                if (config.profile) {
+                    setProfileData(prev => ({ ...prev, ...config.profile }));
+                }
+                
+                // Populate Return Data
+                if (config.return) {
+                    setReturnData(prev => ({ ...prev, ...config.return }));
+                }
+                
+                // Populate Images
+                if (config.images) {
+                    setUploadedImages(prev => ({ ...prev, ...config.images }));
+                }
+                
+                // Set current step
+                const lastStep = store.last_builder_step || 1;
+                setCurrentStep(lastStep);
                 setCurrentStoreId(storeId);
+                setReady(true);
+                
                 console.log('✅ Store loaded successfully:', store);
+                console.log('📌 Last step:', lastStep);
                 return { success: true, data: store };
             }
 
@@ -358,6 +451,7 @@ export const StoreBuilderProvider = ({ children }) => {
 
         } catch (error) {
             console.error('❌ Load store error:', error);
+            setReady(true);
             return { 
                 success: false, 
                 error: error.response?.data?.error || error.message || 'Failed to load store' 
@@ -365,7 +459,7 @@ export const StoreBuilderProvider = ({ children }) => {
         }
     };
 
-    // ✅ Value object to provide to components
+    // ✅ Value object - ONLY ONE DECLARATION
     const value = {
         // State
         brandData,
@@ -378,7 +472,9 @@ export const StoreBuilderProvider = ({ children }) => {
         returnData,
         uploadedImages,
         currentStoreId,
-        // Setter functions for components that need direct access
+        currentStep,
+        ready,
+        // Setter functions
         setBrandData,
         setProductData,
         setCartData,
@@ -387,6 +483,7 @@ export const StoreBuilderProvider = ({ children }) => {
         setOrderData,
         setProfileData,
         setReturnData,
+        setCurrentStep,
         // Update functions
         updateBrandData,
         updateProductData,
@@ -403,6 +500,7 @@ export const StoreBuilderProvider = ({ children }) => {
         // Store operations
         saveStore,
         loadStore,
+        startNewStore,
         setCurrentStoreId,
     };
 
