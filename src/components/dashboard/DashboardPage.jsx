@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import DashboardFirstTime from './DashboardFirstTime';
 import DashboardReturnUser from './DashboardReturnUser';
@@ -11,11 +11,8 @@ const DashboardPage = () => {
 
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002';
 
-    useEffect(() => {
-        checkUserStores();
-    }, []);
-
-    const checkUserStores = async () => {
+    // ✅ Wrap fetch in useCallback so it can be called from child
+    const fetchStores = useCallback(async () => {
         try {
             setLoading(true);
             setError(null);
@@ -48,17 +45,27 @@ const DashboardPage = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [API_URL]);
 
-    // ✅ Callback to update store status
+    useEffect(() => {
+        fetchStores();
+    }, [fetchStores]);
+
+    // ✅ Pass fetchStores to child so it can refresh after delete
     const handleStoreUpdate = (storeId, newStatus) => {
-        setStores(prevStores => 
-            prevStores.map(store => 
-                store.id === storeId 
-                    ? { ...store, status: newStatus }
-                    : store
-            )
-        );
+        if (newStatus === null) {
+            // Store was deleted - refresh the list
+            fetchStores();
+        } else {
+            // Store status was updated
+            setStores(prevStores => 
+                prevStores.map(store => 
+                    store.id === storeId 
+                        ? { ...store, status: newStatus }
+                        : store
+                )
+            );
+        }
     };
 
     if (loading) {
@@ -78,7 +85,7 @@ const DashboardPage = () => {
                     <h3 className="text-lg font-bold text-gray-800 mb-2">Error Loading Dashboard</h3>
                     <p className="text-gray-600 text-sm">{error}</p>
                     <button 
-                        onClick={checkUserStores}
+                        onClick={fetchStores}
                         className="mt-4 px-4 py-2 bg-[#25D366] text-[#005523] rounded-lg font-semibold hover:brightness-105"
                     >
                         Retry
@@ -88,7 +95,6 @@ const DashboardPage = () => {
         );
     }
 
-    // ✅ Pass stores and update callback to DashboardReturnUser
     if (hasStores) {
         return <DashboardReturnUser stores={stores} onStoreUpdate={handleStoreUpdate} />;
     }

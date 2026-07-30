@@ -10,6 +10,7 @@ const DashboardReturnUser = ({ stores = [], onStoreUpdate }) => {
     const navigate = useNavigate();
     const [updating, setUpdating] = useState(null);
     const [error, setError] = useState(null);
+    const [deleting, setDeleting] = useState(null);
 
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002';
 
@@ -27,6 +28,26 @@ const DashboardReturnUser = ({ stores = [], onStoreUpdate }) => {
         } catch {
             return {};
         }
+    };
+
+    // ✅ Helper to get store expiry info
+    const getStoreExpiryInfo = (store) => {
+        if (store.status !== 'draft') return null;
+        
+        const createdAt = new Date(store.created_at);
+        const expiryDays = 120;
+        const expiryDate = new Date(createdAt);
+        expiryDate.setDate(expiryDate.getDate() + expiryDays);
+        
+        const now = new Date();
+        const daysRemaining = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
+        
+        return {
+            daysRemaining,
+            isExpired: daysRemaining <= 0,
+            isWarning: daysRemaining <= 7 && daysRemaining > 0,
+            expiryDate: expiryDate
+        };
     };
 
     // ✅ Handle Publish/Unpublish status change
@@ -65,6 +86,43 @@ const DashboardReturnUser = ({ stores = [], onStoreUpdate }) => {
             setError(error.response?.data?.error || 'Failed to update store status');
         } finally {
             setUpdating(null);
+        }
+    };
+
+    // ✅ Delete Store with auto-refresh
+    const handleDeleteStore = async (storeId, storeName) => {
+        const confirmMessage = `⚠️ Are you sure you want to delete "${storeName}"?\n\nThis action cannot be undone. All products, images, and settings will be permanently removed.`;
+        
+        if (!window.confirm(confirmMessage)) return;
+
+        setDeleting(storeId);
+        try {
+            const token = localStorage.getItem('token');
+            
+            const response = await axios.delete(
+                `${API_URL}/api/stores/${storeId}`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                }
+            );
+
+            if (response.data?.success) {
+                // ✅ Call onStoreUpdate with null to trigger refresh
+                if (onStoreUpdate) {
+                    onStoreUpdate(storeId, null);
+                }
+                alert(response.data.message || 'Store deleted successfully');
+                // ✅ No manual refresh needed - parent will refresh
+            } else {
+                alert(response.data?.error || 'Failed to delete store');
+            }
+        } catch (error) {
+            console.error('❌ Delete store error:', error);
+            alert(error.response?.data?.error || 'Failed to delete store');
+        } finally {
+            setDeleting(null);
         }
     };
 
@@ -122,9 +180,9 @@ const DashboardReturnUser = ({ stores = [], onStoreUpdate }) => {
         return actions;
     };
 
-    // ✅ Navigate to Store Admin Panel
+    // ✅ Navigate to Store Admin Panel (separate app)
     const goToStoreAdmin = (storeId) => {
-        navigate(`/store-admin/${storeId}/dashboard`);
+        window.open(`http://localhost:3001?storeId=${storeId}`, '_blank');
     };
 
     // ✅ Stats based on all stores
@@ -144,17 +202,11 @@ const DashboardReturnUser = ({ stores = [], onStoreUpdate }) => {
 
             <main className="max-w-7xl mx-auto px-4 py-6">
                 {/* ApnaEstore Logo */}
-                <div className="flex items-center gap-4 mb-6">
-                    <img 
-                        src={logo} 
-                        alt="ApnaEstore" 
-                        className="h-14 w-auto"
-                    />
-                </div>
+                
 
                 {/* Welcome Section */}
                 <div className="mb-4">
-                    <h1 className="text-3xl font-bold text-[#191c1e]">Welcome, {tenantName}!</h1>
+                    <h1 className="text-3xl font-bold text-[#191c1e]">Welcome, {tenantName}</h1>
                     <p className="text-[#3c4a3d] mt-1">Manage and scale your digital business.</p>
                 </div>
 
@@ -224,6 +276,7 @@ const DashboardReturnUser = ({ stores = [], onStoreUpdate }) => {
                             const brand = config.brand || {};
                             const statusBadge = getStatusBadge(store.status);
                             const actions = getStatusActions(store);
+                            const expiryInfo = getStoreExpiryInfo(store);
                             
                             return (
                                 <div key={store.id} className="bg-white rounded-2xl border border-[#bbcbb9] shadow-sm p-6 hover:shadow-md transition-shadow">
@@ -258,8 +311,30 @@ const DashboardReturnUser = ({ stores = [], onStoreUpdate }) => {
                                         🔗 {store.subdomain ? `${store.subdomain}.apnaestore.com` : 'No domain set'}
                                     </p>
                                     
+                                    {/* ✅ Expiry Indicator - Only for draft stores with note */}
+                                    {store.status === 'draft' && expiryInfo && (
+                                        <div className="mt-3 pt-3 border-t border-[#e0e3e6]">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`material-symbols-outlined text-sm ${
+                                                        expiryInfo.isWarning ? 'text-red-500' : 'text-yellow-500'
+                                                    }`}>
+                                                        {expiryInfo.isWarning ? 'warning' : 'hourglass_empty'}
+                                                    </span>
+                                                    <span className={`text-xs ${
+                                                        expiryInfo.isWarning ? 'text-red-600 font-semibold' : 'text-gray-500'
+                                                    }`}>
+                                                    
+                                                        Auto delete in <span className="font-bold">{expiryInfo.daysRemaining}</span> days
+                                                    </span>
+                                                </div>
+                                            </div>
+                                           
+                                        </div>
+                                    )}
+                                    
                                     <div className="flex flex-wrap gap-3 mt-4 pt-4 border-t border-[#eceef1]">
-                                        {/* ✅ NEW: Store Admin Panel Button */}
+                                        {/* Store Admin Panel Button */}
                                         <button 
                                             onClick={() => goToStoreAdmin(store.id)}
                                             className="px-4 py-2 bg-[#006d2f] text-white font-semibold text-sm rounded-xl hover:brightness-110 active:scale-[0.98] transition-all flex items-center gap-2"
@@ -268,16 +343,13 @@ const DashboardReturnUser = ({ stores = [], onStoreUpdate }) => {
                                             Store Admin Panel
                                         </button>
                                         
-                                       <button 
-    onClick={() => {
-        console.log('📝 Editing store:', store.id);
-        navigate(`/store-builder/step/1?storeId=${store.id}`);
-    }}
-    className="px-4 py-2 bg-[#eceef1] text-[#006d2f] font-semibold text-sm rounded-xl hover:bg-[#d9e4ec] active:scale-[0.98] transition-all flex items-center gap-2"
->
-    <span className="material-symbols-outlined text-base">edit</span>
-    Edit Store
-</button>
+                                        <button 
+                                            onClick={() => navigate(`/store-builder/step/1?storeId=${store.id}`)}
+                                            className="px-4 py-2 bg-[#eceef1] text-[#006d2f] font-semibold text-sm rounded-xl hover:bg-[#d9e4ec] active:scale-[0.98] transition-all flex items-center gap-2"
+                                        >
+                                            <span className="material-symbols-outlined text-base">edit</span>
+                                            Edit Store
+                                        </button>
                                         
                                         <button 
                                             onClick={() => window.open(`http://${store.subdomain}.apnaestore.com`, '_blank')}
@@ -301,9 +373,25 @@ const DashboardReturnUser = ({ stores = [], onStoreUpdate }) => {
                                                 )}
                                             </button>
                                         ))}
+
+                                        {/* ✅ Delete Store Button */}
+                                        <button
+                                            onClick={() => handleDeleteStore(store.id, store.store_name)}
+                                            disabled={deleting === store.id}
+                                            className="px-4 py-2 bg-red-100 text-red-700 font-semibold text-sm rounded-xl hover:bg-red-200 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center gap-2"
+                                        >
+                                            {deleting === store.id ? (
+                                                <span className="material-symbols-outlined animate-spin text-base">progress_activity</span>
+                                            ) : (
+                                                <>
+                                                    <span className="material-symbols-outlined text-base">delete</span>
+                                                    Delete
+                                                </>
+                                            )}
+                                        </button>
                                     </div>
 
-                                    {/* ✅ Store Admin Panel Info */}
+                                    {/* Store Admin Panel Info */}
                                     <div className="mt-3 pt-3 border-t border-dashed border-[#e0e3e6]">
                                         <p className="text-xs text-[#6c7b6b] flex items-center gap-1">
                                             <span className="material-symbols-outlined text-sm">info</span>
@@ -322,7 +410,7 @@ const DashboardReturnUser = ({ stores = [], onStoreUpdate }) => {
                     </div>
                 )}
 
-                {/* Quick Actions */}
+                {/* Quick Actions 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="bg-white rounded-2xl border border-[#bbcbb9] shadow-sm p-6">
                         <h3 className="font-bold text-[#191c1e] mb-4">Quick Actions</h3>
@@ -349,7 +437,7 @@ const DashboardReturnUser = ({ stores = [], onStoreUpdate }) => {
                     <div className="bg-white rounded-2xl border border-[#bbcbb9] shadow-sm p-6">
                         <h3 className="font-bold text-[#191c1e] mb-4">Store Status Guide</h3>
                         <div className="space-y-3">
-                            <div clasName="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
+                            <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
                                 <span className="material-symbols-outlined text-green-600">check_circle</span>
                                 <div>
                                     <p className="text-sm font-medium text-green-700">Published ✅</p>
@@ -361,6 +449,7 @@ const DashboardReturnUser = ({ stores = [], onStoreUpdate }) => {
                                 <div>
                                     <p className="text-sm font-medium text-yellow-700">Draft 📝</p>
                                     <p className="text-xs text-yellow-600">Store is being built, not visible to customers</p>
+                                    <p className="text-[10px] text-yellow-500 mt-0.5">⚠️ Drafts are automatically removed after 120 days</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
@@ -373,6 +462,7 @@ const DashboardReturnUser = ({ stores = [], onStoreUpdate }) => {
                         </div>
                     </div>
                 </div>
+                */}
             </main>
 
             <BottomNav />
