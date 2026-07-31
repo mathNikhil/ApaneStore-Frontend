@@ -4,11 +4,40 @@ import { useStoreBuilder } from '../../Context/StoreBuilderContext';
 import StoreBuilderLayout from './StoreBuilderLayout';
 import Card from '../Common/Card';
 import Input from '../Common/Input';
+import ImageUploader from '../ImageUploader'; // ✅ NEW: Import ImageUploader
+import imageService from '../../services/imageService'; // ✅ NEW: Import image service
+
+// ✅ NEW: Image Guideline Component
+const ImageGuidelineBadge = ({ size, format, maxSize, ratio }) => (
+  <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-gray-500">
+    <span className="flex items-center gap-0.5">
+      <span className="material-symbols-outlined text-sm">crop</span>
+      <span className="font-medium">{size}</span>
+    </span>
+    <span className="text-gray-300">|</span>
+    <span className="flex items-center gap-0.5">
+      <span className="material-symbols-outlined text-sm">description</span>
+      <span>{format}</span>
+    </span>
+    <span className="text-gray-300">|</span>
+    <span className="flex items-center gap-0.5">
+      <span className="material-symbols-outlined text-sm">sd_storage</span>
+      <span>{maxSize}</span>
+    </span>
+    <span className="text-gray-300">|</span>
+    <span className="flex items-center gap-0.5">
+      <span className="material-symbols-outlined text-sm">aspect_ratio</span>
+      <span>{ratio}</span>
+    </span>
+  </div>
+);
 
 const Step1_BrandSetup = () => {
   const navigate = useNavigate();
-  const { brandData, setBrandData } = useStoreBuilder();
+  const { brandData, setBrandData, storeId, tenantId } = useStoreBuilder();
   const [validationError, setValidationError] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
 
   // Load from context on mount
   const [formData, setFormData] = useState({
@@ -31,25 +60,47 @@ const Step1_BrandSetup = () => {
     },
   });
 
+  // ✅ UPDATED: Logo state with proper image data
+  const [logoData, setLogoData] = useState(null);
   const [logoPreview, setLogoPreview] = useState(brandData.logo || null);
   const [isDragging, setIsDragging] = useState(false);
-  const [uploadError, setUploadError] = useState('');
   const fileInputRef = useRef(null);
   const fontInputRef = useRef(null);
 
+  // ✅ NEW: Logo requirements
+  const logoRequirements = {
+    display: {
+      dimensions: '200 × 200 px',
+      format: 'PNG only',
+      maxSize: '100 KB',
+      aspectRatio: '1:1 (Square)',
+      hint: 'Upload a clear, high-quality PNG logo'
+    },
+    validation: {
+      minWidth: 190,
+      maxWidth: 210,
+      minHeight: 190,
+      maxHeight: 210,
+      minSize: 10 * 1024,
+      maxSize: 120 * 1024,
+      allowedMimeTypes: ['image/png'],
+      allowTolerance: true,
+    }
+  };
+
   // After the Brand Name input field, add this:
-{formData.brandName && (
+  {formData.brandName && (
     <div className="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
-        <p className="text-xs text-gray-500">
-            Your store URL: <span className="font-semibold text-green-600">
-                {formData.brandName.toLowerCase().replace(/[^a-z0-9]/g, '-')}.apnaestore.com
-            </span>
-        </p>
-        <p className="text-xs text-gray-400 mt-1">
-            This will be your store's subdomain
-        </p>
+      <p className="text-xs text-gray-500">
+        Your store URL: <span className="font-semibold text-green-600">
+          {formData.brandName.toLowerCase().replace(/[^a-z0-9]/g, '-')}.apnaestore.com
+        </span>
+      </p>
+      <p className="text-xs text-gray-400 mt-1">
+        This will be your store's subdomain
+      </p>
     </div>
-)}
+  )}
 
   // Save to context whenever formData or logo changes
   useEffect(() => {
@@ -73,11 +124,39 @@ const Step1_BrandSetup = () => {
     return true;
   };
 
-  // ✅ Override the default continue behavior
-  const handleContinue = () => {
-    if (validateStoreName()) {
+  // ✅ UPDATED: Handle Continue with image upload
+  const handleContinue = async () => {
+    if (!validateStoreName()) return;
+
+    setIsUploading(true);
+    setUploadError('');
+
+    try {
+      // Upload logo if exists and has file
+      if (logoData && logoData.file && storeId && tenantId) {
+        const response = await imageService.uploadImage(
+          storeId,
+          tenantId,
+          'LOGO',
+          logoData.file
+        );
+        
+        if (!response.success) {
+          setUploadError(`Logo upload failed: ${response.error}`);
+          setIsUploading(false);
+          return;
+        }
+        
+        // Update preview with uploaded image URL
+        setLogoPreview(response.data.url);
+      }
+
       // Proceed to next step
       navigate('/store-builder/step/2');
+    } catch (error) {
+      setUploadError(error.message || 'Failed to upload logo');
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -131,19 +210,31 @@ const Step1_BrandSetup = () => {
     }));
   };
 
+  // ✅ UPDATED: Process logo file with validation
   const processLogoFile = (file) => {
-    const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp', 'image/svg+xml'];
+    const validTypes = ['image/png'];
     if (!validTypes.includes(file.type)) {
-      setUploadError('Please upload a valid image file (PNG, JPG, JPEG, GIF, WEBP, SVG)');
+      setUploadError('Please upload a PNG image only');
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      setUploadError('File size should be less than 5MB');
+    if (file.size > 120 * 1024) { // 120KB with tolerance
+      setUploadError('File size should be less than 120KB');
       return;
     }
     setUploadError('');
+    
     const reader = new FileReader();
-    reader.onload = (e) => setLogoPreview(e.target.result);
+    reader.onload = (e) => {
+      setLogoPreview(e.target.result);
+      // Store file data for upload
+      setLogoData({
+        file: file,
+        preview: e.target.result,
+        name: file.name,
+        size: file.size,
+        type: file.type
+      });
+    };
     reader.readAsDataURL(file);
   };
 
@@ -179,6 +270,7 @@ const Step1_BrandSetup = () => {
 
   const handleUseDefault = () => {
     setLogoPreview(null);
+    setLogoData(null);
     setUploadError('');
   };
 
@@ -203,6 +295,7 @@ const Step1_BrandSetup = () => {
       subtitle="Complete these details to personalize your Apna eStore store identity."
       onContinue={handleContinue}
       onClose={handleClose}
+      isUploading={isUploading}
     >
       {/* Brand Name - Required */}
       <div className="space-y-4 mb-6">
@@ -229,10 +322,14 @@ const Step1_BrandSetup = () => {
         <Input name="tagline" value={formData.tagline} onChange={handleChange} placeholder="Enter tagline" className="bg-white border border-[#bbcbb9] rounded-lg" />
       </div>
 
-      {/* Logo Upload */}
+      {/* ✅ UPDATED: Logo Upload with Image Guidelines */}
       <div className="space-y-4 mb-6">
-        <label className="font-label-md text-label-md text-[#3c4a3d] uppercase tracking-wider text-xs">Logo Upload</label>
-        <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
+        <div className="flex items-center justify-between">
+          <label className="font-label-md text-label-md text-[#3c4a3d] uppercase tracking-wider text-xs">Logo Upload</label>
+          <span className="text-xs text-gray-400">Recommended: PNG only</span>
+        </div>
+        
+        <input ref={fileInputRef} type="file" accept="image/png" onChange={handleFileSelect} className="hidden" />
         <div
           onClick={handleUploadClick}
           onDragEnter={handleDragEnter}
@@ -261,12 +358,21 @@ const Step1_BrandSetup = () => {
                 <span className="material-symbols-outlined text-4xl text-[#556067]">{isDragging ? 'file_upload' : 'storefront'}</span>
               </div>
               <p className="font-title-lg text-title-lg text-[#191c1e]">{isDragging ? 'Drop your logo here' : 'Drop your logo here or click to upload'}</p>
-              <p className="font-caption text-caption text-[#556067] mt-1 text-xs">Recommended: 200×200px PNG, JPG, SVG (Max 5MB)</p>
+              <p className="font-caption text-caption text-[#556067] mt-1 text-xs">PNG only • 200×200px • Max 100KB</p>
               {uploadError && <p className="text-[#ba1a1a] text-xs mt-2">{uploadError}</p>}
               <button onClick={(e) => { e.stopPropagation(); handleUploadClick(); }} className="font-label-md text-label-md text-[#006d2f] border border-[#006d2f] px-4 py-2 rounded-lg hover:bg-[#25D366]/10 transition-colors mt-4">Browse Files</button>
             </>
           )}
         </div>
+        
+        {/* ✅ NEW: Image Guidelines Badge */}
+        <ImageGuidelineBadge 
+          size="200×200px" 
+          format="PNG" 
+          maxSize="100KB" 
+          ratio="1:1" 
+        />
+        
         <div className="flex justify-center">
           <button onClick={handleUseDefault} className="font-label-md text-label-md text-[#006d2f] px-4 py-2 rounded-lg hover:bg-[#25D366]/10 transition-colors">Use Default Logo</button>
         </div>
@@ -386,6 +492,13 @@ const Step1_BrandSetup = () => {
           <button className="w-full py-2 rounded-lg text-sm font-semibold transition-colors" style={{ backgroundColor: formData.colors.button, color: formData.colors.buttonLabel }}>Preview Button</button>
         </div>
       </Card>
+      
+      {/* ✅ NEW: Upload error display */}
+      {uploadError && (
+        <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-lg text-sm">
+          ⚠️ {uploadError}
+        </div>
+      )}
     </StoreBuilderLayout>
   );
 };

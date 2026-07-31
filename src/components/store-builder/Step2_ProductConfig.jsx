@@ -5,8 +5,9 @@ import StoreBuilderLayout from './StoreBuilderLayout';
 import Card from '../Common/Card';
 import Input from '../Common/Input';
 import Toggle from '../Common/Toggle';
+import imageService from '../../services/imageService';
 
-// ✅ Image Guideline Component - Compact & Integrated
+// ✅ Image Guideline Component
 const ImageGuidelineBadge = ({ size, format, maxSize, ratio }) => (
   <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-gray-500">
     <span className="flex items-center gap-0.5">
@@ -31,9 +32,24 @@ const ImageGuidelineBadge = ({ size, format, maxSize, ratio }) => (
   </div>
 );
 
+// ✅ Error Display Component
+const ImageError = ({ error }) => {
+  if (!error) return null;
+  return (
+    <div className="mt-1 text-xs text-red-600 bg-red-50 px-2 py-1 rounded border border-red-200 flex items-start gap-1">
+      <span className="material-symbols-outlined text-sm">error</span>
+      <span>{error}</span>
+    </div>
+  );
+};
+
 const Step2_ProductConfig = () => {
   const navigate = useNavigate();
-  const { productData, setProductData } = useStoreBuilder();
+  const { productData, setProductData, storeId, tenantId } = useStoreBuilder();
+  
+  // ✅ Track upload status per product/variation
+  const [uploadingStates, setUploadingStates] = useState({});
+  const [errorStates, setErrorStates] = useState({});
 
   // Load from context on mount
   const [categories, setCategories] = useState(() => 
@@ -63,7 +79,7 @@ const Step2_ProductConfig = () => {
     ]
   );
 
-  // Hero Banner State - Load from context
+  // Hero Banner State
   const [bannerImage, setBannerImage] = useState(productData.banner?.image || null);
   const [bannerTagline, setBannerTagline] = useState(productData.banner?.tagline || 'Fresh, Organic & Delivered');
   const [bannerSubtitle, setBannerSubtitle] = useState(productData.banner?.subtitle || '100% Natural Stone-Ground Flour');
@@ -75,17 +91,140 @@ const Step2_ProductConfig = () => {
   const [textAlignment, setTextAlignment] = useState(productData.banner?.textAlignment || 'center');
   const [textColor, setTextColor] = useState(productData.banner?.textColor || '#FFFFFF');
 
-  // Store-wide setting — applies to every product/category at once, not per-item
   const [enableImageZoom, setEnableImageZoom] = useState(productData.enableImageZoom !== false);
 
   // UI State
   const [showAddCategory, setShowAddCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [showQuickPreview, setShowQuickPreview] = useState(false);
-  const fileInputRefs = useRef({});
-  const variationImageInputRefs = useRef({});
 
-  // Save to context whenever data changes
+  // ✅ Generate unique error key for each upload
+  const getErrorKey = (categoryId, productId, type, variationId = null) => {
+    return `${categoryId}-${productId}-${type}${variationId ? `-${variationId}` : ''}`;
+  };
+
+  // ✅ Set error for specific element
+  const setElementError = (key, error) => {
+    setErrorStates(prev => ({ ...prev, [key]: error }));
+  };
+
+  // ✅ Clear error for specific element
+  const clearElementError = (key) => {
+    setErrorStates(prev => ({ ...prev, [key]: null }));
+  };
+
+  // ✅ Set uploading state
+  const setElementUploading = (key, isUploading) => {
+    setUploadingStates(prev => ({ ...prev, [key]: isUploading }));
+  };
+
+  // ✅ NEW: Handle product image upload with API and proper error handling
+  const handleProductImageUpload = async (categoryId, productId, files, errorKey) => {
+    if (!storeId || !tenantId) {
+      setElementError(errorKey, 'Store ID or Tenant ID missing. Please save the store first');
+      return;
+    }
+
+    clearElementError(errorKey);
+    setElementUploading(errorKey, true);
+
+    try {
+      // Upload main image (first file)
+      const mainFile = files[0];
+      if (mainFile) {
+        const response = await imageService.uploadImage(
+          storeId,
+          tenantId,
+          'PRODUCT_MAIN',
+          mainFile,
+          productId
+        );
+        
+        if (!response.success) {
+          setElementError(errorKey, `Main image: ${response.error || 'Upload failed'}`);
+          setElementUploading(errorKey, false);
+          return;
+        }
+
+        // Add to local state
+        const newImage = {
+          id: response.data.id || generateId(),
+          url: response.data.url,
+          uploaded: true
+        };
+
+        setCategories(prevCategories => prevCategories.map(cat => {
+          if (cat.id === categoryId) {
+            return {
+              ...cat,
+              products: cat.products.map(p => {
+                if (p.id === productId) {
+                  return {
+                    ...p,
+                    images: [newImage, ...(p.images || [])]
+                  };
+                }
+                return p;
+              })
+            };
+          }
+          return cat;
+        }));
+      }
+
+      // Upload gallery images (remaining files)
+      const galleryFiles = files.slice(1);
+      if (galleryFiles.length > 0) {
+        const response = await imageService.uploadGalleryImages(
+          storeId,
+          tenantId,
+          'PRODUCT_GALLERY',
+          galleryFiles,
+          productId
+        );
+
+        if (!response.success) {
+          setElementError(errorKey, `Gallery: ${response.error || 'Upload failed'}`);
+          setElementUploading(errorKey, false);
+          return;
+        }
+
+        // Add gallery images to local state
+        const galleryImages = response.data?.uploaded?.map(img => ({
+          id: img.id || generateId(),
+          url: img.url,
+          uploaded: true
+        })) || [];
+
+        setCategories(prevCategories => prevCategories.map(cat => {
+          if (cat.id === categoryId) {
+            return {
+              ...cat,
+              products: cat.products.map(p => {
+                if (p.id === productId) {
+                  return {
+                    ...p,
+                    images: [...(p.images || []), ...galleryImages]
+                  };
+                }
+                return p;
+              })
+            };
+          }
+          return cat;
+        }));
+      }
+
+      clearElementError(errorKey);
+
+    } catch (error) {
+      setElementError(errorKey, error.message || 'Failed to upload images. Please try again.');
+    } finally {
+      setElementUploading(errorKey, false);
+    }
+  };
+
+  // Save to context
   useEffect(() => {
     setProductData({
       categories: categories,
@@ -122,7 +261,6 @@ const Step2_ProductConfig = () => {
     }
   };
 
-  // Product functions - New product added at BOTTOM
   const addProduct = (categoryId) => {
     setCategories(categories.map(cat => {
       if (cat.id === categoryId) {
@@ -155,7 +293,6 @@ const Step2_ProductConfig = () => {
     }
   };
 
-  // Variation functions - New variation added at TOP
   const addVariation = (categoryId, productId) => {
     setCategories(categories.map(cat => {
       if (cat.id === categoryId) {
@@ -199,7 +336,6 @@ const Step2_ProductConfig = () => {
     }));
   };
 
-  // Size functions
   const addSize = (categoryId, productId, variationId) => {
     setCategories(categories.map(cat => {
       if (cat.id === categoryId) {
@@ -254,9 +390,6 @@ const Step2_ProductConfig = () => {
     }));
   };
 
-  // Reads a File as a base64 data URL — unlike URL.createObjectURL(), this
-  // actually survives being saved to the backend and reloaded elsewhere
-  // (blob: URLs are only valid in the tab/session that created them).
   const readFileAsDataURL = (file) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -266,7 +399,7 @@ const Step2_ProductConfig = () => {
     });
   };
 
-  // Product Image functions - Max 20 images
+  // ✅ UPDATED: Handle image upload with error display
   const handleImageUpload = async (categoryId, productId, e) => {
     const files = Array.from(e.target.files);
     const maxImages = 20;
@@ -276,40 +409,30 @@ const Step2_ProductConfig = () => {
       .find(c => c.id === categoryId)?.products
       .find(p => p.id === productId);
     const currentImages = currentProduct?.images || [];
+    
     if (currentImages.length >= maxImages) {
-      alert(`Maximum ${maxImages} images allowed per product`);
+      const errorKey = getErrorKey(categoryId, productId, 'product');
+      setElementError(errorKey, `Maximum ${maxImages} images allowed per product`);
       return;
     }
+    
     const remainingSlots = maxImages - currentImages.length;
     const filesToProcess = files.slice(0, remainingSlots);
-
-    const newImages = await Promise.all(
-      filesToProcess.map(async (file) => ({
-        id: generateId(),
-        url: await readFileAsDataURL(file),
-      }))
-    );
-
-    setCategories(prevCategories => prevCategories.map(cat => {
-      if (cat.id === categoryId) {
-        return {
-          ...cat,
-          products: cat.products.map(p => {
-            if (p.id === productId) {
-              return {
-                ...p,
-                images: [...(p.images || []), ...newImages]
-              };
-            }
-            return p;
-          })
-        };
-      }
-      return cat;
-    }));
+    
+    const errorKey = getErrorKey(categoryId, productId, 'product');
+    await handleProductImageUpload(categoryId, productId, filesToProcess, errorKey);
   };
 
   const removeImage = (categoryId, productId, imageId) => {
+    const imageToRemove = categories
+      .find(c => c.id === categoryId)?.products
+      .find(p => p.id === productId)?.images
+      .find(img => img.id === imageId);
+
+    if (imageToRemove?.uploaded && storeId) {
+      imageService.deleteImage(imageId).catch(console.error);
+    }
+
     setCategories(categories.map(cat => {
       if (cat.id === categoryId) {
         return {
@@ -324,44 +447,95 @@ const Step2_ProductConfig = () => {
       }
       return cat;
     }));
+
+    // Clear any errors for this product
+    const errorKey = getErrorKey(categoryId, productId, 'product');
+    clearElementError(errorKey);
   };
 
-  // Variation Image function — single image per variant, replaces any existing one
+  // ✅ UPDATED: Variation Image upload with error display
   const handleVariationImageUpload = async (categoryId, productId, variationId, e) => {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
 
-    const dataUrl = await readFileAsDataURL(file);
+    const errorKey = getErrorKey(categoryId, productId, 'variant', variationId);
+    clearElementError(errorKey);
 
-    setCategories(prevCategories => prevCategories.map(cat => {
-      if (cat.id === categoryId) {
-        return {
-          ...cat,
-          products: cat.products.map(p => {
-            if (p.id === productId) {
-              return {
-                ...p,
-                variations: p.variations.map(v => {
-                  if (v.id === variationId) {
-                    return {
-                      ...v,
-                      image: { id: generateId(), url: dataUrl }
-                    };
-                  }
-                  return v;
-                })
-              };
-            }
-            return p;
-          })
-        };
+    if (!storeId || !tenantId) {
+      setElementError(errorKey, 'Store ID or Tenant ID missing. Please save the store first.');
+      return;
+    }
+
+    setElementUploading(errorKey, true);
+
+    try {
+      const response = await imageService.uploadImage(
+        storeId,
+        tenantId,
+        'VARIANT',
+        file,
+        variationId
+      );
+
+      if (!response.success) {
+        setElementError(errorKey, response.error || 'Variant image upload failed');
+        setElementUploading(errorKey, false);
+        return;
       }
-      return cat;
-    }));
+
+      const dataUrl = await readFileAsDataURL(file);
+      const newImage = {
+        id: response.data.id || generateId(),
+        url: response.data.url || dataUrl,
+        uploaded: true
+      };
+
+      setCategories(prevCategories => prevCategories.map(cat => {
+        if (cat.id === categoryId) {
+          return {
+            ...cat,
+            products: cat.products.map(p => {
+              if (p.id === productId) {
+                return {
+                  ...p,
+                  variations: p.variations.map(v => {
+                    if (v.id === variationId) {
+                      return {
+                        ...v,
+                        image: newImage
+                      };
+                    }
+                    return v;
+                  })
+                };
+              }
+              return p;
+            })
+          };
+        }
+        return cat;
+      }));
+
+      clearElementError(errorKey);
+
+    } catch (error) {
+      setElementError(errorKey, error.message || 'Failed to upload variant image');
+    } finally {
+      setElementUploading(errorKey, false);
+    }
   };
 
   const removeVariationImage = (categoryId, productId, variationId) => {
+    const variation = categories
+      .find(c => c.id === categoryId)?.products
+      .find(p => p.id === productId)?.variations
+      .find(v => v.id === variationId);
+
+    if (variation?.image?.uploaded) {
+      imageService.deleteImage(variation.image.id).catch(console.error);
+    }
+
     setCategories(categories.map(cat => {
       if (cat.id === categoryId) {
         return {
@@ -387,6 +561,10 @@ const Step2_ProductConfig = () => {
       }
       return cat;
     }));
+
+    // Clear any errors for this variation
+    const errorKey = getErrorKey(categoryId, productId, 'variant', variationId);
+    clearElementError(errorKey);
   };
 
   // Pricing functions
@@ -470,7 +648,6 @@ const Step2_ProductConfig = () => {
     }));
   };
 
-  // Quick Preview - Show FULL PAGE with all products
   const openQuickPreview = () => {
     const allProducts = categories.flatMap(cat => cat.products);
     if (allProducts.length === 0) {
@@ -485,7 +662,12 @@ const Step2_ProductConfig = () => {
   };
 
   return (
-    <StoreBuilderLayout currentStep={2} totalSteps={8} title="Product listing" subtitle="Step 2 of 8">
+    <StoreBuilderLayout 
+      currentStep={2} 
+      totalSteps={8} 
+      title="Product listing" 
+      subtitle="Step 2 of 8"
+    >
       {/* Quick Preview Button */}
       <div className="mb-6">
         <button
@@ -498,12 +680,11 @@ const Step2_ProductConfig = () => {
       </div>
 
       {/* ============================================================ */}
-      {/* QUICK PREVIEW MODAL - FULL PAGE WITH ALL PRODUCTS */}
+      {/* QUICK PREVIEW MODAL */}
       {/* ============================================================ */}
       {showQuickPreview && (
         <div className="fixed inset-0 bg-black/50 z-[200] flex items-center justify-center p-4">
           <div className="bg-white rounded-xl max-w-4xl w-full max-h-[95vh] overflow-y-auto">
-            {/* Modal Header */}
             <div className="sticky top-0 bg-white border-b border-[#e0e3e6] p-4 flex justify-between items-center z-10">
               <div>
                 <h3 className="font-bold text-lg text-[#191c1e]">Quick Store Preview</h3>
@@ -517,7 +698,6 @@ const Step2_ProductConfig = () => {
               </button>
             </div>
 
-            {/* Store Preview Content */}
             <div className="p-6 max-w-3xl mx-auto">
               {/* Hero Banner */}
               <div 
@@ -570,13 +750,11 @@ const Step2_ProductConfig = () => {
                 )}
               </div>
 
-              {/* Store Name */}
               <div className="text-center mb-8">
                 <h1 className="text-2xl font-bold text-[#191c1e]">Your Store</h1>
                 <p className="text-[#556067]">Preview your products</p>
               </div>
 
-              {/* Categories & Products */}
               {categories.length === 0 ? (
                 <div className="text-center py-12 text-[#556067]">
                   <span className="material-symbols-outlined text-6xl block mb-4 opacity-30">storefront</span>
@@ -586,13 +764,11 @@ const Step2_ProductConfig = () => {
                 categories.map((category) => (
                   <div key={category.id} className="mb-8">
                     <h2 className="text-xl font-bold mb-4 text-[#191c1e]">{category.name}</h2>
-                    
                     {category.products.length === 0 ? (
                       <p className="text-sm text-[#556067]">No products in this category</p>
                     ) : (
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                         {category.products.map((product) => {
-                          // Get first variation and size for display
                           const firstVariation = product.variations?.[0];
                           const firstSize = firstVariation?.sizes?.[0];
                           const price = firstSize?.price || '0';
@@ -601,7 +777,6 @@ const Step2_ProductConfig = () => {
 
                           return (
                             <div key={product.id} className="bg-white rounded-lg border border-[#e0e3e6] overflow-hidden hover:shadow-md transition-shadow">
-                              {/* Product Image */}
                               <div className="h-40 bg-[#f7f9fc] flex items-center justify-center overflow-hidden">
                                 {product.images && product.images.length > 0 ? (
                                   <img src={product.images[0].url} alt={product.name} className="w-full h-full object-cover" />
@@ -609,12 +784,9 @@ const Step2_ProductConfig = () => {
                                   <span className="material-symbols-outlined text-4xl text-[#bbcbb9]">image</span>
                                 )}
                               </div>
-
                               <div className="p-4">
                                 <h4 className="font-semibold text-sm text-[#191c1e]">{product.name}</h4>
                                 <p className="text-xs text-[#556067] mt-1 line-clamp-2">{product.description || 'No description'}</p>
-
-                                {/* Price with Discount */}
                                 <div className="mt-2 flex items-center gap-2">
                                   <span className="text-lg font-bold text-[#006d2f]">₹{parseFloat(price).toFixed(2)}</span>
                                   {discount > 0 && (
@@ -624,8 +796,6 @@ const Step2_ProductConfig = () => {
                                     </>
                                   )}
                                 </div>
-
-                                {/* Variations count */}
                                 {product.variations && product.variations.length > 0 && (
                                   <div className="mt-2">
                                     <p className="text-xs text-[#556067]">
@@ -633,7 +803,6 @@ const Step2_ProductConfig = () => {
                                     </p>
                                   </div>
                                 )}
-
                                 <button className="w-full mt-3 py-1.5 rounded-lg font-semibold text-sm bg-[#25D366] text-[#005523] hover:brightness-105 transition-all">
                                   Add to Cart
                                 </button>
@@ -648,7 +817,6 @@ const Step2_ProductConfig = () => {
               )}
             </div>
 
-            {/* Modal Footer */}
             <div className="sticky bottom-0 bg-white border-t border-[#e0e3e6] p-4 flex justify-end">
               <button
                 onClick={closeQuickPreview}
@@ -661,11 +829,7 @@ const Step2_ProductConfig = () => {
         </div>
       )}
 
-      {/* ============================================================ */}
-      {/* REST OF THE STEP 2 CONTENT - Categories, Products, Banner */}
-      {/* ============================================================ */}
-
-      {/* Store-wide Image Settings — applies to every product & category at once */}
+      {/* Store-wide Image Settings */}
       <Card className="mb-6">
         <h2 className="font-title-lg text-title-lg text-[#191c1e] mb-4">Image Settings</h2>
         <Toggle
@@ -705,7 +869,7 @@ const Step2_ProductConfig = () => {
               </button>
             </div>
 
-            {/* ✅ Category Image Upload with integrated guidelines */}
+            {/* Category Image Upload */}
             <div className="mb-3">
               <label className="font-label-md text-label-md text-[#3c4a3d] block uppercase tracking-wider text-xs mb-1">Category Image</label>
               <div className="flex items-center gap-3">
@@ -720,296 +884,328 @@ const Step2_ProductConfig = () => {
             </div>
 
             <div className="space-y-3">
-              {category.products.map((product) => (
-                <Card key={product.id} className="bg-white border border-[#bbcbb9]/10">
-                  <div className="flex items-start gap-4">
-                    {/* ✅ Product Images with integrated guidelines */}
-                    <div className="flex-shrink-0">
-                      <div className="grid grid-cols-3 gap-1 w-24">
-                        {product.images && product.images.map((img) => (
-                          <div key={img.id} className="relative aspect-square rounded bg-[#f2f4f7] border border-[#bbcbb9] overflow-hidden group">
-                            <img src={img.url} alt="Product" className="w-full h-full object-cover" />
-                            <button
-                              onClick={() => removeImage(category.id, product.id, img.id)}
-                              className="absolute top-0 right-0 bg-black/50 text-white p-0.5 rounded-bl hover:bg-black/70 transition-colors"
+              {category.products.map((product) => {
+                const errorKey = getErrorKey(category.id, product.id, 'product');
+                const productError = errorStates[errorKey];
+                const isUploading = uploadingStates[errorKey];
+
+                return (
+                  <Card key={product.id} className="bg-white border border-[#bbcbb9]/10">
+                    <div className="flex items-start gap-4">
+                      {/* Product Images */}
+                      <div className="flex-shrink-0">
+                        <div className="grid grid-cols-3 gap-1 w-24">
+                          {product.images && product.images.map((img) => (
+                            <div key={img.id} className="relative aspect-square rounded bg-[#f2f4f7] border border-[#bbcbb9] overflow-hidden group">
+                              <img src={img.url} alt="Product" className="w-full h-full object-cover" />
+                              <button
+                                onClick={() => removeImage(category.id, product.id, img.id)}
+                                className="absolute top-0 right-0 bg-black/50 text-white p-0.5 rounded-bl hover:bg-black/70 transition-colors"
+                              >
+                                <span className="material-symbols-outlined text-xs">close</span>
+                              </button>
+                            </div>
+                          ))}
+                          {product.images && product.images.length < 20 && (
+                            <div 
+                              className="aspect-square rounded bg-[#f2f4f7] border-2 border-dashed border-[#bbcbb9] flex items-center justify-center text-[#556067] hover:text-[#006d2f] hover:border-[#006d2f] cursor-pointer transition-colors relative"
+                              onClick={() => {
+                                const input = document.getElementById(`image-upload-${product.id}`);
+                                if (input) input.click();
+                              }}
                             >
-                              <span className="material-symbols-outlined text-xs">close</span>
-                            </button>
-                          </div>
-                        ))}
-                        {product.images && product.images.length < 20 && (
-                          <div 
-                            className="aspect-square rounded bg-[#f2f4f7] border-2 border-dashed border-[#bbcbb9] flex items-center justify-center text-[#556067] hover:text-[#006d2f] hover:border-[#006d2f] cursor-pointer transition-colors"
-                            onClick={() => {
-                              const input = document.getElementById(`image-upload-${product.id}`);
-                              if (input) input.click();
-                            }}
-                          >
-                            <span className="material-symbols-outlined text-base">add_a_photo</span>
+                              {isUploading ? (
+                                <span className="material-symbols-outlined text-base animate-spin">progress_activity</span>
+                              ) : (
+                                <span className="material-symbols-outlined text-base">add_a_photo</span>
+                              )}
+                            </div>
+                          )}
+                          <input
+                            id={`image-upload-${product.id}`}
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={(e) => handleImageUpload(category.id, product.id, e)}
+                            className="hidden"
+                          />
+                        </div>
+                        <div className="mt-1">
+                          <p className="text-[10px] text-gray-400">
+                            {product.images?.length || 0}/20 • 400×400px • 200KB • 1:1
+                          </p>
+                        </div>
+                        {/* ✅ Product Error Display */}
+                        {productError && (
+                          <div className="mt-1 text-xs text-red-600 bg-red-50 px-2 py-1 rounded border border-red-200 flex items-start gap-1">
+                            <span className="material-symbols-outlined text-sm">error</span>
+                            <span>{productError}</span>
                           </div>
                         )}
-                        <input
-                          id={`image-upload-${product.id}`}
-                          type="file"
-                          accept="image/*"
-                          multiple
-                          onChange={(e) => handleImageUpload(category.id, product.id, e)}
-                          className="hidden"
-                        />
                       </div>
-                      {/* ✅ Integrated image guidelines */}
-                      <div className="mt-1">
-                        <p className="text-[10px] text-gray-400">
-                          {product.images?.length || 0}/20 • 
-                          <span className="ml-1">400×400px • 200KB • 1:1</span>
-                        </p>
-                      </div>
-                    </div>
 
-                    {/* Product Details */}
-                    <div className="flex-1 space-y-2">
-                      <div className="flex justify-between items-start">
-                        <Input
-                          value={product.name}
-                          onChange={(e) => setCategories(categories.map(cat => cat.id === category.id ? { ...cat, products: cat.products.map(p => p.id === product.id ? { ...p, name: e.target.value } : p) } : cat))}
-                          placeholder="Product Name"
-                          className="flex-1"
-                        />
-                        <button
-                          onClick={() => deleteProduct(category.id, product.id)}
-                          className="text-[#ba1a1a] hover:bg-[#ffdad6]/50 p-1 rounded-lg transition-colors ml-2"
-                        >
-                          <span className="material-symbols-outlined text-base">delete</span>
-                        </button>
-                      </div>
-                      <div>
-                        <label className="font-label-md text-label-md text-[#3c4a3d] block uppercase tracking-wider text-xs">Product Description</label>
-                        <textarea
-                          value={product.description}
-                          onChange={(e) => setCategories(categories.map(cat => cat.id === category.id ? { ...cat, products: cat.products.map(p => p.id === product.id ? { ...p, description: e.target.value } : p) } : cat))}
-                          className="w-full px-3 py-2 bg-[#f2f4f7] rounded-lg border border-[#bbcbb9] font-body-md text-body-md outline-none focus:ring-2 focus:ring-[#25D366] focus:border-[#006d2f] min-h-[60px]"
-                          placeholder="Enter product description..."
-                        />
-                      </div>
-                      <div className="flex flex-wrap items-center gap-4">
-                        <Toggle label="Apply same price to all sizes" checked={product.bulkPricing || false} onChange={() => toggleBulkPricing(category.id, product.id)} />
-                        <div className="flex items-center gap-2">
-                          <label className="font-label-md text-label-md text-[#3c4a3d] text-xs whitespace-nowrap">Discount %</label>
-                          <Input type="number" value={product.discount || 0} onChange={(e) => updateDiscount(category.id, product.id, e.target.value)} className="w-16 bg-[#f2f4f7] text-center" min="0" max="100" />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Variations */}
-                  <div className="mt-3 pt-3 border-t border-[#bbcbb9]/10">
-                    <div className="flex items-center justify-between">
-                      <p className="font-label-md text-label-md text-[#3c4a3d] uppercase tracking-wider text-xs">Variations (Max 10)</p>
-                      <button
-                        onClick={() => addVariation(category.id, product.id)}
-                        className="text-[#006d2f] flex items-center gap-1 hover:bg-[#25D366]/10 px-2 py-1 rounded text-sm font-semibold"
-                      >
-                        <span className="material-symbols-outlined text-base">add_circle</span> Add Variation
-                      </button>
-                    </div>
-
-                    {product.variations.map((variation) => (
-                      <div key={variation.id} className="bg-[#f2f4f7] p-3 rounded-lg mt-2">
-                        <div className="flex items-center gap-2">
+                      {/* Product Details */}
+                      <div className="flex-1 space-y-2">
+                        <div className="flex justify-between items-start">
                           <Input
-                            placeholder="Variation Name (e.g. Organic)"
-                            value={variation.name}
-                            onChange={(e) => setCategories(categories.map(cat => {
-                              if (cat.id === category.id) {
-                                return {
-                                  ...cat,
-                                  products: cat.products.map(p => {
-                                    if (p.id === product.id) {
-                                      return {
-                                        ...p,
-                                        variations: p.variations.map(v => {
-                                          if (v.id === variation.id) {
-                                            return { ...v, name: e.target.value };
-                                          }
-                                          return v;
-                                        })
-                                      };
-                                    }
-                                    return p;
-                                  })
-                                };
-                              }
-                              return cat;
-                            }))}
+                            value={product.name}
+                            onChange={(e) => setCategories(categories.map(cat => cat.id === category.id ? { ...cat, products: cat.products.map(p => p.id === product.id ? { ...p, name: e.target.value } : p) } : cat))}
+                            placeholder="Product Name"
                             className="flex-1"
                           />
                           <button
-                            onClick={() => deleteVariation(category.id, product.id, variation.id)}
-                            className="text-[#ba1a1a] hover:bg-[#ffdad6]/50 p-1 rounded-full"
+                            onClick={() => deleteProduct(category.id, product.id)}
+                            className="text-[#ba1a1a] hover:bg-[#ffdad6]/50 p-1 rounded-lg transition-colors ml-2"
                           >
                             <span className="material-symbols-outlined text-base">delete</span>
                           </button>
                         </div>
-
-                        {/* ✅ Variation Image with integrated guidelines */}
-                        <div className="mt-2 flex items-center gap-2">
-                          {variation.image ? (
-                            <div className="relative w-10 h-10 rounded bg-[#f2f4f7] border border-[#bbcbb9] overflow-hidden group">
-                              <img src={variation.image.url} alt="Variation" className="w-full h-full object-cover" />
-                              <button
-                                onClick={() => removeVariationImage(category.id, product.id, variation.id)}
-                                className="absolute top-0 right-0 bg-black/50 text-white p-0.5 rounded-bl hover:bg-black/70 transition-colors"
-                              >
-                                <span className="material-symbols-outlined text-[10px]">close</span>
-                              </button>
-                            </div>
-                          ) : (
-                            <div 
-                              className="w-10 h-10 rounded bg-[#f2f4f7] border-2 border-dashed border-[#bbcbb9] flex items-center justify-center text-[#556067] hover:text-[#006d2f] hover:border-[#006d2f] cursor-pointer transition-colors"
-                              onClick={() => {
-                                const input = document.getElementById(`variation-image-${variation.id}`);
-                                if (input) input.click();
-                              }}
-                            >
-                              <span className="material-symbols-outlined text-sm">add_a_photo</span>
-                            </div>
-                          )}
-                          <input
-                            id={`variation-image-${variation.id}`}
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => handleVariationImageUpload(category.id, product.id, variation.id, e)}
-                            className="hidden"
+                        <div>
+                          <label className="font-label-md text-label-md text-[#3c4a3d] block uppercase tracking-wider text-xs">Product Description</label>
+                          <textarea
+                            value={product.description}
+                            onChange={(e) => setCategories(categories.map(cat => cat.id === category.id ? { ...cat, products: cat.products.map(p => p.id === product.id ? { ...p, description: e.target.value } : p) } : cat))}
+                            className="w-full px-3 py-2 bg-[#f2f4f7] rounded-lg border border-[#bbcbb9] font-body-md text-body-md outline-none focus:ring-2 focus:ring-[#25D366] focus:border-[#006d2f] min-h-[60px]"
+                            placeholder="Enter product description..."
                           />
-                          <div>
-                            <p className="text-xs text-gray-500">Variant Image</p>
-                            <p className="text-[10px] text-gray-400">100×100px • 30KB • 1:1</p>
-                          </div>
                         </div>
-
-                        {/* Sizes */}
-                        <div className="mt-2 pl-4">
-                          <div className="grid grid-cols-12 gap-2 items-center text-xs text-[#556067] uppercase font-semibold mb-1">
-                            <div className="col-span-3">Size</div>
-                            <div className="col-span-3">Unit</div>
-                            <div className="col-span-5">Price</div>
-                            <div className="col-span-1"></div>
+                        <div className="flex flex-wrap items-center gap-4">
+                          <Toggle label="Apply same price to all sizes" checked={product.bulkPricing || false} onChange={() => toggleBulkPricing(category.id, product.id)} />
+                          <div className="flex items-center gap-2">
+                            <label className="font-label-md text-label-md text-[#3c4a3d] text-xs whitespace-nowrap">Discount %</label>
+                            <Input type="number" value={product.discount || 0} onChange={(e) => updateDiscount(category.id, product.id, e.target.value)} className="w-16 bg-[#f2f4f7] text-center" min="0" max="100" />
                           </div>
-
-                          {variation.sizes.map((size) => {
-                            const isBulkPricing = product.bulkPricing || false;
-                            const firstPrice = variation.sizes[0]?.price || '';
-                            const displayPrice = isBulkPricing ? firstPrice : size.price;
-
-                            return (
-                              <div key={size.id} className="grid grid-cols-12 gap-2 items-center mb-1">
-                                <Input
-                                  className="col-span-3"
-                                  value={size.size}
-                                  placeholder="e.g. 5"
-                                  onChange={(e) => setCategories(categories.map(cat => {
-                                    if (cat.id === category.id) {
-                                      return {
-                                        ...cat,
-                                        products: cat.products.map(p => {
-                                          if (p.id === product.id) {
-                                            return {
-                                              ...p,
-                                              variations: p.variations.map(v => {
-                                                if (v.id === variation.id) {
-                                                  return {
-                                                    ...v,
-                                                    sizes: v.sizes.map(s => {
-                                                      if (s.id === size.id) {
-                                                        return { ...s, size: e.target.value };
-                                                      }
-                                                      return s;
-                                                    })
-                                                  };
-                                                }
-                                                return v;
-                                              })
-                                            };
-                                          }
-                                          return p;
-                                        })
-                                      };
-                                    }
-                                    return cat;
-                                  }))}
-                                />
-                                <Input
-                                  className="col-span-3"
-                                  value={size.unit}
-                                  placeholder="kg"
-                                  onChange={(e) => setCategories(categories.map(cat => {
-                                    if (cat.id === category.id) {
-                                      return {
-                                        ...cat,
-                                        products: cat.products.map(p => {
-                                          if (p.id === product.id) {
-                                            return {
-                                              ...p,
-                                              variations: p.variations.map(v => {
-                                                if (v.id === variation.id) {
-                                                  return {
-                                                    ...v,
-                                                    sizes: v.sizes.map(s => {
-                                                      if (s.id === size.id) {
-                                                        return { ...s, unit: e.target.value };
-                                                      }
-                                                      return s;
-                                                    })
-                                                  };
-                                                }
-                                                return v;
-                                              })
-                                            };
-                                          }
-                                          return p;
-                                        })
-                                      };
-                                    }
-                                    return cat;
-                                  }))}
-                                />
-                                <div className="col-span-5 flex items-center gap-1 bg-white px-2 py-1 rounded border border-[#bbcbb9]">
-                                  <span className="text-xs text-[#556067]">₹</span>
-                                  <Input
-                                    value={displayPrice}
-                                    placeholder={isBulkPricing ? 'Auto-filled' : '0'}
-                                    disabled={isBulkPricing}
-                                    className={`border-none bg-transparent p-0 w-full ${isBulkPricing ? 'opacity-60 cursor-not-allowed' : ''}`}
-                                    onChange={(e) => {
-                                      if (!isBulkPricing) {
-                                        updatePrice(category.id, product.id, variation.id, size.id, e.target.value);
-                                      }
-                                    }}
-                                  />
-                                </div>
-                                <button
-                                  onClick={() => deleteSize(category.id, product.id, variation.id, size.id)}
-                                  className="col-span-1 text-[#ba1a1a] hover:bg-[#ffdad6]/50 p-1 rounded-full"
-                                  disabled={isBulkPricing && variation.sizes.length === 1}
-                                >
-                                  <span className="material-symbols-outlined text-base">delete</span>
-                                </button>
-                              </div>
-                            );
-                          })}
-
-                          <button
-                            onClick={() => addSize(category.id, product.id, variation.id)}
-                            className="flex items-center gap-1 text-[#006d2f] hover:bg-[#25D366]/10 px-3 py-1 rounded-lg mt-1 text-sm font-semibold"
-                          >
-                            <span className="material-symbols-outlined text-base">add</span> Add Size
-                          </button>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </Card>
-              ))}
+                    </div>
+
+                    {/* Variations */}
+                    <div className="mt-3 pt-3 border-t border-[#bbcbb9]/10">
+                      <div className="flex items-center justify-between">
+                        <p className="font-label-md text-label-md text-[#3c4a3d] uppercase tracking-wider text-xs">Variations (Max 10)</p>
+                        <button
+                          onClick={() => addVariation(category.id, product.id)}
+                          className="text-[#006d2f] flex items-center gap-1 hover:bg-[#25D366]/10 px-2 py-1 rounded text-sm font-semibold"
+                        >
+                          <span className="material-symbols-outlined text-base">add_circle</span> Add Variation
+                        </button>
+                      </div>
+
+                      {product.variations.map((variation) => {
+                        const variantErrorKey = getErrorKey(category.id, product.id, 'variant', variation.id);
+                        const variantError = errorStates[variantErrorKey];
+                        const isVariantUploading = uploadingStates[variantErrorKey];
+
+                        return (
+                          <div key={variation.id} className="bg-[#f2f4f7] p-3 rounded-lg mt-2">
+                            <div className="flex items-center gap-2">
+                              <Input
+                                placeholder="Variation Name (e.g. Organic)"
+                                value={variation.name}
+                                onChange={(e) => setCategories(categories.map(cat => {
+                                  if (cat.id === category.id) {
+                                    return {
+                                      ...cat,
+                                      products: cat.products.map(p => {
+                                        if (p.id === product.id) {
+                                          return {
+                                            ...p,
+                                            variations: p.variations.map(v => {
+                                              if (v.id === variation.id) {
+                                                return { ...v, name: e.target.value };
+                                              }
+                                              return v;
+                                            })
+                                          };
+                                        }
+                                        return p;
+                                      })
+                                    };
+                                  }
+                                  return cat;
+                                }))}
+                                className="flex-1"
+                              />
+                              <button
+                                onClick={() => deleteVariation(category.id, product.id, variation.id)}
+                                className="text-[#ba1a1a] hover:bg-[#ffdad6]/50 p-1 rounded-full"
+                              >
+                                <span className="material-symbols-outlined text-base">delete</span>
+                              </button>
+                            </div>
+
+                            {/* Variation Image */}
+                            <div className="mt-2 flex items-center gap-2">
+                              {variation.image ? (
+                                <div className="relative w-10 h-10 rounded bg-[#f2f4f7] border border-[#bbcbb9] overflow-hidden group">
+                                  <img src={variation.image.url} alt="Variation" className="w-full h-full object-cover" />
+                                  <button
+                                    onClick={() => removeVariationImage(category.id, product.id, variation.id)}
+                                    className="absolute top-0 right-0 bg-black/50 text-white p-0.5 rounded-bl hover:bg-black/70 transition-colors"
+                                  >
+                                    <span className="material-symbols-outlined text-[10px]">close</span>
+                                  </button>
+                                </div>
+                              ) : (
+                                <div 
+                                  className="w-10 h-10 rounded bg-[#f2f4f7] border-2 border-dashed border-[#bbcbb9] flex items-center justify-center text-[#556067] hover:text-[#006d2f] hover:border-[#006d2f] cursor-pointer transition-colors relative"
+                                  onClick={() => {
+                                    const input = document.getElementById(`variation-image-${variation.id}`);
+                                    if (input) input.click();
+                                  }}
+                                >
+                                  {isVariantUploading ? (
+                                    <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>
+                                  ) : (
+                                    <span className="material-symbols-outlined text-sm">add_a_photo</span>
+                                  )}
+                                </div>
+                              )}
+                              <input
+                                id={`variation-image-${variation.id}`}
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => handleVariationImageUpload(category.id, product.id, variation.id, e)}
+                                className="hidden"
+                              />
+                              <div>
+                                <p className="text-xs text-gray-500">Variant Image</p>
+                                <p className="text-[10px] text-gray-400">100×100px • 30KB • 1:1</p>
+                                {/* ✅ Variant Error Display */}
+                                {variantError && (
+                                  <div className="mt-1 text-xs text-red-600 bg-red-50 px-2 py-0.5 rounded border border-red-200 flex items-start gap-0.5">
+                                    <span className="material-symbols-outlined text-sm">error</span>
+                                    <span>{variantError}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Sizes */}
+                            <div className="mt-2 pl-4">
+                              <div className="grid grid-cols-12 gap-2 items-center text-xs text-[#556067] uppercase font-semibold mb-1">
+                                <div className="col-span-3">Size</div>
+                                <div className="col-span-3">Unit</div>
+                                <div className="col-span-5">Price</div>
+                                <div className="col-span-1"></div>
+                              </div>
+
+                              {variation.sizes.map((size) => {
+                                const isBulkPricing = product.bulkPricing || false;
+                                const firstPrice = variation.sizes[0]?.price || '';
+                                const displayPrice = isBulkPricing ? firstPrice : size.price;
+
+                                return (
+                                  <div key={size.id} className="grid grid-cols-12 gap-2 items-center mb-1">
+                                    <Input
+                                      className="col-span-3"
+                                      value={size.size}
+                                      placeholder="e.g. 5"
+                                      onChange={(e) => setCategories(categories.map(cat => {
+                                        if (cat.id === category.id) {
+                                          return {
+                                            ...cat,
+                                            products: cat.products.map(p => {
+                                              if (p.id === product.id) {
+                                                return {
+                                                  ...p,
+                                                  variations: p.variations.map(v => {
+                                                    if (v.id === variation.id) {
+                                                      return {
+                                                        ...v,
+                                                        sizes: v.sizes.map(s => {
+                                                          if (s.id === size.id) {
+                                                            return { ...s, size: e.target.value };
+                                                          }
+                                                          return s;
+                                                        })
+                                                      };
+                                                    }
+                                                    return v;
+                                                  })
+                                                };
+                                              }
+                                              return p;
+                                            })
+                                          };
+                                        }
+                                        return cat;
+                                      }))}
+                                    />
+                                    <Input
+                                      className="col-span-3"
+                                      value={size.unit}
+                                      placeholder="kg"
+                                      onChange={(e) => setCategories(categories.map(cat => {
+                                        if (cat.id === category.id) {
+                                          return {
+                                            ...cat,
+                                            products: cat.products.map(p => {
+                                              if (p.id === product.id) {
+                                                return {
+                                                  ...p,
+                                                  variations: p.variations.map(v => {
+                                                    if (v.id === variation.id) {
+                                                      return {
+                                                        ...v,
+                                                        sizes: v.sizes.map(s => {
+                                                          if (s.id === size.id) {
+                                                            return { ...s, unit: e.target.value };
+                                                          }
+                                                          return s;
+                                                        })
+                                                      };
+                                                    }
+                                                    return v;
+                                                  })
+                                                };
+                                              }
+                                              return p;
+                                            })
+                                          };
+                                        }
+                                        return cat;
+                                      }))}
+                                    />
+                                    <div className="col-span-5 flex items-center gap-1 bg-white px-2 py-1 rounded border border-[#bbcbb9]">
+                                      <span className="text-xs text-[#556067]">₹</span>
+                                      <Input
+                                        value={displayPrice}
+                                        placeholder={isBulkPricing ? 'Auto-filled' : '0'}
+                                        disabled={isBulkPricing}
+                                        className={`border-none bg-transparent p-0 w-full ${isBulkPricing ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                        onChange={(e) => {
+                                          if (!isBulkPricing) {
+                                            updatePrice(category.id, product.id, variation.id, size.id, e.target.value);
+                                          }
+                                        }}
+                                      />
+                                    </div>
+                                    <button
+                                      onClick={() => deleteSize(category.id, product.id, variation.id, size.id)}
+                                      className="col-span-1 text-[#ba1a1a] hover:bg-[#ffdad6]/50 p-1 rounded-full"
+                                      disabled={isBulkPricing && variation.sizes.length === 1}
+                                    >
+                                      <span className="material-symbols-outlined text-base">delete</span>
+                                    </button>
+                                  </div>
+                                );
+                              })}
+
+                              <button
+                                onClick={() => addSize(category.id, product.id, variation.id)}
+                                className="flex items-center gap-1 text-[#006d2f] hover:bg-[#25D366]/10 px-3 py-1 rounded-lg mt-1 text-sm font-semibold"
+                              >
+                                <span className="material-symbols-outlined text-base">add</span> Add Size
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </Card>
+                );
+              })}
               <button
                 onClick={() => addProduct(category.id)}
                 className="w-full py-2 border-2 border-dashed border-[#bbcbb9] rounded-lg text-[#556067] hover:text-[#006d2f] hover:border-[#006d2f] transition-colors flex items-center justify-center gap-1"
@@ -1021,14 +1217,13 @@ const Step2_ProductConfig = () => {
         ))}
       </Card>
 
-      {/* ✅ Hero Banner Section with integrated guidelines */}
+      {/* Hero Banner Section */}
       <Card className="mb-6">
         <div className="flex items-center gap-2 mb-4">
           <span className="material-symbols-outlined text-[#006d2f]">image</span>
           <h2 className="font-label-md text-label-md text-[#556067] uppercase tracking-wider text-xs">Hero Banner Properties</h2>
         </div>
 
-        {/* Banner Image Upload */}
         <div className="space-y-3 mb-4">
           <label className="font-label-md text-label-md text-[#3c4a3d] block uppercase tracking-wider text-xs">Banner Image</label>
           <div 
@@ -1073,7 +1268,7 @@ const Step2_ProductConfig = () => {
               className="hidden"
             />
           </div>
-        
+          <ImageGuidelineBadge size="1200×375px" format="PNG/JPG" maxSize="300KB" ratio="16:5" />
         </div>
 
         <div className="space-y-3">

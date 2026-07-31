@@ -139,8 +139,11 @@ export const StoreBuilderProvider = ({ children }) => {
         categories: {},
     });
 
-    // Store ID for saving
+    // ✅ Store ID for saving
     const [currentStoreId, setCurrentStoreId] = useState(null);
+    
+    // ✅ NEW: Tenant ID for image uploads
+    const [tenantId, setTenantId] = useState(null);
 
     // ✅ Current step in store builder
     const [currentStep, setCurrentStep] = useState(1);
@@ -214,6 +217,7 @@ export const StoreBuilderProvider = ({ children }) => {
     const startNewStore = () => {
         console.log('🆕 Starting new store');
         setCurrentStoreId(null);
+        setTenantId(null); // ✅ Reset tenant ID
         setCurrentStep(1);
         setReady(true);
         
@@ -249,6 +253,32 @@ export const StoreBuilderProvider = ({ children }) => {
         return { success: true };
     };
 
+    // ✅ GET TENANT ID FROM USER DATA
+    const getTenantIdFromUser = () => {
+        try {
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            // Try to get tenant_id from user data
+            const tenant = user.tenant_id || user.tenantId || user.current_tenant_id || user.default_tenant_id;
+            if (tenant) {
+                console.log('✅ Found tenant ID from user:', tenant);
+                return tenant;
+            }
+            
+            // Try to get from user's tenant list
+            if (user.tenants && user.tenants.length > 0) {
+                const firstTenant = user.tenants[0].id || user.tenants[0].tenant_id;
+                console.log('✅ Found tenant ID from user tenants:', firstTenant);
+                return firstTenant;
+            }
+            
+            console.warn('⚠️ No tenant ID found in user data');
+            return null;
+        } catch (error) {
+            console.error('❌ Error getting tenant ID:', error);
+            return null;
+        }
+    };
+
     // ✅ SAVE STORE
     const saveStore = async () => {
         try {
@@ -261,6 +291,15 @@ export const StoreBuilderProvider = ({ children }) => {
 
             if (!brandData.brandName || brandData.brandName.trim() === '') {
                 return { success: false, error: 'Store name is required' };
+            }
+
+            // ✅ Get tenant ID if not set
+            let currentTenantId = tenantId;
+            if (!currentTenantId) {
+                currentTenantId = getTenantIdFromUser();
+                if (currentTenantId) {
+                    setTenantId(currentTenantId);
+                }
             }
 
             const storeData = {
@@ -321,10 +360,27 @@ export const StoreBuilderProvider = ({ children }) => {
                 if (response.data?.data?.id) {
                     setCurrentStoreId(response.data.data.id);
                     console.log('✅ New store ID saved:', response.data.data.id);
+                    
+                    // ✅ Try to get tenant_id from response
+                    if (response.data.data.tenant_id) {
+                        setTenantId(response.data.data.tenant_id);
+                        console.log('✅ Tenant ID from response:', response.data.data.tenant_id);
+                    }
+                    
+                    // ✅ If still no tenant ID, try to get from user
+                    if (!tenantId) {
+                        const userTenantId = getTenantIdFromUser();
+                        if (userTenantId) {
+                            setTenantId(userTenantId);
+                        }
+                    }
                 }
             }
 
             console.log('✅ Store saved successfully:', response.data);
+            console.log('📌 Current Tenant ID:', tenantId);
+            console.log('📌 Current Store ID:', currentStoreId);
+            
             return { success: true, data: response.data };
 
         } catch (error) {
@@ -372,6 +428,22 @@ export const StoreBuilderProvider = ({ children }) => {
                 const config = store.config || {};
                 
                 console.log('📡 Store config:', config);
+                
+                // ✅ Set store ID
+                setCurrentStoreId(storeId);
+                
+                // ✅ Set tenant ID from store data
+                if (store.tenant_id) {
+                    setTenantId(store.tenant_id);
+                    console.log('✅ Tenant ID from store:', store.tenant_id);
+                } else {
+                    // Try to get from user
+                    const userTenantId = getTenantIdFromUser();
+                    if (userTenantId) {
+                        setTenantId(userTenantId);
+                        console.log('✅ Tenant ID from user:', userTenantId);
+                    }
+                }
                 
                 // Populate Brand Data
                 if (config.brand?.storeName) {
@@ -439,10 +511,11 @@ export const StoreBuilderProvider = ({ children }) => {
                 // Set current step
                 const lastStep = store.last_builder_step || 1;
                 setCurrentStep(lastStep);
-                setCurrentStoreId(storeId);
                 setReady(true);
                 
                 console.log('✅ Store loaded successfully:', store);
+                console.log('📌 Tenant ID:', tenantId);
+                console.log('📌 Store ID:', storeId);
                 console.log('📌 Last step:', lastStep);
                 return { success: true, data: store };
             }
@@ -459,7 +532,17 @@ export const StoreBuilderProvider = ({ children }) => {
         }
     };
 
-    // ✅ Value object - ONLY ONE DECLARATION
+    // ✅ NEW: Get current tenant ID (for components)
+    const getCurrentTenantId = () => {
+        return tenantId || getTenantIdFromUser();
+    };
+
+    // ✅ NEW: Check if store is ready for uploads
+    const isStoreReadyForUploads = () => {
+        return currentStoreId !== null && tenantId !== null;
+    };
+
+    // ✅ Value object
     const value = {
         // State
         brandData,
@@ -472,6 +555,7 @@ export const StoreBuilderProvider = ({ children }) => {
         returnData,
         uploadedImages,
         currentStoreId,
+        tenantId,          // ✅ NEW: Expose tenantId
         currentStep,
         ready,
         // Setter functions
@@ -484,6 +568,7 @@ export const StoreBuilderProvider = ({ children }) => {
         setProfileData,
         setReturnData,
         setCurrentStep,
+        setTenantId,       // ✅ NEW: Allow setting tenantId
         // Update functions
         updateBrandData,
         updateProductData,
@@ -502,6 +587,9 @@ export const StoreBuilderProvider = ({ children }) => {
         loadStore,
         startNewStore,
         setCurrentStoreId,
+        // ✅ NEW: Helper functions
+        getCurrentTenantId,
+        isStoreReadyForUploads,
     };
 
     return (
