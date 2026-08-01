@@ -66,7 +66,10 @@ const StoreBuilderLayout = ({
         setSaving(false);
         
         if (result.success) {
-            navigate('/dashboard');
+            // FIX: Navigate to dashboard, but pass state so it knows the store is already loaded
+            navigate('/dashboard', { 
+                state: { fromBuilder: true } 
+            });
         } else {
             alert('Failed to save: ' + (result.error || 'Please try again'));
         }

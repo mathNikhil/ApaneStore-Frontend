@@ -45,7 +45,8 @@ const ImageError = ({ error }) => {
 
 const Step2_ProductConfig = () => {
   const navigate = useNavigate();
-  const { productData, setProductData, storeId, tenantId } = useStoreBuilder();
+  // ✅ FIX: Destructure `currentStoreId` instead of `storeId`!
+  const { productData, setProductData, currentStoreId, tenantId } = useStoreBuilder();
   
   // ✅ Track upload status per product/variation
   const [uploadingStates, setUploadingStates] = useState({});
@@ -93,6 +94,35 @@ const Step2_ProductConfig = () => {
 
   const [enableImageZoom, setEnableImageZoom] = useState(productData.enableImageZoom !== false);
 
+  // ✅ FIX: Re-hydrate product/banner state once loadStore() actually finishes.
+  // categories/banner fields above are only captured once at mount, but loadStore()
+  // is async and often hasn't resolved yet when this component first mounts — so
+  // editing an existing store's products showed the blank/default sample data.
+  // currentStoreId only changes once loadStore's response has landed, so syncing
+  // on it here (instead of on productData) picks up the real data without looping
+  // against the "Save to context" effect further below.
+  useEffect(() => {
+    if (currentStoreId && productData.categories?.length > 0) {
+      setCategories(productData.categories);
+    }
+    if (currentStoreId && productData.banner) {
+      setBannerImage(productData.banner.image || null);
+      setBannerTagline(productData.banner.tagline || 'Fresh, Organic & Delivered');
+      setBannerSubtitle(productData.banner.subtitle || '100% Natural Stone-Ground Flour');
+      setBannerCta(productData.banner.cta || 'Shop Now');
+      setBannerHeight(productData.banner.height || 400);
+      setBannerBgColor(productData.banner.bgColor || '#25D366');
+      setShowCta(productData.banner.showCta !== undefined ? productData.banner.showCta : true);
+      setShowText(productData.banner.showText !== undefined ? productData.banner.showText : true);
+      setTextAlignment(productData.banner.textAlignment || 'center');
+      setTextColor(productData.banner.textColor || '#FFFFFF');
+    }
+    if (currentStoreId && productData.enableImageZoom !== undefined) {
+      setEnableImageZoom(productData.enableImageZoom !== false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentStoreId]);
+
   // UI State
   const [showAddCategory, setShowAddCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
@@ -118,9 +148,10 @@ const Step2_ProductConfig = () => {
     setUploadingStates(prev => ({ ...prev, [key]: isUploading }));
   };
 
-  // ✅ NEW: Handle product image upload with API and proper error handling
+  // ✅ FIXED: Handle product image upload with API and proper error handling
   const handleProductImageUpload = async (categoryId, productId, files, errorKey) => {
-    if (!storeId || !tenantId) {
+    // ✅ FIX: Use `currentStoreId` instead of `storeId`
+    if (!currentStoreId || !tenantId) {
       setElementError(errorKey, 'Store ID or Tenant ID missing. Please save the store first');
       return;
     }
@@ -133,7 +164,7 @@ const Step2_ProductConfig = () => {
       const mainFile = files[0];
       if (mainFile) {
         const response = await imageService.uploadImage(
-          storeId,
+          currentStoreId, // ✅ Changed from storeId
           tenantId,
           'PRODUCT_MAIN',
           mainFile,
@@ -176,7 +207,7 @@ const Step2_ProductConfig = () => {
       const galleryFiles = files.slice(1);
       if (galleryFiles.length > 0) {
         const response = await imageService.uploadGalleryImages(
-          storeId,
+          currentStoreId, // ✅ Changed from storeId
           tenantId,
           'PRODUCT_GALLERY',
           galleryFiles,
@@ -218,7 +249,7 @@ const Step2_ProductConfig = () => {
       clearElementError(errorKey);
 
     } catch (error) {
-      setElementError(errorKey, error.message || 'Failed to upload images. Please try again.');
+      setElementError(errorKey, error.response?.data?.error || error.message || 'Failed to upload images. Please try again.');
     } finally {
       setElementUploading(errorKey, false);
     }
@@ -429,7 +460,8 @@ const Step2_ProductConfig = () => {
       .find(p => p.id === productId)?.images
       .find(img => img.id === imageId);
 
-    if (imageToRemove?.uploaded && storeId) {
+    // ✅ FIX: Use `currentStoreId` instead of `storeId`
+    if (imageToRemove?.uploaded && currentStoreId) {
       imageService.deleteImage(imageId).catch(console.error);
     }
 
@@ -453,7 +485,7 @@ const Step2_ProductConfig = () => {
     clearElementError(errorKey);
   };
 
-  // ✅ UPDATED: Variation Image upload with error display
+  // ✅ FIXED: Variation Image upload with error display
   const handleVariationImageUpload = async (categoryId, productId, variationId, e) => {
     const file = e.target.files?.[0];
     e.target.value = '';
@@ -462,7 +494,8 @@ const Step2_ProductConfig = () => {
     const errorKey = getErrorKey(categoryId, productId, 'variant', variationId);
     clearElementError(errorKey);
 
-    if (!storeId || !tenantId) {
+    // ✅ FIX: Use `currentStoreId` instead of `storeId`
+    if (!currentStoreId || !tenantId) {
       setElementError(errorKey, 'Store ID or Tenant ID missing. Please save the store first.');
       return;
     }
@@ -471,7 +504,7 @@ const Step2_ProductConfig = () => {
 
     try {
       const response = await imageService.uploadImage(
-        storeId,
+        currentStoreId, // ✅ Changed from storeId
         tenantId,
         'VARIANT',
         file,
@@ -520,7 +553,7 @@ const Step2_ProductConfig = () => {
       clearElementError(errorKey);
 
     } catch (error) {
-      setElementError(errorKey, error.message || 'Failed to upload variant image');
+      setElementError(errorKey, error.response?.data?.error || error.message || 'Failed to upload variant image');
     } finally {
       setElementUploading(errorKey, false);
     }
@@ -532,7 +565,8 @@ const Step2_ProductConfig = () => {
       .find(p => p.id === productId)?.variations
       .find(v => v.id === variationId);
 
-    if (variation?.image?.uploaded) {
+    // ✅ FIX: Use `currentStoreId` instead of `storeId`
+    if (variation?.image?.uploaded && currentStoreId) {
       imageService.deleteImage(variation.image.id).catch(console.error);
     }
 
@@ -1256,18 +1290,49 @@ const Step2_ProductConfig = () => {
               id="banner-upload"
               type="file"
               accept="image/*"
-              onChange={(e) => {
+              onChange={async (e) => {
                 const file = e.target.files?.[0];
-                if (file) {
-                  const reader = new FileReader();
-                  reader.onload = (e) => setBannerImage(e.target.result);
-                  reader.readAsDataURL(file);
-                }
                 e.target.value = '';
+                if (!file) return;
+
+                // ✅ FIX: This used to read the file into a base64 data URI
+                // client-side (FileReader.readAsDataURL) and store that
+                // directly — completely bypassing the server upload that
+                // every other image field (logo, product, gallery, variant,
+                // category) correctly goes through. That's why it wasn't
+                // behaving like the others: it was never actually uploaded
+                // or given a real, persistent server URL. Now uses the same
+                // imageService upload path as everything else, via the
+                // existing HERO image type endpoint.
+                if (!currentStoreId || !tenantId) {
+                  setElementError('banner', 'Store ID or Tenant ID missing. Please save the store first');
+                  return;
+                }
+
+                clearElementError('banner');
+                setElementUploading('banner', true);
+                try {
+                  const response = await imageService.uploadImage(currentStoreId, tenantId, 'HERO', file);
+                  if (response.success) {
+                    setBannerImage(response.data.url);
+                  } else {
+                    setElementError('banner', response.error || 'Banner upload failed');
+                  }
+                } catch (error) {
+                  setElementError('banner', error.response?.data?.error || error.message || 'Failed to upload banner image');
+                } finally {
+                  setElementUploading('banner', false);
+                }
               }}
               className="hidden"
             />
           </div>
+          {uploadingStates['banner'] && (
+            <p className="text-xs text-[#556067]">Uploading banner image...</p>
+          )}
+          {errorStates['banner'] && (
+            <p className="text-xs text-red-600">{errorStates['banner']}</p>
+          )}
           <ImageGuidelineBadge size="1200×375px" format="PNG/JPG" maxSize="300KB" ratio="16:5" />
         </div>
 

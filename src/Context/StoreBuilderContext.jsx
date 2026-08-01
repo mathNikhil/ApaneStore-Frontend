@@ -318,6 +318,8 @@ export const StoreBuilderProvider = ({ children }) => {
                 },
                 baseFontSize: brandData.baseFontSize || '16px',
                 categories: productData.categories || [],
+                productBanner: productData.banner || {},
+                enableImageZoom: productData.enableImageZoom,
                 cartSettings: cartData,
                 paymentSettings: paymentData,
                 addressSettings: addressData,
@@ -432,10 +434,11 @@ export const StoreBuilderProvider = ({ children }) => {
                 // ✅ Set store ID
                 setCurrentStoreId(storeId);
                 
-                // ✅ Set tenant ID from store data
-                if (store.tenant_id) {
-                    setTenantId(store.tenant_id);
-                    console.log('✅ Tenant ID from store:', store.tenant_id);
+                // ✅ FIXED: Check for both tenant_id and tenantId
+                if (store.tenant_id || store.tenantId) {
+                    const foundTenantId = store.tenant_id || store.tenantId;
+                    setTenantId(foundTenantId);
+                    console.log('✅ Tenant ID from store:', foundTenantId);
                 } else {
                     // Try to get from user
                     const userTenantId = getTenantIdFromUser();
@@ -469,7 +472,8 @@ export const StoreBuilderProvider = ({ children }) => {
                 if (config.products?.categories) {
                     setProductData({ 
                         categories: config.products.categories || [],
-                        products: []
+                        banner: config.products.banner || {},
+                        enableImageZoom: config.products.enableImageZoom !== false,
                     });
                 }
                 

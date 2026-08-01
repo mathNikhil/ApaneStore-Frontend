@@ -9,7 +9,6 @@ import Step5_AddressConfig from './Step5_AddressConfig';
 import Step6_OrderTrackerConfig from './Step6_OrderTrackerConfig';
 import Step7_ProfileConfig from './Step7_ProfileConfig';
 import Step8_ReturnPolicy from './Step8_ReturnPolicy';
-// ✅ Import the preview component (already exists)
 import FinalStorePreview from './FinalStorePreview';
 
 const StoreBuilderRouter = () => {
@@ -21,6 +20,7 @@ const StoreBuilderRouter = () => {
 
     useEffect(() => {
         console.log('🔍 StoreBuilderRouter - storeId from URL:', storeId);
+        console.log('🔍 StoreBuilderRouter - currentStoreId in Context:', currentStoreId);
 
         if (storeId && storeId !== 'null' && storeId !== 'undefined') {
             if (storeId !== currentStoreId) {
@@ -28,10 +28,15 @@ const StoreBuilderRouter = () => {
                 loadStore(storeId);
             }
         } else {
-            console.log('🆕 Starting new store');
-            startNewStore();
+            // CRITICAL FIX: Only start a new store if there is NO existing store running.
+            if (!currentStoreId) {
+                console.log('🆕 Starting new store');
+                startNewStore();
+            } else {
+                console.log('⏸️ Keeping existing store loaded:', currentStoreId);
+            }
         }
-    }, [storeId]);
+    }, [storeId, currentStoreId]);
 
     if (!ready) {
         return (
@@ -52,7 +57,6 @@ const StoreBuilderRouter = () => {
             <Route path="/step/6" element={<Step6_OrderTrackerConfig />} />
             <Route path="/step/7" element={<Step7_ProfileConfig />} />
             <Route path="/step/8" element={<Step8_ReturnPolicy />} />
-            {/* ✅ Preview route - already exists, just ensuring it's here */}
             <Route path="/preview" element={<FinalStorePreview />} />
             <Route path="*" element={<Navigate to="/store-builder/step/1" replace />} />
         </Routes>

@@ -4,10 +4,9 @@ import { useStoreBuilder } from '../../Context/StoreBuilderContext';
 import StoreBuilderLayout from './StoreBuilderLayout';
 import Card from '../Common/Card';
 import Input from '../Common/Input';
-import ImageUploader from '../ImageUploader'; // ✅ NEW: Import ImageUploader
-import imageService from '../../services/imageService'; // ✅ NEW: Import image service
+import imageService from '../../services/imageService';
 
-// ✅ NEW: Image Guideline Component
+// ✅ Image Guideline Component
 const ImageGuidelineBadge = ({ size, format, maxSize, ratio }) => (
   <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-gray-500">
     <span className="flex items-center gap-0.5">
@@ -34,16 +33,31 @@ const ImageGuidelineBadge = ({ size, format, maxSize, ratio }) => (
 
 const Step1_BrandSetup = () => {
   const navigate = useNavigate();
-  const { brandData, setBrandData, storeId, tenantId } = useStoreBuilder();
+  // ✅ FIX: Use `currentStoreId` and `tenantId` from context
+  const { brandData, setBrandData, currentStoreId, tenantId, saveStore } = useStoreBuilder();
   const [validationError, setValidationError] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
+
+  // ✅ FIX: Prevent the button from working if IDs aren't loaded yet
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    // Only mark as ready once we have BOTH the store ID and tenant ID
+    if (currentStoreId && tenantId) {
+      setIsReady(true);
+      console.log('✅ Step 1 is ready! Store:', currentStoreId, 'Tenant:', tenantId);
+    } else {
+      setIsReady(false);
+      console.log('⏳ Step 1 waiting for IDs...');
+    }
+  }, [currentStoreId, tenantId]);
 
   // Load from context on mount
   const [formData, setFormData] = useState({
     brandName: brandData.brandName || '',
     tagline: brandData.tagline || 'Fresh, Organic & Delivered to Your Doorstep',
-    colors: brandData.colors || {
+    colors: brandData.brandColors || {
       primary: '#25D366',
       secondary: '#111B21',
       tertiary: '#008069',
@@ -54,67 +68,76 @@ const Step1_BrandSetup = () => {
       font: '#191C1E',
     },
     typography: {
-      headingFont: brandData.fonts?.heading || 'Inter',
-      bodyFont: brandData.fonts?.body || 'Inter',
+      headingFont: brandData.headingFont || 'Inter',
+      bodyFont: brandData.bodyFont || 'Inter',
       baseFontSize: brandData.baseFontSize || '16px',
     },
   });
 
-  // ✅ UPDATED: Logo state with proper image data
   const [logoData, setLogoData] = useState(null);
-  const [logoPreview, setLogoPreview] = useState(brandData.logo || null);
+  const [logoPreview, setLogoPreview] = useState(brandData.logoUrl || null);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef(null);
   const fontInputRef = useRef(null);
 
-  // ✅ NEW: Logo requirements
-  const logoRequirements = {
-    display: {
-      dimensions: '200 × 200 px',
-      format: 'PNG only',
-      maxSize: '100 KB',
-      aspectRatio: '1:1 (Square)',
-      hint: 'Upload a clear, high-quality PNG logo'
-    },
-    validation: {
-      minWidth: 190,
-      maxWidth: 210,
-      minHeight: 190,
-      maxHeight: 210,
-      minSize: 10 * 1024,
-      maxSize: 120 * 1024,
-      allowedMimeTypes: ['image/png'],
-      allowTolerance: true,
-    }
-  };
-
-  // After the Brand Name input field, add this:
-  {formData.brandName && (
-    <div className="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
-      <p className="text-xs text-gray-500">
-        Your store URL: <span className="font-semibold text-green-600">
-          {formData.brandName.toLowerCase().replace(/[^a-z0-9]/g, '-')}.apnaestore.com
-        </span>
-      </p>
-      <p className="text-xs text-gray-400 mt-1">
-        This will be your store's subdomain
-      </p>
-    </div>
-  )}
-
-  // Save to context whenever formData or logo changes
+  // ✅ FIX: Re-hydrate the form once loadStore() actually finishes.
+  // formData/logoPreview above are only captured once at mount, but loadStore()
+  // is async and often hasn't resolved yet when this component first mounts —
+  // so editing an existing store showed blank/default values. currentStoreId
+  // only changes once loadStore's response has landed, so syncing on it here
+  // (instead of on brandData) picks up the real data without looping against
+  // the formData -> context effect below.
   useEffect(() => {
-    setBrandData({
+    if (currentStoreId) {
+      setFormData({
+        brandName: brandData.brandName || '',
+        tagline: brandData.tagline || 'Fresh, Organic & Delivered to Your Doorstep',
+        colors: brandData.brandColors || {
+          primary: '#25D366',
+          secondary: '#111B21',
+          tertiary: '#008069',
+          element: '#F0F2F5',
+          background: '#FFFFFF',
+          button: '#25D366',
+          buttonLabel: '#005523',
+          font: '#191C1E',
+        },
+        typography: {
+          headingFont: brandData.headingFont || 'Inter',
+          bodyFont: brandData.bodyFont || 'Inter',
+          baseFontSize: brandData.baseFontSize || '16px',
+        },
+      });
+      setLogoPreview(brandData.logoUrl || null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentStoreId]);
+
+  // Save to context whenever formData or logo changes.
+  // ✅ FIX: This used to call the raw setBrandData(...) with a completely
+  // different set of field names (logo/colors/fonts) than what saveStore()
+  // and loadStore() actually use (logoUrl/brandColors/headingFont/bodyFont).
+  // Since setBrandData replaces the whole object (it's the raw useState
+  // setter, not a merge), this was destructively wiping out logoUrl,
+  // brandColors, headingFont, bodyFont, and bannerUrl on every keystroke —
+  // then saveStore() would persist those wiped-out nulls to the database.
+  // That's why brand color/logo/font choices "disappeared" on the next
+  // visit: they were being overwritten with null on every save, not just
+  // failing to load. Now merges (via the functional update form) and uses
+  // the correct field names throughout.
+  useEffect(() => {
+    setBrandData(prev => ({
+      ...prev,
       brandName: formData.brandName,
       tagline: formData.tagline,
-      logo: logoPreview,
-      colors: formData.colors,
-      fonts: formData.typography,
+      logoUrl: logoPreview,
+      brandColors: formData.colors,
+      headingFont: formData.typography.headingFont,
+      bodyFont: formData.typography.bodyFont,
       baseFontSize: formData.typography.baseFontSize,
-    });
+    }));
   }, [formData, logoPreview, setBrandData]);
 
-  // ✅ Validate store name before proceeding
   const validateStoreName = () => {
     if (!formData.brandName || formData.brandName.trim() === '') {
       setValidationError('Store name is required');
@@ -124,18 +147,25 @@ const Step1_BrandSetup = () => {
     return true;
   };
 
-  // ✅ UPDATED: Handle Continue with image upload
+  // ✅ FIXED: Handles the race condition properly
   const handleContinue = async () => {
     if (!validateStoreName()) return;
+
+    // 🛡️ CRITICAL FIX: Block the save if the IDs aren't ready
+    if (!isReady || !currentStoreId || !tenantId) {
+      setUploadError('Store is still loading. Please wait a moment and try again.');
+      return;
+    }
 
     setIsUploading(true);
     setUploadError('');
 
     try {
-      // Upload logo if exists and has file
-      if (logoData && logoData.file && storeId && tenantId) {
+      // Only upload if a NEW file was actually selected.
+      if (logoData && logoData.file) {
+        console.log('📤 Uploading new logo to backend...');
         const response = await imageService.uploadImage(
-          storeId,
+          currentStoreId,
           tenantId,
           'LOGO',
           logoData.file
@@ -147,30 +177,45 @@ const Step1_BrandSetup = () => {
           return;
         }
         
-        // Update preview with uploaded image URL
         setLogoPreview(response.data.url);
+        console.log('✅ Logo uploaded successfully.');
+      } else {
+        console.log('ℹ️ No new logo selected. Skipping upload.');
       }
 
-      // Proceed to next step
-      navigate('/store-builder/step/2');
+      // ✅ FIX: This never actually called saveStore() before — it only
+      // uploaded the logo (a separate endpoint) and navigated straight to
+      // Step 2. brandName/tagline/brandColors/fonts were never persisted
+      // to the database from this button, only held in React context —
+      // which is why everything except brandName (also stored separately
+      // as a plain stores.store_name column) reset after logout/next-day.
+      console.log('💾 Saving brand data to backend...');
+      const saveResult = await saveStore();
+
+      if (!saveResult.success) {
+        setUploadError(saveResult.error || 'Failed to save. Please try again.');
+        setIsUploading(false);
+        return;
+      }
+
+      const savedStoreId = saveResult.data?.data?.id || currentStoreId;
+      navigate(`/store-builder/step/2?storeId=${savedStoreId}`);
     } catch (error) {
-      setUploadError(error.message || 'Failed to upload logo');
+      console.error('❌ Logo upload error:', error);
+      setUploadError(error.response?.data?.error || error.message || 'Failed to upload logo');
     } finally {
       setIsUploading(false);
     }
   };
 
-  // ✅ Override the default close behavior
   const handleClose = () => {
     if (!formData.brandName || formData.brandName.trim() === '') {
       setValidationError('Please enter a store name before closing');
       return;
     }
-    // Save and navigate to dashboard
     navigate('/dashboard');
   };
 
-  // Available free fonts
   const freeFonts = [
     'Inter', 'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Poppins',
     'Nunito', 'Quicksand', 'Manrope', 'Work Sans', 'Plus Jakarta Sans',
@@ -193,13 +238,11 @@ const Step1_BrandSetup = () => {
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
     }
-    // Clear validation error when user types
     if (name === 'brandName' && validationError) {
       setValidationError('');
     }
   };
 
-  // One-click color picker - directly opens color picker
   const handleColorChange = (colorKey, value) => {
     setFormData((prev) => ({
       ...prev,
@@ -210,14 +253,13 @@ const Step1_BrandSetup = () => {
     }));
   };
 
-  // ✅ UPDATED: Process logo file with validation
   const processLogoFile = (file) => {
     const validTypes = ['image/png'];
     if (!validTypes.includes(file.type)) {
       setUploadError('Please upload a PNG image only');
       return;
     }
-    if (file.size > 120 * 1024) { // 120KB with tolerance
+    if (file.size > 120 * 1024) {
       setUploadError('File size should be less than 120KB');
       return;
     }
@@ -226,9 +268,8 @@ const Step1_BrandSetup = () => {
     const reader = new FileReader();
     reader.onload = (e) => {
       setLogoPreview(e.target.result);
-      // Store file data for upload
       setLogoData({
-        file: file,
+        file: file,        
         preview: e.target.result,
         name: file.name,
         size: file.size,
@@ -297,7 +338,7 @@ const Step1_BrandSetup = () => {
       onClose={handleClose}
       isUploading={isUploading}
     >
-      {/* Brand Name - Required */}
+      {/* Brand Name */}
       <div className="space-y-4 mb-6">
         <label className="font-label-md text-label-md text-[#3c4a3d] uppercase tracking-wider text-xs">
           Brand Name <span className="text-red-500">*</span>
@@ -322,7 +363,7 @@ const Step1_BrandSetup = () => {
         <Input name="tagline" value={formData.tagline} onChange={handleChange} placeholder="Enter tagline" className="bg-white border border-[#bbcbb9] rounded-lg" />
       </div>
 
-      {/* ✅ UPDATED: Logo Upload with Image Guidelines */}
+      {/* Logo Upload */}
       <div className="space-y-4 mb-6">
         <div className="flex items-center justify-between">
           <label className="font-label-md text-label-md text-[#3c4a3d] uppercase tracking-wider text-xs">Logo Upload</label>
@@ -365,7 +406,6 @@ const Step1_BrandSetup = () => {
           )}
         </div>
         
-        {/* ✅ NEW: Image Guidelines Badge */}
         <ImageGuidelineBadge 
           size="200×200px" 
           format="PNG" 
@@ -378,7 +418,7 @@ const Step1_BrandSetup = () => {
         </div>
       </div>
 
-      {/* Brand Colors - One Click Color Picker */}
+      {/* Brand Colors */}
       <div className="space-y-4 mb-6">
         <label className="font-label-md text-label-md text-[#3c4a3d] uppercase tracking-wider text-xs">Brand Colors</label>
         <Card>
@@ -493,7 +533,6 @@ const Step1_BrandSetup = () => {
         </div>
       </Card>
       
-      {/* ✅ NEW: Upload error display */}
       {uploadError && (
         <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-lg text-sm">
           ⚠️ {uploadError}

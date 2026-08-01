@@ -44,11 +44,11 @@ const StoreCard = ({ store, onNavigate }) => {
     };
 
     const openPreview = () => {
-        navigate(`/store-builder/${store.id}/preview`);
+        navigate(`/store-builder/preview?storeId=${store.id}`);
     };
 
     const openEdit = () => {
-        navigate(`/store-builder/${store.id}/step/1`);
+        navigate(`/store-builder/step/1?storeId=${store.id}`);
     };
 
     const openAdminPanel = () => {
