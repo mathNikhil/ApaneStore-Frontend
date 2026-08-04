@@ -3,6 +3,43 @@ import axios from 'axios';
 
 const StoreBuilderContext = createContext();
 
+// ✅ Self-healing ID sanitizer. Some stores have products/categories/
+// variations/sizes with corrupted IDs saved from before generateId() was
+// fixed (e.g. 1785769510832.0525 — a fractional, out-of-range value that
+// Postgres rejects for any integer column). Simply reloading the page can
+// never fix an ID that's already persisted in the database — this runs on
+// every load and quietly replaces any invalid ID with a clean one, so old
+// corrupted data self-heals instead of needing to be manually found and
+// deleted.
+let _sanitizeIdCounter = 0;
+const sanitizeId = (id) => {
+    if (id !== undefined && id !== null) {
+        const num = typeof id === 'number' ? id : parseFloat(id);
+        if (!isNaN(num) && Number.isInteger(num)) return num;
+    }
+    _sanitizeIdCounter += 1;
+    return Math.floor(Date.now()) + _sanitizeIdCounter;
+};
+
+const sanitizeCategories = (categories) => {
+    return (categories || []).map((cat) => ({
+        ...cat,
+        id: sanitizeId(cat.id),
+        products: (cat.products || []).map((prod) => ({
+            ...prod,
+            id: sanitizeId(prod.id),
+            images: (prod.images || []).map((img) =>
+                img && typeof img === 'object' ? { ...img, id: sanitizeId(img.id) } : img
+            ),
+            variations: (prod.variations || []).map((v) => ({
+                ...v,
+                id: sanitizeId(v.id),
+                sizes: (v.sizes || []).map((s) => ({ ...s, id: sanitizeId(s.id) })),
+            })),
+        })),
+    }));
+};
+
 export const useStoreBuilder = () => {
     const context = useContext(StoreBuilderContext);
     if (!context) {
@@ -24,8 +61,12 @@ export const StoreBuilderProvider = ({ children }) => {
         bannerPublicId: null,
         brandColors: {
             primary: '#25D366',
-            secondary: '#111B21',
-            tertiary: '#008069',
+            secondary: '#E0E3E6',
+            background: '#FFFFFF',
+            button: '#25D366',
+            buttonLabel: '#005523',
+            fontHeader: '#191C1E',
+            fontBody: '#556067',
         },
         headingFont: 'Inter',
         bodyFont: 'Inter',
@@ -217,7 +258,13 @@ export const StoreBuilderProvider = ({ children }) => {
     const startNewStore = () => {
         console.log('🆕 Starting new store');
         setCurrentStoreId(null);
-        setTenantId(null); // ✅ Reset tenant ID
+        // ✅ FIX: tenantId comes from the logged-in user's session, not from
+        // any store — it should be available immediately, even before a
+        // store exists. Resetting it to null here meant a brand-new store
+        // could never pass the "tenant ready" check on Step 1's Continue
+        // button, since nothing else ever re-populated it for a new store.
+        const userTenantId = getTenantIdFromUser();
+        setTenantId(userTenantId || null);
         setCurrentStep(1);
         setReady(true);
         
@@ -230,8 +277,12 @@ export const StoreBuilderProvider = ({ children }) => {
             bannerPublicId: null,
             brandColors: {
                 primary: '#25D366',
-                secondary: '#111B21',
-                tertiary: '#008069',
+                secondary: '#E0E3E6',
+                background: '#FFFFFF',
+                button: '#25D366',
+                buttonLabel: '#005523',
+                fontHeader: '#191C1E',
+                fontBody: '#556067',
             },
             headingFont: 'Inter',
             bodyFont: 'Inter',
@@ -257,8 +308,14 @@ export const StoreBuilderProvider = ({ children }) => {
     const getTenantIdFromUser = () => {
         try {
             const user = JSON.parse(localStorage.getItem('user') || '{}');
-            // Try to get tenant_id from user data
-            const tenant = user.tenant_id || user.tenantId || user.current_tenant_id || user.default_tenant_id;
+            // ✅ FIX: user.id is the REAL tenant primary key (an integer,
+            // matching what stores.tenant_id/store_images.tenant_id actually
+            // expect). user.tenant_id is a separate, human-readable business
+            // code (e.g. "TENANT_1785571312324") — a completely different
+            // value that these integer columns correctly reject. This must
+            // be checked first; the business-code fields below are only a
+            // last-resort fallback for shapes that don't include a real id.
+            const tenant = user.id || user.tenant_id || user.tenantId || user.current_tenant_id || user.default_tenant_id;
             if (tenant) {
                 console.log('✅ Found tenant ID from user:', tenant);
                 return tenant;
@@ -280,7 +337,11 @@ export const StoreBuilderProvider = ({ children }) => {
     };
 
     // ✅ SAVE STORE
-    const saveStore = async () => {
+    // extraFields lets a caller merge in fields not tracked by builder state
+    // (e.g. { status: 'published', published_at: ... }) into this SAME save,
+    // instead of making a separate, partial follow-up request — which is
+    // exactly what was silently wiping out the rest of the config before.
+    const saveStore = async (storeIdOverride = null, extraFields = {}) => {
         try {
             const token = localStorage.getItem('token');
             
@@ -292,6 +353,12 @@ export const StoreBuilderProvider = ({ children }) => {
             if (!brandData.brandName || brandData.brandName.trim() === '') {
                 return { success: false, error: 'Store name is required' };
             }
+
+            // ✅ Use the explicitly passed ID if given (e.g. a caller that just
+            // created the store moments ago in this same function and knows
+            // the real ID, which the closure's currentStoreId won't reflect
+            // yet), otherwise fall back to context state as before.
+            const effectiveStoreId = storeIdOverride || currentStoreId;
 
             // ✅ Get tenant ID if not set
             let currentTenantId = tenantId;
@@ -309,8 +376,12 @@ export const StoreBuilderProvider = ({ children }) => {
                 bannerUrl: brandData.bannerUrl || null,
                 brandColors: brandData.brandColors || {
                     primary: '#25D366',
-                    secondary: '#111B21',
-                    tertiary: '#008069',
+                    secondary: '#E0E3E6',
+                    background: '#FFFFFF',
+                    button: '#25D366',
+                    buttonLabel: '#005523',
+                    fontHeader: '#191C1E',
+                    fontBody: '#556067',
                 },
                 fonts: {
                     heading: brandData.headingFont || 'Inter',
@@ -328,16 +399,17 @@ export const StoreBuilderProvider = ({ children }) => {
                 returnSettings: returnData,
                 images: uploadedImages || {},
                 lastBuilderStep: currentStep,
+                ...extraFields,
             };
 
             console.log('📝 Saving store data:', storeData);
 
             let response;
             
-            if (currentStoreId) {
-                console.log('🔄 Updating existing store:', currentStoreId);
+            if (effectiveStoreId) {
+                console.log('🔄 Updating existing store:', effectiveStoreId);
                 response = await axios.put(
-                    `${API_URL}/api/stores/${currentStoreId}`,
+                    `${API_URL}/api/stores/${effectiveStoreId}`,
                     storeData,
                     {
                         headers: {
@@ -450,6 +522,21 @@ export const StoreBuilderProvider = ({ children }) => {
                 
                 // Populate Brand Data
                 if (config.brand?.storeName) {
+                    // ✅ Migrate old-shape saved brandColors (font/tertiary/element)
+                    // to the new schema, same as Step1_BrandSetup.jsx's
+                    // normalizeBrandColors — so stores saved before this color
+                    // system change don't lose their saved header color or
+                    // silently reset to defaults.
+                    const savedColors = config.brand.brandColors || {};
+                    const defaultColors = {
+                        primary: '#25D366',
+                        secondary: '#E0E3E6',
+                        background: '#FFFFFF',
+                        button: '#25D366',
+                        buttonLabel: '#005523',
+                        fontHeader: '#191C1E',
+                        fontBody: '#556067',
+                    };
                     setBrandData({
                         brandName: config.brand.storeName || '',
                         tagline: config.brand.tagline || '',
@@ -457,10 +544,10 @@ export const StoreBuilderProvider = ({ children }) => {
                         bannerUrl: config.brand.bannerUrl || null,
                         logoPublicId: null,
                         bannerPublicId: null,
-                        brandColors: config.brand.brandColors || {
-                            primary: '#25D366',
-                            secondary: '#111B21',
-                            tertiary: '#008069',
+                        brandColors: {
+                            ...defaultColors,
+                            ...savedColors,
+                            fontHeader: savedColors.fontHeader || savedColors.font || defaultColors.fontHeader,
                         },
                         headingFont: config.brand.fonts?.heading || 'Inter',
                         bodyFont: config.brand.fonts?.body || 'Inter',
@@ -471,7 +558,7 @@ export const StoreBuilderProvider = ({ children }) => {
                 // Populate Product Data
                 if (config.products?.categories) {
                     setProductData({ 
-                        categories: config.products.categories || [],
+                        categories: sanitizeCategories(config.products.categories),
                         banner: config.products.banner || {},
                         enableImageZoom: config.products.enableImageZoom !== false,
                     });

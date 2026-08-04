@@ -5,7 +5,6 @@ import logo from '../../assets/images/Apnaestore-Logo.png';
 const TopAppBar = ({
     title = 'Apna eStore',
     showBack = false,
-    showProfile = true,
     className = '',
 }) => {
     const navigate = useNavigate();
@@ -26,28 +25,21 @@ const TopAppBar = ({
                     </button>
                 )}
                 
-                {/* ✅ Logo in TopAppBar */}
-                <img 
-                    src={logo} 
-                    alt="ApnaEstore" 
-                    className="h-8 w-auto"
-                />
-                
-                {title && (
-                    <h1 className="text-xl font-bold text-[#006d2f] ml-1">{title}</h1>
-                )}
-            </div>
-
-            <div className="flex items-center gap-2">
-                {showProfile && (
-                    <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-[#25D366]">
-                        <img
-                            className="w-full h-full object-cover"
-                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuA7MHuiEnvSV9ofdmHdGQiEfY00ADLvr6EPGGqy6rq1A4Db22wUClUQ6o6aee3gZ9btKCMCZn4mxmZzeTlSjUnNvKI0rELLkEUh9GhFU-iKl6HP_ViSMDRDn-MA6vC1v_vag0lssbc8daoNHeCKTIof7j-j0EoF5UrVMhKlls4iMwSIrS6_B995fbcZhxktcOhgZcLNratCt9boZGvbspUj7RqHXfRuvJjuFBEWCZcUfEwsRXQgw37XMUD6wjbf6paM1FZ7S01GtHU"
-                            alt="Profile"
-                        />
-                    </div>
-                )}
+                {/* ✅ Logo now navigates to the dashboard from any page */}
+                <button
+                    onClick={() => navigate('/dashboard')}
+                    className="flex items-center gap-1 hover:opacity-80 transition-opacity"
+                >
+                    <img 
+                        src={logo} 
+                        alt="ApnaEstore" 
+                        className="h-8 w-auto"
+                    />
+                    
+                    {title && (
+                        <h1 className="text-xl font-bold text-[#006d2f] ml-1">{title}</h1>
+                    )}
+                </button>
             </div>
         </header>
     );

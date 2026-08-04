@@ -1,24 +1,31 @@
 // Generates dynamic styles from brand data
+//
+// ✅ New brand color system (see design discussion): Tertiary and Element
+// removed (unused everywhere), Font split into Header/Body, Secondary
+// repurposed from "muted text" to "default/inactive state of toggles,
+// checkboxes, progress bars" (muted text now comes from Font Body).
+// `font` is still read as a fallback for fontHeader so stores saved before
+// this change don't lose their header color.
 
 export const generatePreviewStyles = function(brandData) {
   var colors = brandData && brandData.colors ? brandData.colors : {};
   var fonts = brandData && brandData.fonts ? brandData.fonts : {};
-  
+
   return {
     // Colors
     primary: colors.primary || '#25D366',
-    secondary: colors.secondary || '#111B21',
-    tertiary: colors.tertiary || '#008069',
+    secondary: colors.secondary || '#E0E3E6',
     background: colors.background || '#FFFFFF',
     button: colors.button || '#25D366',
     buttonLabel: colors.buttonLabel || '#005523',
-    font: colors.font || '#191C1E',
-    
+    fontHeader: colors.fontHeader || colors.font || '#191C1E',
+    fontBody: colors.fontBody || '#556067',
+
     // Fonts
     headingFont: fonts.heading || 'Inter',
     bodyFont: fonts.body || 'Inter',
     baseFontSize: fonts.baseFontSize || '16px',
-    
+
     // Helper functions
     getButtonStyle: function() {
       return {
@@ -26,23 +33,30 @@ export const generatePreviewStyles = function(brandData) {
         color: colors.buttonLabel || '#005523',
       };
     },
-    
-    getPrimaryStyle: function() {
+
+    // Active/selected state for toggles, checkboxes, progress bars, etc.
+    getActiveStyle: function() {
       return {
         backgroundColor: colors.primary || '#25D366',
-        color: colors.background || '#FFFFFF',
       };
     },
-    
-    getTextStyle: function() {
+
+    // Default/inactive state of the same elements
+    getInactiveStyle: function() {
       return {
-        color: colors.font || '#191C1E',
+        backgroundColor: colors.secondary || '#E0E3E6',
       };
     },
-    
-    getSecondaryTextStyle: function() {
+
+    getHeaderTextStyle: function() {
       return {
-        color: colors.secondary || '#556067',
+        color: colors.fontHeader || colors.font || '#191C1E',
+      };
+    },
+
+    getBodyTextStyle: function() {
+      return {
+        color: colors.fontBody || '#556067',
       };
     },
   };

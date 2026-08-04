@@ -99,7 +99,7 @@ const ProfilePage = () => {
 
     return (
         <div className="min-h-screen bg-[#f7f9fc] pb-24 lg:pb-0">
-            <TopAppBar title="Profile" showProfile={false} />
+            <TopAppBar title="Profile" />
             
             <main className="max-w-3xl mx-auto px-4 pt-6 space-y-6">
                 {success && (

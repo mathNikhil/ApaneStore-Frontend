@@ -5,12 +5,16 @@ import TopAppBar from '../common/TopAppBar';
 import Button from '../common/Button';
 import BottomNav from '../common/BottomNav';
 import logo from '../../assets/images/Apnaestore-Logo.png';
+import { storeAPI } from '../../services/api';
 
 const DashboardReturnUser = ({ stores = [], onStoreUpdate }) => {
     const navigate = useNavigate();
     const [updating, setUpdating] = useState(null);
     const [error, setError] = useState(null);
     const [deleting, setDeleting] = useState(null);
+    const [adminPasswords, setAdminPasswords] = useState({});
+    const [passwordVisible, setPasswordVisible] = useState({});
+    const [passwordLoading, setPasswordLoading] = useState({});
 
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002';
 
@@ -129,6 +133,11 @@ const DashboardReturnUser = ({ stores = [], onStoreUpdate }) => {
     // ✅ Get status badge styling
     const getStatusBadge = (status) => {
         const statuses = {
+            'published': {
+                label: 'Published ✅',
+                className: 'bg-green-100 text-green-700',
+                icon: 'check_circle'
+            },
             'active': {
                 label: 'Published ✅',
                 className: 'bg-green-100 text-green-700',
@@ -154,25 +163,33 @@ const DashboardReturnUser = ({ stores = [], onStoreUpdate }) => {
     };
 
     // ✅ Get status actions
+    // ✅ Get status actions
     const getStatusActions = (store) => {
         const actions = [];
         
         if (store.status === 'draft') {
             actions.push({
                 label: 'Publish',
-                action: () => handleStatusChange(store.id, 'active'),
+                // ✅ FIX: this used to call handleStatusChange(store.id, 'active'),
+                // which only ever set status to 'active' — a value the
+                // Storefront's public lookup never actually checks for (it
+                // requires status = 'published'). This button looked like it
+                // worked but never made the store genuinely visible. Now it
+                // launches the real domain/hosting/payment flow, which is the
+                // only place status actually becomes 'published'.
+                action: () => navigate(`/store-builder/quick-publish?storeId=${store.id}`),
                 className: 'bg-[#25D366] text-[#005523] hover:brightness-105'
             });
-        } else if (store.status === 'active') {
+        } else if (store.status === 'published' || store.status === 'active') {
             actions.push({
                 label: 'Unpublish',
-                action: () => handleStatusChange(store.id, 'inactive'),
+                action: () => handleStatusChange(store.id, 'draft'),
                 className: 'bg-orange-100 text-orange-700 hover:bg-orange-200'
             });
         } else if (store.status === 'inactive') {
             actions.push({
                 label: 'Publish Again',
-                action: () => handleStatusChange(store.id, 'active'),
+                action: () => navigate(`/store-builder/quick-publish?storeId=${store.id}`),
                 className: 'bg-[#25D366] text-[#005523] hover:brightness-105'
             });
         }
@@ -181,8 +198,65 @@ const DashboardReturnUser = ({ stores = [], onStoreUpdate }) => {
     };
 
     // ✅ Navigate to Store Admin Panel (separate app)
-    const goToStoreAdmin = (storeId) => {
-        window.open(`http://localhost:3001?storeId=${storeId}`, '_blank');
+    const STORE_ADMIN_URL = import.meta.env.VITE_STORE_ADMIN_URL || 'http://localhost:3006';
+
+    // ✅ FIX: this used to open http://localhost:3001?storeId=<id> — port
+    // 3001 is the Super Admin panel, not Store Admin (which runs on 3006),
+    // and storeId alone doesn't match what Store Admin's login actually
+    // expects (?store=<subdomain>, matching the Storefront's own pattern).
+    const goToStoreAdmin = (subdomain) => {
+        if (!subdomain) {
+            alert('This store needs a subdomain before its admin panel can be opened.');
+            return;
+        }
+        window.open(`${STORE_ADMIN_URL}/login?store=${subdomain}`, '_blank');
+    };
+
+    const handleTogglePassword = async (storeId) => {
+        const isCurrentlyVisible = passwordVisible[storeId];
+        if (isCurrentlyVisible) {
+            setPasswordVisible(prev => ({ ...prev, [storeId]: false }));
+            return;
+        }
+        if (adminPasswords[storeId]) {
+            setPasswordVisible(prev => ({ ...prev, [storeId]: true }));
+            return;
+        }
+        setPasswordLoading(prev => ({ ...prev, [storeId]: true }));
+        try {
+            const result = await storeAPI.getAdminPassword(storeId);
+            if (result.success) {
+                setAdminPasswords(prev => ({ ...prev, [storeId]: result.data.password }));
+                setPasswordVisible(prev => ({ ...prev, [storeId]: true }));
+            }
+        } catch (err) {
+            console.error('Failed to fetch admin password:', err);
+        } finally {
+            setPasswordLoading(prev => ({ ...prev, [storeId]: false }));
+        }
+    };
+
+    const handleGeneratePassword = async (storeId) => {
+        if (!window.confirm('Generate a new Store Admin password? The current password will stop working immediately — anyone using it (including any active session) will need the new one.')) {
+            return;
+        }
+        setPasswordLoading(prev => ({ ...prev, [storeId]: true }));
+        try {
+            const result = await storeAPI.generateAdminPassword(storeId);
+            if (result.success) {
+                setAdminPasswords(prev => ({ ...prev, [storeId]: result.data.password }));
+                setPasswordVisible(prev => ({ ...prev, [storeId]: true }));
+            }
+        } catch (err) {
+            console.error('Failed to generate admin password:', err);
+            alert('Failed to generate password. Please try again.');
+        } finally {
+            setPasswordLoading(prev => ({ ...prev, [storeId]: false }));
+        }
+    };
+
+    const handleCopyPassword = (password) => {
+        navigator.clipboard.writeText(password);
     };
 
     // ✅ Stats based on all stores
@@ -198,7 +272,7 @@ const DashboardReturnUser = ({ stores = [], onStoreUpdate }) => {
 
     return (
         <div className="min-h-screen bg-[#f7f9fc] pb-24 lg:pb-0">
-            <TopAppBar title="eStore Manager" showProfile={true} />
+            <TopAppBar title="eStore Manager" />
 
             <main className="max-w-7xl mx-auto px-4 py-6">
                 {/* ApnaEstore Logo */}
@@ -333,16 +407,8 @@ const DashboardReturnUser = ({ stores = [], onStoreUpdate }) => {
                                         </div>
                                     )}
                                     
+                                    {/* Row 1: Edit, Preview, Publish/Unpublish */}
                                     <div className="flex flex-wrap gap-3 mt-4 pt-4 border-t border-[#eceef1]">
-                                        {/* Store Admin Panel Button */}
-                                        <button 
-                                            onClick={() => goToStoreAdmin(store.id)}
-                                            className="px-4 py-2 bg-[#006d2f] text-white font-semibold text-sm rounded-xl hover:brightness-110 active:scale-[0.98] transition-all flex items-center gap-2"
-                                        >
-                                            <span className="material-symbols-outlined text-base">dashboard</span>
-                                            Store Admin Panel
-                                        </button>
-                                        
                                         <button 
                                             onClick={() => navigate(`/store-builder/step/1?storeId=${store.id}`)}
                                             className="px-4 py-2 bg-[#eceef1] text-[#006d2f] font-semibold text-sm rounded-xl hover:bg-[#d9e4ec] active:scale-[0.98] transition-all flex items-center gap-2"
@@ -373,30 +439,83 @@ const DashboardReturnUser = ({ stores = [], onStoreUpdate }) => {
                                                 )}
                                             </button>
                                         ))}
+                                    </div>
 
-                                        {/* ✅ Delete Store Button */}
+                                    {/* Row 2: Store Admin Panel */}
+                                    <div className="mt-3">
+                                        <button 
+                                            onClick={() => goToStoreAdmin(store.subdomain)}
+                                            className="w-full px-4 py-2 bg-[#006d2f] text-white font-semibold text-sm rounded-xl hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                                        >
+                                            <span className="material-symbols-outlined text-base">dashboard</span>
+                                            Store Admin Panel
+                                        </button>
+                                    </div>
+                                    <div className="mt-3 pt-3 border-t border-dashed border-[#e0e3e6]">
+                                        <p className="text-xs font-semibold text-[#3c4a3d] mb-2 flex items-center gap-1">
+                                            <span className="material-symbols-outlined text-sm">lock</span>
+                                            Store Admin Access
+                                        </p>
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            {passwordVisible[store.id] && adminPasswords[store.id] ? (
+                                                <>
+                                                    <code className="px-3 py-1.5 bg-[#f2f4f7] rounded-lg text-sm font-mono text-[#191c1e] border border-[#e0e3e6]">
+                                                        {adminPasswords[store.id]}
+                                                    </code>
+                                                    <button
+                                                        onClick={() => handleCopyPassword(adminPasswords[store.id])}
+                                                        className="px-3 py-1.5 text-xs font-semibold text-[#006d2f] hover:bg-[#eceef1] rounded-lg transition-colors flex items-center gap-1"
+                                                    >
+                                                        <span className="material-symbols-outlined text-sm">content_copy</span>
+                                                        Copy
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleTogglePassword(store.id)}
+                                                        className="px-3 py-1.5 text-xs font-semibold text-[#6c7b6b] hover:bg-[#eceef1] rounded-lg transition-colors"
+                                                    >
+                                                        Hide
+                                                    </button>
+                                                </>
+                                            ) : (
+                                                <button
+                                                    onClick={() => handleTogglePassword(store.id)}
+                                                    disabled={passwordLoading[store.id]}
+                                                    className="px-3 py-1.5 text-xs font-semibold text-[#006d2f] hover:bg-[#eceef1] rounded-lg transition-colors flex items-center gap-1 disabled:opacity-50"
+                                                >
+                                                    <span className="material-symbols-outlined text-sm">visibility</span>
+                                                    {passwordLoading[store.id] ? 'Loading...' : 'Show Password'}
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={() => handleGeneratePassword(store.id)}
+                                                disabled={passwordLoading[store.id]}
+                                                className="px-3 py-1.5 text-xs font-semibold text-[#556067] hover:bg-[#eceef1] rounded-lg transition-colors flex items-center gap-1 disabled:opacity-50"
+                                            >
+                                                <span className="material-symbols-outlined text-sm">refresh</span>
+                                                Generate New
+                                            </button>
+                                        </div>
+                                        <p className="text-xs text-[#6c7b6b] mt-2">
+                                            Share this password with staff to let them manage this store's orders and customers. Only one person can be logged in at a time.
+                                        </p>
+                                    </div>
+
+                                    {/* Bottom: Delete */}
+                                    <div className="mt-4 pt-3 border-t border-[#eceef1]">
                                         <button
                                             onClick={() => handleDeleteStore(store.id, store.store_name)}
                                             disabled={deleting === store.id}
-                                            className="px-4 py-2 bg-red-100 text-red-700 font-semibold text-sm rounded-xl hover:bg-red-200 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center gap-2"
+                                            className="w-full px-4 py-2 bg-red-100 text-red-700 font-semibold text-sm rounded-xl hover:bg-red-200 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                                         >
                                             {deleting === store.id ? (
                                                 <span className="material-symbols-outlined animate-spin text-base">progress_activity</span>
                                             ) : (
                                                 <>
                                                     <span className="material-symbols-outlined text-base">delete</span>
-                                                    Delete
+                                                    Delete Store
                                                 </>
                                             )}
                                         </button>
-                                    </div>
-
-                                    {/* Store Admin Panel Info */}
-                                    <div className="mt-3 pt-3 border-t border-dashed border-[#e0e3e6]">
-                                        <p className="text-xs text-[#6c7b6b] flex items-center gap-1">
-                                            <span className="material-symbols-outlined text-sm">info</span>
-                                            Each store has its own admin panel to manage orders, customers, products, and deliveries
-                                        </p>
                                     </div>
                                 </div>
                             );

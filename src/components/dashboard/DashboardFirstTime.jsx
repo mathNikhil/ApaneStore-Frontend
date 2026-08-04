@@ -17,7 +17,7 @@ const DashboardFirstTime = () => {
 
     return (
         <div className="min-h-screen bg-[#f7f9fc] pb-24">
-            <TopAppBar title="eStore Manager" showProfile={true} />
+            <TopAppBar title="eStore Manager" />
 
             <main className="max-w-7xl mx-auto px-4 py-6">
                 <div className="mb-8">

@@ -20,15 +20,28 @@ const StoreBuilderLayout = ({
     closeLabel = 'Save & Close',
 }) => {
     const navigate = useNavigate();
-    const { saveStore } = useStoreBuilder();
+    const { saveStore, currentStoreId } = useStoreBuilder();
     const [saving, setSaving] = useState(false);
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+
+    // ✅ Keep the store id in the URL on every step, not just Step 1. Every
+    // navigate() call below used to drop it entirely, relying purely on
+    // StoreBuilderContext staying alive in memory — so a hard refresh on
+    // any step past 1 lost track of the store and silently started a new
+    // one. storeIdOverride lets the post-save navigations use the id that
+    // just came back from saveStore() directly, since setCurrentStoreId()
+    // inside saveStore() won't be visible on `currentStoreId` until the
+    // next render — which matters the first time a brand-new store saves.
+    const withStoreId = (path, storeIdOverride = null) => {
+        const id = storeIdOverride || currentStoreId;
+        return id ? `${path}?storeId=${id}` : path;
+    };
 
     const handleBack = () => {
         if (onBack) {
             onBack();
         } else if (currentStep > 1) {
-            navigate(`/store-builder/step/${currentStep - 1}`);
+            navigate(withStoreId(`/store-builder/step/${currentStep - 1}`));
         } else {
             navigate('/dashboard');
         }
@@ -43,7 +56,7 @@ const StoreBuilderLayout = ({
             setSaving(false);
             
             if (result.success) {
-                navigate(`/store-builder/step/${currentStep + 1}`);
+                navigate(withStoreId(`/store-builder/step/${currentStep + 1}`, result.data?.data?.id));
             } else {
                 alert('Failed to save: ' + (result.error || 'Please try again'));
             }
@@ -53,7 +66,7 @@ const StoreBuilderLayout = ({
             setSaving(false);
             
             if (result.success) {
-                navigate('/store-builder/preview');
+                navigate(withStoreId('/store-builder/preview', result.data?.data?.id));
             } else {
                 alert('Failed to save: ' + (result.error || 'Please try again'));
             }
@@ -124,7 +137,6 @@ const StoreBuilderLayout = ({
             <TopAppBar
                 title="Store Builder"
                 showBack={false}
-                showProfile={false}
                 actions={actions}
             />
 

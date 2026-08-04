@@ -26,15 +26,21 @@ const StorePreview = ({
     getCartItemCount,
   } = usePreviewData(builderData);
 
-  const handleAddToCart = (productId, variationId, sizeId) => {
-    const allProducts = storeData.products || [];
-    const product = allProducts.find(p => p.id === productId);
+  const handleAddToCart = function(productId, variationId, sizeId) {
+    var allProducts = storeData.products || [];
+    var product = null;
+    for (var i = 0; i < allProducts.length; i++) {
+      if (allProducts[i].id === productId) {
+        product = allProducts[i];
+        break;
+      }
+    }
     if (product) {
       addToCart(product, variationId, sizeId);
     }
   };
 
-  const renderTab = () => {
+  var renderTab = function() {
     switch(activeTab) {
       case 'home':
         return <PreviewHomeTab data={storeData} onAddToCart={handleAddToCart} />;
@@ -49,14 +55,19 @@ const StorePreview = ({
     }
   };
 
-  const deviceWidths = {
+  var deviceWidths = {
     desktop: '1200px',
     tablet: '768px',
     mobile: '400px'
   };
 
-  const primaryColor = storeData?.brand?.colors?.primary || '#25D366';
-  const secondaryColor = storeData?.brand?.colors?.secondary || '#556067';
+  // SAFE: Get colors with fallbacks
+  var primaryColor = '#25D366';
+  var secondaryColor = '#556067';
+  if (storeData && storeData.brand && storeData.brand.colors) {
+    primaryColor = storeData.brand.colors.primary || '#25D366';
+    secondaryColor = storeData.brand.colors.secondary || '#556067';
+  }
 
   return (
     <div className="fixed inset-0 bg-black/50 z-[100] flex flex-col">
@@ -96,8 +107,8 @@ const StorePreview = ({
       {/* Store Content */}
       <div className="flex-1 overflow-y-auto bg-[#f2f4f7] p-4">
         <div 
-          className="mx-auto bg-white rounded-xl shadow-2xl overflow-hidden transition-all duration-500"
-          style={{ maxWidth: isQuickPreview ? '400px' : deviceWidths[device] || '1200px' }}
+          className="mx-auto rounded-xl shadow-2xl overflow-hidden transition-all duration-500"
+          style={{ maxWidth: isQuickPreview ? '400px' : (deviceWidths[device] || '1200px'), backgroundColor: (storeData && storeData.brand && storeData.brand.colors && storeData.brand.colors.background) || '#FFFFFF' }}
         >
           <PreviewHeader 
             brand={storeData.brand || {}} 
@@ -111,7 +122,7 @@ const StorePreview = ({
           <PreviewFooter 
             activeTab={activeTab} 
             onChange={setActiveTab} 
-            brandColors={storeData.brand?.colors || {}}
+            brandColors={storeData.brand && storeData.brand.colors ? storeData.brand.colors : {}}
           />
         </div>
       </div>

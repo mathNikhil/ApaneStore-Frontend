@@ -5,6 +5,7 @@ const Card = ({
   className = '',
   hover = false,
   variant = 'default',
+  ...rest
 }) => {
   const variantStyles = {
     default: 'bg-surface-container-lowest border border-outline-variant',
@@ -15,7 +16,7 @@ const Card = ({
   const hoverStyles = hover ? 'hover:shadow-md transition-shadow' : '';
 
   return (
-    <div className={`rounded-xl p-5 ${variantStyles[variant]} ${hoverStyles} ${className}`}>
+    <div className={`rounded-xl p-5 ${variantStyles[variant]} ${hoverStyles} ${className}`} {...rest}>
       {children}
     </div>
   );

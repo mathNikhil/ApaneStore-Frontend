@@ -31,6 +31,35 @@ const ImageGuidelineBadge = ({ size, format, maxSize, ratio }) => (
   </div>
 );
 
+// ✅ New brand color system (see design discussion): Tertiary and Element
+// removed (they were unused across the real storefront), Font split into
+// Header/Body, Secondary repurposed from "muted text" to "default/inactive
+// state of toggles, checkboxes, progress bars" (muted text now comes from
+// Font Body instead).
+const DEFAULT_BRAND_COLORS = {
+  primary: '#25D366',
+  secondary: '#E0E3E6',
+  background: '#FFFFFF',
+  button: '#25D366',
+  buttonLabel: '#005523',
+  fontHeader: '#191C1E',
+  fontBody: '#556067',
+};
+
+// Merges saved brand colors with the new defaults. Existing stores saved
+// before this change have the OLD shape (font/tertiary/element) — this
+// migrates `font` -> `fontHeader` so nobody's saved header color silently
+// resets, while tertiary/element are just left unused (harmless) rather
+// than requiring a data migration.
+const normalizeBrandColors = (saved) => {
+  if (!saved) return { ...DEFAULT_BRAND_COLORS };
+  return {
+    ...DEFAULT_BRAND_COLORS,
+    ...saved,
+    fontHeader: saved.fontHeader || saved.font || DEFAULT_BRAND_COLORS.fontHeader,
+  };
+};
+
 const Step1_BrandSetup = () => {
   const navigate = useNavigate();
   // ✅ FIX: Use `currentStoreId` and `tenantId` from context
@@ -43,13 +72,16 @@ const Step1_BrandSetup = () => {
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    // Only mark as ready once we have BOTH the store ID and tenant ID
-    if (currentStoreId && tenantId) {
+    // ✅ FIX: Only require tenantId, not currentStoreId. A brand-new store
+    // legitimately has no currentStoreId until the first save creates one —
+    // requiring it here meant new store creation could never become "ready"
+    // and Continue would be permanently blocked for first-time tenants.
+    if (tenantId) {
       setIsReady(true);
-      console.log('✅ Step 1 is ready! Store:', currentStoreId, 'Tenant:', tenantId);
+      console.log('✅ Step 1 is ready! Store:', currentStoreId || '(new)', 'Tenant:', tenantId);
     } else {
       setIsReady(false);
-      console.log('⏳ Step 1 waiting for IDs...');
+      console.log('⏳ Step 1 waiting for tenant ID...');
     }
   }, [currentStoreId, tenantId]);
 
@@ -57,16 +89,7 @@ const Step1_BrandSetup = () => {
   const [formData, setFormData] = useState({
     brandName: brandData.brandName || '',
     tagline: brandData.tagline || 'Fresh, Organic & Delivered to Your Doorstep',
-    colors: brandData.brandColors || {
-      primary: '#25D366',
-      secondary: '#111B21',
-      tertiary: '#008069',
-      element: '#F0F2F5',
-      background: '#FFFFFF',
-      button: '#25D366',
-      buttonLabel: '#005523',
-      font: '#191C1E',
-    },
+    colors: normalizeBrandColors(brandData.brandColors),
     typography: {
       headingFont: brandData.headingFont || 'Inter',
       bodyFont: brandData.bodyFont || 'Inter',
@@ -92,16 +115,7 @@ const Step1_BrandSetup = () => {
       setFormData({
         brandName: brandData.brandName || '',
         tagline: brandData.tagline || 'Fresh, Organic & Delivered to Your Doorstep',
-        colors: brandData.brandColors || {
-          primary: '#25D366',
-          secondary: '#111B21',
-          tertiary: '#008069',
-          element: '#F0F2F5',
-          background: '#FFFFFF',
-          button: '#25D366',
-          buttonLabel: '#005523',
-          font: '#191C1E',
-        },
+        colors: normalizeBrandColors(brandData.brandColors),
         typography: {
           headingFont: brandData.headingFont || 'Inter',
           bodyFont: brandData.bodyFont || 'Inter',
@@ -147,12 +161,13 @@ const Step1_BrandSetup = () => {
     return true;
   };
 
-  // ✅ FIXED: Handles the race condition properly
+  // ✅ FIXED: correct ordering for both new and existing stores
   const handleContinue = async () => {
     if (!validateStoreName()) return;
 
-    // 🛡️ CRITICAL FIX: Block the save if the IDs aren't ready
-    if (!isReady || !currentStoreId || !tenantId) {
+    // 🛡️ Only tenantId needs to be ready — currentStoreId is legitimately
+    // null for a brand-new store until the save below creates it.
+    if (!isReady || !tenantId) {
       setUploadError('Store is still loading. Please wait a moment and try again.');
       return;
     }
@@ -161,36 +176,13 @@ const Step1_BrandSetup = () => {
     setUploadError('');
 
     try {
-      // Only upload if a NEW file was actually selected.
-      if (logoData && logoData.file) {
-        console.log('📤 Uploading new logo to backend...');
-        const response = await imageService.uploadImage(
-          currentStoreId,
-          tenantId,
-          'LOGO',
-          logoData.file
-        );
-        
-        if (!response.success) {
-          setUploadError(`Logo upload failed: ${response.error}`);
-          setIsUploading(false);
-          return;
-        }
-        
-        setLogoPreview(response.data.url);
-        console.log('✅ Logo uploaded successfully.');
-      } else {
-        console.log('ℹ️ No new logo selected. Skipping upload.');
-      }
-
-      // ✅ FIX: This never actually called saveStore() before — it only
-      // uploaded the logo (a separate endpoint) and navigated straight to
-      // Step 2. brandName/tagline/brandColors/fonts were never persisted
-      // to the database from this button, only held in React context —
-      // which is why everything except brandName (also stored separately
-      // as a plain stores.store_name column) reset after logout/next-day.
+      // ✅ FIX: Save FIRST so a brand-new store actually gets created (and
+      // we get a real store ID back) before attempting anything that needs
+      // one, like an image upload. The previous order uploaded the logo
+      // first using currentStoreId — which is null for a new store, since
+      // nothing has created it yet — permanently blocking first-time setup.
       console.log('💾 Saving brand data to backend...');
-      const saveResult = await saveStore();
+      let saveResult = await saveStore();
 
       if (!saveResult.success) {
         setUploadError(saveResult.error || 'Failed to save. Please try again.');
@@ -199,10 +191,44 @@ const Step1_BrandSetup = () => {
       }
 
       const savedStoreId = saveResult.data?.data?.id || currentStoreId;
-      navigate(`/store-builder/step/2?storeId=${savedStoreId}`);
+
+      // Only upload if a NEW file was actually selected.
+      if (logoData && logoData.file) {
+        console.log('📤 Uploading new logo to backend...');
+        const response = await imageService.uploadImage(
+          savedStoreId,
+          tenantId,
+          'LOGO',
+          logoData.file
+        );
+
+        if (!response.success) {
+          setUploadError(`Logo upload failed: ${response.error}`);
+          setIsUploading(false);
+          return;
+        }
+
+        setLogoPreview(response.data.url);
+        console.log('✅ Logo uploaded successfully.');
+
+        // Save again to persist the new logo URL now that we have it.
+        // Passing savedStoreId explicitly avoids saveStore() mistaking this
+        // for another brand-new store — the closure's own currentStoreId
+        // won't reflect the ID we just got back from the save above.
+        saveResult = await saveStore(savedStoreId);
+        if (!saveResult.success) {
+          setUploadError(saveResult.error || 'Logo uploaded, but failed to save. Please try again.');
+          setIsUploading(false);
+          return;
+        }
+      } else {
+        console.log('ℹ️ No new logo selected. Skipping upload.');
+      }
+
+      navigate(`/store-builder/step/2?storeId=${saveResult.data?.data?.id || savedStoreId}`);
     } catch (error) {
-      console.error('❌ Logo upload error:', error);
-      setUploadError(error.response?.data?.error || error.message || 'Failed to upload logo');
+      console.error('❌ Save/upload error:', error);
+      setUploadError(error.response?.data?.error || error.message || 'Failed to save. Please try again.');
     } finally {
       setIsUploading(false);
     }
@@ -316,14 +342,13 @@ const Step1_BrandSetup = () => {
   };
 
   const colorOptions = [
-    { key: 'primary', label: 'Primary' },
-    { key: 'secondary', label: 'Secondary' },
-    { key: 'tertiary', label: 'Tertiary' },
-    { key: 'element', label: 'Element' },
-    { key: 'background', label: 'Background' },
-    { key: 'button', label: 'Button' },
-    { key: 'buttonLabel', label: 'Button Label' },
-    { key: 'font', label: 'Font' },
+    { key: 'primary', label: 'Primary', hint: 'Active/selected state (toggles, checkboxes, progress bar)' },
+    { key: 'secondary', label: 'Secondary', hint: 'Default/inactive state of the same elements' },
+    { key: 'background', label: 'Background', hint: 'Default background of every element' },
+    { key: 'button', label: 'Button', hint: 'Call-to-action button fill' },
+    { key: 'buttonLabel', label: 'Button Label', hint: 'Text on top of buttons' },
+    { key: 'fontHeader', label: 'Font Header', hint: 'All heading/title text' },
+    { key: 'fontBody', label: 'Font Body', hint: 'All body/paragraph text' },
   ];
 
   const allFonts = [...freeFonts, ...customFonts];
@@ -437,7 +462,7 @@ const Step1_BrandSetup = () => {
                       border: 'none',
                       outline: 'none',
                     }}
-                    title={`Click to change ${color.label} color`}
+                    title={color.hint}
                   />
                   <style>{`
                     input[type="color"]::-webkit-color-swatch-wrapper {
@@ -504,7 +529,7 @@ const Step1_BrandSetup = () => {
       </div>
 
       {/* Brand Preview */}
-      <Card className="relative overflow-hidden border border-[#bbcbb9]">
+      <Card className="relative overflow-hidden border border-[#bbcbb9]" style={{ backgroundColor: formData.colors.background }}>
         <div className="absolute top-3 right-3">
           <span className="font-label-md text-label-md bg-[#25D366]/20 text-[#005523] px-2 py-1 rounded text-xs">Live Preview</span>
         </div>
@@ -519,14 +544,14 @@ const Step1_BrandSetup = () => {
             )}
           </div>
           <div>
-            <h3 className="font-headline-md text-headline-md" style={{ color: formData.colors.font, fontFamily: formData.typography.headingFont }}>{formData.brandName || 'Your Brand Name'}</h3>
-            <p className="font-body-md text-body-md" style={{ color: formData.colors.secondary, fontFamily: formData.typography.bodyFont }}>{formData.tagline || 'Your tagline here'}</p>
+            <h3 className="font-headline-md text-headline-md" style={{ color: formData.colors.fontHeader, fontFamily: formData.typography.headingFont }}>{formData.brandName || 'Your Brand Name'}</h3>
+            <p className="font-body-md text-body-md" style={{ color: formData.colors.fontBody, fontFamily: formData.typography.bodyFont }}>{formData.tagline || 'Your tagline here'}</p>
           </div>
         </div>
+        {/* Progress bar demo: Primary = active/filled, Secondary = default/inactive track */}
         <div className="mt-4 flex gap-2">
-          <div className="h-1 flex-1 rounded-full" style={{ backgroundColor: formData.colors.primary }} />
+          <div className="h-1 flex-[2] rounded-full" style={{ backgroundColor: formData.colors.primary }} />
           <div className="h-1 flex-1 rounded-full" style={{ backgroundColor: formData.colors.secondary }} />
-          <div className="h-1 flex-1 rounded-full" style={{ backgroundColor: formData.colors.tertiary }} />
         </div>
         <div className="mt-3 pt-3 border-t border-[#e0e3e6]">
           <button className="w-full py-2 rounded-lg text-sm font-semibold transition-colors" style={{ backgroundColor: formData.colors.button, color: formData.colors.buttonLabel }}>Preview Button</button>

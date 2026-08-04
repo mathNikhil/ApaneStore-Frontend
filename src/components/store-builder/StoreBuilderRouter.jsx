@@ -10,6 +10,8 @@ import Step6_OrderTrackerConfig from './Step6_OrderTrackerConfig';
 import Step7_ProfileConfig from './Step7_ProfileConfig';
 import Step8_ReturnPolicy from './Step8_ReturnPolicy';
 import FinalStorePreview from './FinalStorePreview';
+import PublishFlowRouter from '../publish-flow/PublishFlowRouter';
+import PublishQuickConfirm from '../publish-flow/PublishQuickConfirm';
 
 const StoreBuilderRouter = () => {
     const [searchParams] = useSearchParams();
@@ -58,6 +60,8 @@ const StoreBuilderRouter = () => {
             <Route path="/step/7" element={<Step7_ProfileConfig />} />
             <Route path="/step/8" element={<Step8_ReturnPolicy />} />
             <Route path="/preview" element={<FinalStorePreview />} />
+            <Route path="/quick-publish" element={<PublishQuickConfirm />} />
+            <Route path="/publish/*" element={<PublishFlowRouter />} />
             <Route path="*" element={<Navigate to="/store-builder/step/1" replace />} />
         </Routes>
     );

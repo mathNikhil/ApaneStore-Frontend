@@ -84,52 +84,29 @@ const FinalStorePreview = () => {
 
     const primaryColor = builderData?.brand?.colors?.primary || '#25D366';
     const secondaryColor = builderData?.brand?.colors?.secondary || '#556067';
+    const backgroundColor = builderData?.brand?.colors?.background || '#FFFFFF';
 
     const handlePublish = async () => {
-        if (!window.confirm('Ready to publish your store? This will make it live at its public URL.')) return;
-        
         setPublishing(true);
         try {
+            // ✅ Ready to Publish no longer publishes directly — it now
+            // hands off to the domain/hosting/payment flow, which is the
+            // only place stores.status actually becomes 'published' (only
+            // after payment). This just makes sure the latest config is
+            // saved before handing off.
             const saveResult = await saveStore();
+
             if (!saveResult.success) {
                 alert('Failed to save store: ' + (saveResult.error || 'Please try again'));
                 setPublishing(false);
                 return;
             }
 
-            const id = currentStoreId || storeId || saveResult.data?.id;
-            if (!id) {
-                alert('Store ID not found. Please save your store first.');
-                setPublishing(false);
-                return;
-            }
-
-            const token = localStorage.getItem('token');
-            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002';
-            
-            const response = await fetch(`${API_URL}/api/stores/${id}`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ 
-                    status: 'active',
-                    published_at: new Date().toISOString()
-                })
-            });
-            
-            const result = await response.json();
-            
-            if (result.success) {
-                const subdomain = result?.data?.subdomain || builderData?.brand?.brandName?.toLowerCase().replace(/[^a-z0-9]/g, '-') || 'my-store';
-                setPublishedInfo({ subdomain });
-            } else {
-                alert('Failed to publish store: ' + (result.error || 'Please try again'));
-            }
+            const id = saveResult.data?.data?.id || currentStoreId || storeId;
+            navigate(`/store-builder/quick-publish?storeId=${id}`);
         } catch (e) {
-            console.error('Failed to publish store:', e);
-            alert('Publishing failed — check your connection and try again.');
+            console.error('Failed to save store before publishing:', e);
+            alert('Something went wrong — check your connection and try again.');
         } finally {
             setPublishing(false);
         }
@@ -141,7 +118,10 @@ const FinalStorePreview = () => {
             <div className="bg-white border-b px-4 py-3 flex flex-wrap items-center justify-between gap-2 flex-shrink-0">
                 <div className="flex items-center gap-4">
                     <button
-                        onClick={() => navigate('/store-builder/step/8')}
+                        onClick={() => {
+                            const id = currentStoreId || storeId;
+                            navigate(id ? `/store-builder/step/8?storeId=${id}` : '/store-builder/step/8');
+                        }}
                         className="text-[#556067] hover:bg-[#f2f4f7] p-2 rounded-lg transition-colors"
                     >
                         <span className="material-symbols-outlined">arrow_back</span>
@@ -176,11 +156,12 @@ const FinalStorePreview = () => {
                     builderData={builderData}
                     storeId={currentStoreId || storeId}
                     device={device}
-                    className="bg-white rounded-xl shadow-2xl overflow-hidden transition-all duration-500"
+                    className="rounded-xl shadow-2xl overflow-hidden transition-all duration-500"
                     style={{ 
                         width: '100%', 
                         maxWidth: deviceWidths[device] || '1200px', 
-                        height: deviceHeights[device] || '820px' 
+                        height: deviceHeights[device] || '820px',
+                        backgroundColor: backgroundColor
                     }}
                 />
             </div>
