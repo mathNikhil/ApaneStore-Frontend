@@ -44,9 +44,9 @@ const PublishDomainSelection = () => {
     }, [storeId]);
 
     const handleNext = () => {
-        setError('');
+        showError('');
         if (domainType === 'custom' && !customDomain.trim()) {
-            setError('Please enter your domain (e.g. example.com)');
+            showError('Please enter your domain (e.g. example.com)');
             return;
         }
 
@@ -79,9 +79,7 @@ const PublishDomainSelection = () => {
                 <h1 className="text-3xl font-bold text-[#191c1e] mb-2">Choose your store address</h1>
                 <p className="text-[#556067] mb-6">Decide how customers will find your store on the web. You can always change this later.</p>
 
-                {error && (
-                    <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>
-                )}
+                
 
                 {/* Free Subdomain */}
                 <button

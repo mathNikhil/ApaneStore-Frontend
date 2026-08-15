@@ -1,3 +1,4 @@
+import { showSuccess, showError } from '../../utils/toast';
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { storeAPI } from '../../services/api';
@@ -30,7 +31,7 @@ const PublishQuickConfirm = () => {
                 }
             } catch (err) {
                 console.error('Failed to load store:', err);
-                setError('Failed to load store details.');
+                showError('Failed to load store details.');
             } finally {
                 setLoading(false);
             }
@@ -40,7 +41,7 @@ const PublishQuickConfirm = () => {
 
     const handleConfirmPublish = async () => {
         setPublishing(true);
-        setError('');
+        showError('');
         try {
             const result = await storeAPI.update(storeId, {
                 status: 'published',
@@ -129,7 +130,7 @@ const PublishQuickConfirm = () => {
                         <span className="font-mono text-sm text-[#006d2f]">{store?.subdomain}.aapnaestore.com</span>
                     </div>
 
-                    {error && <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>}
+                    
 
                     <p className="text-xs text-[#8e9eab] mb-6">
                         Note: custom domain and hosting options aren't live yet — every store publishes on a free subdomain for now.

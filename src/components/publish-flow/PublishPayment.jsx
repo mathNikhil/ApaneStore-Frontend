@@ -94,7 +94,7 @@ const PublishPayment = () => {
                 }
             } catch (err) {
                 console.error('Failed to load payment info:', err);
-                setError('Failed to load payment details. Please go back and try again.');
+                showError('Failed to load payment details. Please go back and try again.');
             } finally {
                 setLoading(false);
             }
@@ -106,11 +106,11 @@ const PublishPayment = () => {
 
     const handlePay = async () => {
         if (!termsAccepted) {
-            setError('Please read and accept the Terms & Conditions to continue.');
+            showError('Please read and accept the Terms & Conditions to continue.');
             return;
         }
         setPaying(true);
-        setError('');
+        showError('');
         try {
             // Simulated — no real payment gateway yet.
             await new Promise((resolve) => setTimeout(resolve, 1500));
@@ -129,7 +129,7 @@ const PublishPayment = () => {
 
     const handleTrial = async () => {
         setTrialActivating(true);
-        setError('');
+        showError('');
         try {
             const token = localStorage.getItem('token');
             const result = await fetch(
@@ -191,7 +191,7 @@ const PublishPayment = () => {
                 <h1 className="text-2xl font-bold text-[#191c1e] mb-1">Complete Your Payment</h1>
                 <p className="text-[#556067] mb-6">Choose how long you'd like to launch your store for</p>
 
-                {error && <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>}
+                
 
                 {/* Trial Card — shown first, only if eligible */}
                 {trialEligible && trialPlan && (

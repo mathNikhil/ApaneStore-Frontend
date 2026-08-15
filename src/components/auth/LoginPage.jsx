@@ -1,3 +1,4 @@
+import { showSuccess, showError } from '../../utils/toast';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import TopAppBar from '../Common/TopAppBar';
@@ -17,12 +18,12 @@ const LoginPage = () => {
     e.preventDefault();
     
     if (mobile.length !== 10) {
-      setError('Please enter a valid 10-digit mobile number');
+      showError('Please enter a valid 10-digit mobile number');
       return;
     }
 
     setLoading(true);
-    setError('');
+    showError('');
 
     try {
       const result = await sendOTP(mobile, 'login');
@@ -33,7 +34,7 @@ const LoginPage = () => {
       }
       navigate('/verify-otp', { state: { mobile, devOtp: result.data?.test_otp } });
     } catch (err) {
-      setError('Failed to send OTP');
+      showError('Failed to send OTP');
     } finally {
       setLoading(false);
     }

@@ -1,3 +1,4 @@
+import { showSuccess, showError } from '../../utils/toast';
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import TopAppBar from '../Common/TopAppBar';
@@ -36,7 +37,7 @@ const VerifyOTPPage = () => {
     const newOtp = [...otp];
     newOtp[index] = value;
     setOtp(newOtp);
-    setError('');
+    showError('');
 
     if (value && index < 5) {
       inputRefs.current[index + 1].focus();
@@ -67,12 +68,12 @@ const VerifyOTPPage = () => {
   const handleVerify = async () => {
     const otpString = otp.join('');
     if (otpString.length !== 6) {
-      setError('Please enter all 6 digits');
+      showError('Please enter all 6 digits');
       return;
     }
 
     setLoading(true);
-    setError('');
+    showError('');
     try {
       const result = await loginWithOTP(mobile, otpString, 'login');
       if (!result.success) {
@@ -82,7 +83,7 @@ const VerifyOTPPage = () => {
       }
       navigate('/dashboard');
     } catch (err) {
-      setError('Invalid OTP. Please try again.');
+      showError('Invalid OTP. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -91,7 +92,7 @@ const VerifyOTPPage = () => {
   const handleResend = async () => {
     setTimeLeft(30);
     setCanResend(false);
-    setError('');
+    showError('');
     setDevOtp(null);
     const result = await sendOTP(mobile, 'login');
     if (result.success) {

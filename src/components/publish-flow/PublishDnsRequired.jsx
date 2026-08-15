@@ -1,3 +1,4 @@
+import { showSuccess, showError } from '../../utils/toast';
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { storeAPI } from '../../services/api';
@@ -32,7 +33,7 @@ const PublishDnsRequired = () => {
 
     const handleVerify = async () => {
         setVerifying(true);
-        setError('');
+        showError('');
         try {
             // Simulated — no real DNS lookup yet, per the design discussion.
             await new Promise((resolve) => setTimeout(resolve, 1200));
@@ -62,7 +63,7 @@ const PublishDnsRequired = () => {
                 <h1 className="text-xl font-bold text-[#191c1e] mb-1">DNS Configuration Required</h1>
                 <p className="text-[#556067] mb-6 text-sm">Add these records at your domain registrar to connect your domain.</p>
 
-                {error && <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>}
+                
 
                 <div className="bg-white rounded-2xl border border-[#e0e3e6] p-5 mb-4">
                     <div className="flex items-center gap-3 mb-3">

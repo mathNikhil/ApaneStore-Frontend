@@ -14,7 +14,7 @@ const PublishHostingChoice = () => {
     const [error, setError] = useState('');
 
     const handleContinue = async () => {
-        setError('');
+        showError('');
 
         // ✅ Works for both domain types now — subdomain tenants can also
         // choose their own hosting, not just ApnaEstore's.
@@ -72,7 +72,7 @@ const PublishHostingChoice = () => {
                 <h1 className="text-3xl font-bold text-[#191c1e] mb-2">Choose your hosting</h1>
                 <p className="text-[#556067] mb-6">Decide who manages the server your store runs on. You can always change this later.</p>
 
-                {error && <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>}
+                
 
                 {/* ApnaEstore Hosting — same card language as the domain
                     selection screen: white background always, radio circle

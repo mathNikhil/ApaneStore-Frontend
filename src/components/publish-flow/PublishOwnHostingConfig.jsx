@@ -1,3 +1,4 @@
+import { showSuccess, showError } from '../../utils/toast';
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { storeAPI } from '../../services/api';
@@ -14,9 +15,9 @@ const PublishOwnHostingConfig = () => {
     const [error, setError] = useState('');
 
     const handleContinue = async () => {
-        setError('');
+        showError('');
         if (!serverIp.trim()) {
-            setError('Please enter your server IP address');
+            showError('Please enter your server IP address');
             return;
         }
 
@@ -66,7 +67,7 @@ const PublishOwnHostingConfig = () => {
                 <h1 className="text-2xl font-bold text-[#191c1e] mb-2">Configure Your Own Hosting</h1>
                 <p className="text-[#556067] mb-6">Enter your server details where your store will be hosted</p>
 
-                {error && <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>}
+                
 
                 <div className="bg-white rounded-2xl border border-[#e0e3e6] p-5 mb-4">
                     <h3 className="font-semibold text-[#191c1e] mb-4 flex items-center gap-2">

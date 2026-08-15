@@ -1,3 +1,4 @@
+import { showSuccess, showError } from '../../utils/toast';
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../Context/AuthContext';
 import { tenantAPI } from '../../services/api';
@@ -42,7 +43,7 @@ const ProfilePage = () => {
         if (token) {
             fetchProfile();
         } else {
-            setError('No authentication token found. Please login again.');
+            showError('No authentication token found. Please login again.');
             setLoading(false);
         }
     }, [token]);
@@ -107,11 +108,7 @@ const ProfilePage = () => {
                         ✅ {success}
                     </div>
                 )}
-                {error && (
-                    <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-                        ❌ {error}
-                    </div>
-                )}
+                
 
                 {/* Business Profile Card */}
                 <Card>
