@@ -1,3 +1,4 @@
+import { showSuccess, showError } from '../../utils/toast';
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useStoreBuilder } from '../../Context/StoreBuilderContext';
@@ -97,7 +98,7 @@ const FinalStorePreview = () => {
             const saveResult = await saveStore();
 
             if (!saveResult.success) {
-                alert('Failed to save store: ' + (saveResult.error || 'Please try again'));
+                showError('Failed to save store: ' + (saveResult.error || 'Please try again'));
                 setPublishing(false);
                 return;
             }
@@ -106,7 +107,7 @@ const FinalStorePreview = () => {
             navigate(`/store-builder/publish/domain?storeId=${id}`);
         } catch (e) {
             console.error('Failed to save store before publishing:', e);
-            alert('Something went wrong — check your connection and try again.');
+            showError('Something went wrong — check your connection and try again.');
         } finally {
             setPublishing(false);
         }

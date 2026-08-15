@@ -1,3 +1,4 @@
+import { showSuccess, showError } from '../../../../utils/toast';
 import React, { useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 
@@ -54,7 +55,7 @@ const PreviewCartTab = ({ data, updateQuantity, removeFromCart, placeOrder, onGo
 
   const handleCheckout = () => {
     if (items.length === 0) {
-      alert('Your cart is empty');
+      showError('Your cart is empty');
       return;
     }
     if (!isAuthenticated) {
@@ -62,7 +63,7 @@ const PreviewCartTab = ({ data, updateQuantity, removeFromCart, placeOrder, onGo
       return;
     }
     if (!currentAddress) {
-      alert('Please add a delivery address from the Profile tab before checking out');
+      showError('Please add a delivery address from the Profile tab before checking out');
       return;
     }
     setShowCheckout(true);
@@ -70,15 +71,15 @@ const PreviewCartTab = ({ data, updateQuantity, removeFromCart, placeOrder, onGo
 
   const handlePlaceOrder = async () => {
     if (!currentAddress) {
-      alert('Please select a delivery address');
+      showError('Please select a delivery address');
       return;
     }
     if (paymentMethods.length > 0 && !selectedPayment) {
-      alert('Please select a payment method');
+      showError('Please select a payment method');
       return;
     }
     if (selectedPayment === 'upi' && !upiIdConfirmed) {
-      alert('Please enter your UPI ID and tap "Pay" first');
+      showError('Please enter your UPI ID and tap "Pay" first');
       return;
     }
 
@@ -215,7 +216,7 @@ const PreviewCartTab = ({ data, updateQuantity, removeFromCart, placeOrder, onGo
                   <button
                     onClick={() => {
                       if (!customerUpiId.trim()) {
-                        alert('Please enter your UPI ID');
+                        showError('Please enter your UPI ID');
                         return;
                       }
                       setUpiIdConfirmed(true);

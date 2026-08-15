@@ -1,3 +1,4 @@
+import { showSuccess, showError } from '../../utils/toast';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -217,13 +218,13 @@ const DashboardReturnUser = ({ stores = [], subscriptions = {}, onStoreUpdate })
                         });
                         const result = await res.json();
                         if (result.success) {
-                            alert('Store unpublished successfully.');
+                            showError('Store unpublished successfully.');
                             window.location.reload();
                         } else {
                             alert(result.error || 'Failed to unpublish store');
                         }
                     } catch (e) {
-                        alert('Failed to unpublish store. Please try again.');
+                        showError('Failed to unpublish store. Please try again.');
                     }
                 },
                 className: 'bg-orange-100 text-orange-700 hover:bg-orange-200'
@@ -248,7 +249,7 @@ const DashboardReturnUser = ({ stores = [], subscriptions = {}, onStoreUpdate })
     // expects (?store=<subdomain>, matching the Storefront's own pattern).
     const goToStoreAdmin = (subdomain) => {
         if (!subdomain) {
-            alert('This store needs a subdomain before its admin panel can be opened.');
+            showError('This store needs a subdomain before its admin panel can be opened.');
             return;
         }
         window.open(`${STORE_ADMIN_URL}/login?store=${subdomain}`, '_blank');
@@ -291,7 +292,7 @@ const DashboardReturnUser = ({ stores = [], subscriptions = {}, onStoreUpdate })
             }
         } catch (err) {
             console.error('Failed to generate admin password:', err);
-            alert('Failed to generate password. Please try again.');
+            showError('Failed to generate password. Please try again.');
         } finally {
             setPasswordLoading(prev => ({ ...prev, [storeId]: false }));
         }

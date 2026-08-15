@@ -1,4 +1,5 @@
 import React from 'react';
+import { Toaster } from 'react-hot-toast';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './Context/AuthContext';
 import { StoreBuilderProvider } from './Context/StoreBuilderContext';
@@ -31,6 +32,7 @@ import './styles/globals.css';
 function App() {
   return (
     <AuthProvider>
+      <Toaster position="top-center" toastOptions={{ duration: 4000, style: { borderRadius: '10px', fontWeight: '500', fontSize: '14px' }, success: { style: { background: '#006d2f', color: '#fff' } }, error: { style: { background: '#ba1a1a', color: '#fff' } } }} />
       <StoreBuilderProvider>
         <BrowserRouter>
           <Routes>

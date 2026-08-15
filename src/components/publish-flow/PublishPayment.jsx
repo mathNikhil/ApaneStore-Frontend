@@ -1,3 +1,4 @@
+import { showSuccess, showError } from '../../utils/toast';
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { storeAPI, pricingAPI, termsAPI } from '../../services/api';

@@ -1,3 +1,4 @@
+import { showSuccess, showError } from '../../utils/toast';
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStoreBuilder } from '../../Context/StoreBuilderContext';
@@ -57,11 +58,11 @@ const Step8_ReturnPolicy = () => {
                 const storeId = result.data?.id || localStorage.getItem('currentStoreId');
                 navigate(`/store-builder/preview?storeId=${storeId}`);
             } else {
-                alert('Failed to save: ' + (result.error || 'Please try again'));
+                showError(result.error || 'Failed to save. Please try again.');
             }
         } catch (error) {
             console.error('Save error:', error);
-            alert('Failed to save. Please try again.');
+            showError('Failed to save. Please try again.');
         } finally {
             setSaving(false);
         }

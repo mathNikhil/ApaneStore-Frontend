@@ -1,3 +1,4 @@
+import { showSuccess, showError } from '../../utils/toast';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStoreBuilder } from '../../Context/StoreBuilderContext';
@@ -58,7 +59,7 @@ const StoreBuilderLayout = ({
             if (result.success) {
                 navigate(withStoreId(`/store-builder/step/${currentStep + 1}`, result.data?.data?.id));
             } else {
-                alert('Failed to save: ' + (result.error || 'Please try again'));
+                showError(result.error || 'Failed to save. Please try again.');
             }
         } else {
             setSaving(true);
@@ -68,7 +69,7 @@ const StoreBuilderLayout = ({
             if (result.success) {
                 navigate(withStoreId('/store-builder/preview', result.data?.data?.id));
             } else {
-                alert('Failed to save: ' + (result.error || 'Please try again'));
+                showError(result.error || 'Failed to save. Please try again.');
             }
         }
     };
@@ -84,7 +85,7 @@ const StoreBuilderLayout = ({
                 state: { fromBuilder: true } 
             });
         } else {
-            alert('Failed to save: ' + (result.error || 'Please try again'));
+            showError(result.error || 'Failed to save. Please try again.');
         }
     };
 

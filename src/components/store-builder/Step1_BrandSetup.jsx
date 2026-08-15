@@ -1,3 +1,4 @@
+import { showSuccess, showError } from '../../utils/toast';
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStoreBuilder } from '../../Context/StoreBuilderContext';
@@ -363,6 +364,12 @@ const Step1_BrandSetup = () => {
       onClose={handleClose}
       isUploading={isUploading}
     >
+      {uploadError && (
+        <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-lg text-sm mb-4">
+          ⚠️ {uploadError}
+        </div>
+      )}
+
       {/* Brand Name */}
       <div className="space-y-4 mb-6">
         <label className="font-label-md text-label-md text-[#3c4a3d] uppercase tracking-wider text-xs">
@@ -558,11 +565,6 @@ const Step1_BrandSetup = () => {
         </div>
       </Card>
       
-      {uploadError && (
-        <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-lg text-sm">
-          ⚠️ {uploadError}
-        </div>
-      )}
     </StoreBuilderLayout>
   );
 };

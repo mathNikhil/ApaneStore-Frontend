@@ -1,3 +1,4 @@
+import { showSuccess, showError } from '../../../../utils/toast';
 import React, { useState } from 'react';
 
 // Minimal inline brand icons — avoids depending on Material Symbols, which
@@ -179,7 +180,7 @@ const PreviewProfileTab = ({
 
   const handleDeleteAddress = (addressId) => {
     if (addressBook.length <= 1) {
-      alert('You need at least one address');
+      showError('You need at least one address');
       return;
     }
     if (window.confirm('Are you sure you want to delete this address?')) {

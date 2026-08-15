@@ -1,3 +1,4 @@
+import { showSuccess, showError } from '../../../../utils/toast';
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStoreBuilder } from '../../Context/StoreBuilderContext';
@@ -428,7 +429,7 @@ const Step2_ProductConfig = () => {
   const openQuickPreview = () => {
     const allProducts = categories.flatMap(cat => cat.products);
     if (allProducts.length === 0) {
-      alert('Please add at least one product to preview');
+      showError('Please add at least one product to preview');
       return;
     }
     setShowQuickPreview(true);

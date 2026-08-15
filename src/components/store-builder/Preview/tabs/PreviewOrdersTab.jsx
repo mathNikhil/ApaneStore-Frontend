@@ -1,3 +1,4 @@
+import { showSuccess, showError } from '../../../../utils/toast';
 import React, { useState, useEffect } from 'react';
 import { getOrderStatusColor, getOrderStatusIcon } from '../utils/mockOrders';
 import { customerReturnAPI } from '../../../../services/api';
@@ -125,11 +126,11 @@ const PreviewOrdersTab = ({ data, cancelOrder, addToCart, onGoToCart, storeId, c
     if (!selectedOrder || !storeId || !customerToken) return;
 
     if (returnConfig.requireReason && !returnReason) {
-      alert('Please select a return reason');
+      showError('Please select a return reason');
       return;
     }
     if (returnConfig.requirePhotos && returnPhotos.length === 0) {
-      alert('Please upload at least one photo');
+      showError('Please upload at least one photo');
       return;
     }
 
@@ -184,7 +185,7 @@ const PreviewOrdersTab = ({ data, cancelOrder, addToCart, onGoToCart, storeId, c
   // shares their own courier + tracking number.
   const handleSubmitShipping = async function(orderId) {
     if (!shippingCourier.trim() || !shippingTracking.trim()) {
-      alert('Please enter both courier name and tracking number');
+      showError('Please enter both courier name and tracking number');
       return;
     }
     setSubmittingShipping(true);
