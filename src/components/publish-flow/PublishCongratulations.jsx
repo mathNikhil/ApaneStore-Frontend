@@ -25,7 +25,7 @@ const PublishCongratulations = () => {
                 if (storeResult.success) {
                     const subdomain = storeResult.data.subdomain;
                     const cfg = flowResult.success ? flowResult.data.domainConfig : null;
-                    const address = cfg && cfg.domain_type === 'custom' ? cfg.custom_domain : `${subdomain}.aapnaestore.com (local: ${STOREFRONT_URL}/?store=${subdomain})`;
+                    const address = cfg && cfg.domain_type === 'custom' ? cfg.custom_domain : `${subdomain}.aapnaestore.com`;
                     setStoreUrl(address);
                     setAdminUrl(`${STORE_ADMIN_URL}/login?store=${subdomain}`);
                 }

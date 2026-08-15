@@ -10,8 +10,8 @@ const resolvePlanKey = (domainType, hostingType) => {
     return null;
 };
 
-const CYCLE_LABELS = { monthly: '30 days', quarterly: '90 days', annual: '365 days' };
-const CYCLE_ORDER = ['monthly', 'quarterly', 'annual'];
+const CYCLE_LABELS = { '30days': '30 Days', '90days': '90 Days', '365days': '365 Days', monthly: '30 Days', quarterly: '90 Days', annual: '365 Days' };
+const CYCLE_ORDER = ['30days', '90days', '365days', 'monthly', 'quarterly', 'annual'];
 
 const PublishPayment = () => {
     const [searchParams] = useSearchParams();
@@ -30,6 +30,9 @@ const PublishPayment = () => {
     const [termsAccepted, setTermsAccepted] = useState(false);
     const [termsExpanded, setTermsExpanded] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [trialEligible, setTrialEligible] = useState(false);
+    const [trialPlan, setTrialPlan] = useState(null);
+    const [trialActivating, setTrialActivating] = useState(false);
     const [paying, setPaying] = useState(false);
     const [error, setError] = useState('');
 
@@ -56,13 +59,37 @@ const PublishPayment = () => {
 
                 if (pricingResult.success) {
                     const planKey = resolvePlanKey(cfg.domain_type, cfg.hosting_type);
-                    const matches = pricingResult.data
+                    const allMatches = pricingResult.data
                         .filter((p) => p.plan_key === planKey && p.is_active)
                         .sort((a, b) => CYCLE_ORDER.indexOf(a.billing_cycle) - CYCLE_ORDER.indexOf(b.billing_cycle));
+                    // Deduplicate by label — old keys (30days/90days/365days) and
+                    // new keys (monthly/quarterly/annual) map to the same labels,
+                    // so keep only the first of each label to avoid showing duplicates.
+                    const seen = new Set();
+                    const matches = allMatches.filter((p) => {
+                        const label = CYCLE_LABELS[p.billing_cycle] || p.billing_cycle;
+                        if (seen.has(label)) return false;
+                        seen.add(label);
+                        return true;
+                    });
                     setAvailablePlans(matches);
                     // Default to annual if available, otherwise whatever exists first
                     const hasAnnual = matches.some((p) => p.billing_cycle === 'annual');
                     setSelectedCycle(hasAnnual ? 'annual' : matches[0]?.billing_cycle || 'annual');
+                }
+                // Check trial eligibility (Level 1: tenant default, Level 2: store-specific)
+                try {
+                    const token = localStorage.getItem('token');
+                    const trialRes = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.aapnaestore.com'}/api/stores/trial/eligibility?storeId=${storeId}`, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    const trialData = await trialRes.json();
+                    if (trialData.success && trialData.data.eligible) {
+                        setTrialEligible(true);
+                        setTrialPlan(trialData.data.trialPlan);
+                    }
+                } catch (e) {
+                    console.warn('Trial eligibility check failed:', e);
                 }
             } catch (err) {
                 console.error('Failed to load payment info:', err);
@@ -96,6 +123,28 @@ const PublishPayment = () => {
             setError(err.message || 'Payment failed. Please try again.');
         } finally {
             setPaying(false);
+        }
+    };
+
+    const handleTrial = async () => {
+        setTrialActivating(true);
+        setError('');
+        try {
+            const token = localStorage.getItem('token');
+            const result = await fetch(
+                `${import.meta.env.VITE_API_URL || 'https://api.aapnaestore.com'}/api/stores/${storeId}/trial/activate`,
+                { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
+            );
+            const data = await result.json();
+            if (data.success) {
+                navigate(`/store-builder/publish/success?storeId=${storeId}`);
+            } else {
+                setError(data.error || 'Failed to activate trial. Please try again.');
+            }
+        } catch (err) {
+            setError(err.message || 'Failed to activate trial.');
+        } finally {
+            setTrialActivating(false);
         }
     };
 
@@ -142,6 +191,29 @@ const PublishPayment = () => {
                 <p className="text-[#556067] mb-6">Choose how long you'd like to launch your store for</p>
 
                 {error && <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>}
+
+                {/* Trial Card — shown first, only if eligible */}
+                {trialEligible && trialPlan && (
+                    <div className="mb-4 p-5 rounded-2xl border-2 border-[#e0e3e6] bg-white">
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-sm font-bold text-[#191c1e]">{trialPlan.display_name || `${trialPlan.validity_days} Day Free Trial`}</span>
+                                <span className="text-xs font-semibold text-white bg-[#006d2f] px-2 py-0.5 rounded-full">FREE</span>
+                            </div>
+                            <span className="text-lg font-bold text-[#006d2f]">₹0</span>
+                        </div>
+                        <p className="text-xs text-[#556067] mb-3">
+                            Test your live store — payments, orders, delivery flow. No credit card needed.
+                        </p>
+                        <button
+                            onClick={handleTrial}
+                            disabled={trialActivating}
+                            className="w-full py-2.5 bg-[#006d2f] text-white font-semibold rounded-xl hover:brightness-110 transition-all disabled:opacity-50 text-sm"
+                        >
+                            {trialActivating ? 'Activating...' : `Start ${trialPlan.validity_days}-Day Free Trial`}
+                        </button>
+                    </div>
+                )}
 
                 {availablePlans.length > 1 && (
                     <div className="mb-4">
@@ -273,7 +345,7 @@ const PublishPayment = () => {
                     disabled={paying || !termsAccepted}
                     className="px-8 py-3 bg-[#006d2f] text-white font-semibold rounded-xl hover:brightness-110 transition-all disabled:opacity-50 flex items-center gap-2"
                 >
-                    {paying ? 'Processing...' : "I've Paid"}
+                    {paying ? 'Processing...' : 'Confirm & Launch Store'}
                     <span className="material-symbols-outlined text-base">arrow_forward</span>
                 </button>
             </div>

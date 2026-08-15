@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useStoreBuilder } from '../../context/StoreBuilderContext';
-import TopAppBar from '../common/TopAppBar';
-import ProgressBar from '../common/ProgressBar';
+import { useStoreBuilder } from '../../Context/StoreBuilderContext';
+import TopAppBar from '../Common/TopAppBar';
+import ProgressBar from '../Common/ProgressBar';
 
 const StoreBuilderLayout = ({
     children,

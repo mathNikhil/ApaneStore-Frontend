@@ -53,11 +53,11 @@ const PublishDomainSelection = () => {
         // choice next — tenants can bring their own server either way.
         // Nothing is saved to the backend yet; the hosting screens save
         // the full domain+hosting config together once hosting is picked.
-        sessionStorage.setItem('publishFlow_domainType', domainType);
+        localStorage.setItem('publishFlow_domainType', domainType);
         if (domainType === 'custom') {
-            sessionStorage.setItem('publishFlow_customDomain', customDomain.trim());
+            localStorage.setItem('publishFlow_customDomain', customDomain.trim());
         } else {
-            sessionStorage.removeItem('publishFlow_customDomain');
+            localStorage.removeItem('publishFlow_customDomain');
         }
         navigate(`/store-builder/publish/hosting?storeId=${storeId}`);
     };

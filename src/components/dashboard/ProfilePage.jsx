@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../Context/AuthContext';
 import { tenantAPI } from '../../services/api';
-import TopAppBar from '../common/TopAppBar';
-import BottomNav from '../common/BottomNav';
-import Card from '../common/Card';
+import TopAppBar from '../Common/TopAppBar';
+import BottomNav from '../Common/BottomNav';
+import Card from '../Common/Card';
 
 const ProfilePage = () => {
     const { token, user, logout } = useAuth();

@@ -7,6 +7,7 @@ const DashboardPage = () => {
     const [hasStores, setHasStores] = useState(false);
     const [loading, setLoading] = useState(true);
     const [stores, setStores] = useState([]);
+    const [subscriptions, setSubscriptions] = useState({});
     const [error, setError] = useState(null);
 
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002';
@@ -33,8 +34,26 @@ const DashboardPage = () => {
             });
 
             if (response.data?.success && response.data?.data) {
-                setStores(response.data.data);
-                setHasStores(response.data.data.length > 0);
+                const storeList = response.data.data;
+                // Fetch subscription status for published stores
+                const subs = {};
+                for (const store of storeList) {
+                    if (store.status === 'published' || store.status === 'active') {
+                        try {
+                            const subRes = await axios.get(`${API_URL}/api/stores/${store.id}/subscription-status`, {
+                                headers: { 'Authorization': `Bearer ${token}` }
+                            });
+                            if (subRes.data?.success && subRes.data?.data) {
+                                subs[store.id] = subRes.data.data;
+                            }
+                        } catch (e) {
+                            console.error('Failed to fetch subscription for store', store.id);
+                        }
+                    }
+                }
+                setSubscriptions(subs);
+                setStores(storeList);
+                setHasStores(storeList.length > 0);
             } else {
                 setHasStores(false);
             }
@@ -96,7 +115,7 @@ const DashboardPage = () => {
     }
 
     if (hasStores) {
-        return <DashboardReturnUser stores={stores} onStoreUpdate={handleStoreUpdate} />;
+        return <DashboardReturnUser stores={stores} subscriptions={subscriptions} onStoreUpdate={handleStoreUpdate} />;
     }
 
     return <DashboardFirstTime />;

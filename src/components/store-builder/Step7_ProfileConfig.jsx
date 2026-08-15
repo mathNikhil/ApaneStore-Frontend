@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useStoreBuilder } from '../../context/StoreBuilderContext';
+import { useStoreBuilder } from '../../Context/StoreBuilderContext';
 import StoreBuilderLayout from './StoreBuilderLayout';
-import Card from '../common/Card';
-import Input from '../common/Input';
+import Card from '../Common/Card';
+import Input from '../Common/Input';
 
 const Step7_ProfileConfig = () => {
   const navigate = useNavigate();

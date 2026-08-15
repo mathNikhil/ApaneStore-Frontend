@@ -12,6 +12,15 @@ import Step8_ReturnPolicy from './Step8_ReturnPolicy';
 import FinalStorePreview from './FinalStorePreview';
 import PublishFlowRouter from '../publish-flow/PublishFlowRouter';
 import PublishQuickConfirm from '../publish-flow/PublishQuickConfirm';
+import PublishDomainSelection from '../publish-flow/PublishDomainSelection';
+import PublishHostingChoice from '../publish-flow/PublishHostingChoice';
+import PublishHostingSuccess from '../publish-flow/PublishHostingSuccess';
+import PublishOwnHostingConfig from '../publish-flow/PublishOwnHostingConfig';
+import PublishDnsRequired from '../publish-flow/PublishDnsRequired';
+import PublishDnsSuccess from '../publish-flow/PublishDnsSuccess';
+import PublishPayment from '../publish-flow/PublishPayment';
+import PublishCongratulations from '../publish-flow/PublishCongratulations';
+import PublishAlreadyLive from '../publish-flow/PublishAlreadyLive';
 
 const StoreBuilderRouter = () => {
     const [searchParams] = useSearchParams();
@@ -60,7 +69,18 @@ const StoreBuilderRouter = () => {
             <Route path="/step/7" element={<Step7_ProfileConfig />} />
             <Route path="/step/8" element={<Step8_ReturnPolicy />} />
             <Route path="/preview" element={<FinalStorePreview />} />
-            <Route path="/publish/*" element={<PublishFlowRouter />} />
+            <Route path="/publish/*" element={<PublishFlowRouter />}>
+                <Route path="domain" element={<PublishDomainSelection />} />
+                <Route path="hosting" element={<PublishHostingChoice />} />
+                <Route path="hosting-success" element={<PublishHostingSuccess />} />
+                <Route path="own-hosting" element={<PublishOwnHostingConfig />} />
+                <Route path="dns" element={<PublishDnsRequired />} />
+                <Route path="dns-success" element={<PublishDnsSuccess />} />
+                <Route path="payment" element={<PublishPayment />} />
+                <Route path="success" element={<PublishCongratulations />} />
+                <Route path="already-live" element={<PublishAlreadyLive />} />
+                <Route path="quick-confirm" element={<PublishQuickConfirm />} />
+            </Route>
             <Route path="*" element={<Navigate to="/store-builder/step/1" replace />} />
         </Routes>
     );

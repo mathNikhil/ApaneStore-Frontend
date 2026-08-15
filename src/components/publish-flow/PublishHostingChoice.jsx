@@ -17,12 +17,12 @@ const PublishHostingChoice = () => {
 
         // ✅ Works for both domain types now — subdomain tenants can also
         // choose their own hosting, not just ApnaEstore's.
-        const domainType = sessionStorage.getItem('publishFlow_domainType');
+        const domainType = localStorage.getItem('publishFlow_domainType');
         if (!domainType) {
             navigate(`/store-builder/publish/domain?storeId=${storeId}`);
             return;
         }
-        const customDomain = domainType === 'custom' ? sessionStorage.getItem('publishFlow_customDomain') : null;
+        const customDomain = domainType === 'custom' ? localStorage.getItem('publishFlow_customDomain') : null;
         if (domainType === 'custom' && !customDomain) {
             navigate(`/store-builder/publish/domain?storeId=${storeId}`);
             return;

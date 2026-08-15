@@ -114,7 +114,7 @@ export const AuthProvider = ({ children }) => {
         sendOTP,
         register,
         logout,
-        isAuthenticated: !!token && !!user,
+        isAuthenticated: !!token && (!!user || !!localStorage.getItem('user')),
     };
 
     return (

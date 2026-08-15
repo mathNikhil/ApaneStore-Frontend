@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import TopAppBar from '../common/TopAppBar';
-import Button from '../common/Button';
-import BottomNav from '../common/BottomNav';
+import TopAppBar from '../Common/TopAppBar';
+import Button from '../Common/Button';
+import BottomNav from '../Common/BottomNav';
 import logo from '../../assets/images/Apnaestore-Logo.png';
 import { storeAPI } from '../../services/api';
 
-const DashboardReturnUser = ({ stores = [], onStoreUpdate }) => {
+const DashboardReturnUser = ({ stores = [], subscriptions = {}, onStoreUpdate }) => {
     const navigate = useNavigate();
     const [updating, setUpdating] = useState(null);
     const [error, setError] = useState(null);
@@ -131,6 +131,33 @@ const DashboardReturnUser = ({ stores = [], onStoreUpdate }) => {
     };
 
     // ✅ Get status badge styling
+    const getSubscriptionBadge = (store) => {
+        const sub = subscriptions[store.id];
+        if (!sub) return null;
+        
+        if (sub.displayStatus === 'grace') {
+            return { 
+                label: `🚨 Grace period: ${sub.graceDaysRemaining} days left to renew`,
+                style: 'bg-red-100 text-red-700 border border-red-300'
+            };
+        } else if (sub.displayStatus === 'expiring_soon') {
+            return {
+                label: `🔴 ${sub.daysRemaining} days remaining — renew now!`,
+                style: 'bg-orange-100 text-orange-700 border border-orange-300'
+            };
+        } else if (sub.displayStatus === 'expiring') {
+            return {
+                label: `⚠️ ${sub.daysRemaining} days remaining`,
+                style: 'bg-yellow-100 text-yellow-700 border border-yellow-300'
+            };
+        } else {
+            return {
+                label: `✅ Active — expires ${sub.validUntilFormatted}`,
+                style: 'bg-green-100 text-green-700 border border-green-300'
+            };
+        }
+    };
+
     const getStatusBadge = (status) => {
         const statuses = {
             'published': {
@@ -170,26 +197,41 @@ const DashboardReturnUser = ({ stores = [], onStoreUpdate }) => {
         if (store.status === 'draft') {
             actions.push({
                 label: 'Publish',
-                // ✅ FIX: this used to call handleStatusChange(store.id, 'active'),
-                // which only ever set status to 'active' — a value the
-                // Storefront's public lookup never actually checks for (it
-                // requires status = 'published'). This button looked like it
-                // worked but never made the store genuinely visible. Now it
-                // launches the real domain/hosting/payment flow, which is the
-                // only place status actually becomes 'published'.
-                action: () => navigate(`/store-builder/publish?storeId=${store.id}`),
+                action: () => navigate(`/store-builder/publish/domain?storeId=${store.id}`),
                 className: 'bg-[#25D366] text-[#005523] hover:brightness-105'
             });
         } else if (store.status === 'published' || store.status === 'active') {
             actions.push({
                 label: 'Unpublish',
-                action: () => handleStatusChange(store.id, 'draft'),
+                action: async () => {
+                    const sub = subscriptions[store.id];
+                    const warningMsg = sub 
+                        ? `⚠️ Unpublishing takes your store offline immediately.\n\nYou have ${sub.daysRemaining} days remaining (expires ${sub.validUntilFormatted}).\n\nRemaining subscription days are non-refundable and will not be credited.\n\nAre you sure you want to unpublish?`
+                        : 'Unpublish your store? It will go offline immediately. Remaining subscription days are non-refundable.';
+                    if (!window.confirm(warningMsg)) return;
+                    try {
+                        const token = localStorage.getItem('token');
+                        const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.aapnaestore.com'}/api/stores/${store.id}/unpublish`, {
+                            method: 'POST',
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        const result = await res.json();
+                        if (result.success) {
+                            alert('Store unpublished successfully.');
+                            window.location.reload();
+                        } else {
+                            alert(result.error || 'Failed to unpublish store');
+                        }
+                    } catch (e) {
+                        alert('Failed to unpublish store. Please try again.');
+                    }
+                },
                 className: 'bg-orange-100 text-orange-700 hover:bg-orange-200'
             });
-        } else if (store.status === 'inactive') {
+        } else if (store.status === 'inactive' || store.status === 'draft') {
             actions.push({
-                label: 'Publish Again',
-                action: () => navigate(`/store-builder/quick-publish?storeId=${store.id}`),
+                label: 'Publish',
+                action: () => navigate(`/store-builder/publish/domain?storeId=${store.id}`),
                 className: 'bg-[#25D366] text-[#005523] hover:brightness-105'
             });
         }
@@ -262,7 +304,7 @@ const DashboardReturnUser = ({ stores = [], onStoreUpdate }) => {
     // ✅ Stats based on all stores
     const stats = {
         total: stores.length,
-        active: stores.filter(s => s.status === 'active').length,
+        active: stores.filter(s => s.status === 'published' || s.status === 'active').length,
         draft: stores.filter(s => s.status === 'draft').length,
         inactive: stores.filter(s => s.status === 'inactive').length,
     };
@@ -352,8 +394,10 @@ const DashboardReturnUser = ({ stores = [], onStoreUpdate }) => {
                             const actions = getStatusActions(store);
                             const expiryInfo = getStoreExpiryInfo(store);
                             
+                            const subBadge = getSubscriptionBadge(store);
+                            const isExpiringSoon = subBadge && (subBadge.style.includes('orange') || subBadge.style.includes('red'));
                             return (
-                                <div key={store.id} className="bg-white rounded-2xl border border-[#bbcbb9] shadow-sm p-6 hover:shadow-md transition-shadow">
+                                <div key={store.id} className={`bg-white rounded-2xl border shadow-sm p-6 hover:shadow-md transition-shadow ${isExpiringSoon ? 'border-orange-400' : 'border-[#bbcbb9]'}`}>
                                     <div className="flex items-center justify-between mb-4">
                                         <div className="flex items-center gap-3">
                                             {brand.logoUrl ? (
@@ -384,6 +428,11 @@ const DashboardReturnUser = ({ stores = [], onStoreUpdate }) => {
                                     <p className="text-xs text-[#6c7b6b] mt-1">
                                         🔗 {store.subdomain ? `${store.subdomain}.aapnaestore.com` : 'No domain set'}
                                     </p>
+                                    {subBadge && (
+                                        <div className={`mt-2 px-3 py-1.5 rounded-lg text-xs font-medium ${subBadge.style}`}>
+                                            {subBadge.label}
+                                        </div>
+                                    )}
                                     
                                     {/* ✅ Expiry Indicator - Only for draft stores with note */}
                                     {store.status === 'draft' && expiryInfo && (
@@ -418,7 +467,7 @@ const DashboardReturnUser = ({ stores = [], onStoreUpdate }) => {
                                         </button>
                                         
                                         <button 
-                                            onClick={() => window.open(`http://${store.subdomain}.aapnaestore.com`, '_blank')}
+                                            onClick={() => store.status === 'published' ? window.open(`https://${store.subdomain}.aapnaestore.com`, '_blank') : navigate(`/store-builder/preview?storeId=${store.id}`)}
                                             className="px-4 py-2 bg-[#eceef1] text-[#006d2f] font-semibold text-sm rounded-xl hover:bg-[#d9e4ec] active:scale-[0.98] transition-all flex items-center gap-2"
                                         >
                                             <span className="material-symbols-outlined text-base">visibility</span>

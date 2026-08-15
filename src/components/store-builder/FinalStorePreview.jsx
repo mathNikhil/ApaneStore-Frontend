@@ -103,7 +103,7 @@ const FinalStorePreview = () => {
             }
 
             const id = saveResult.data?.data?.id || currentStoreId || storeId;
-            navigate(`/store-builder/publish?storeId=${id}`);
+            navigate(`/store-builder/publish/domain?storeId=${id}`);
         } catch (e) {
             console.error('Failed to save store before publishing:', e);
             alert('Something went wrong — check your connection and try again.');
