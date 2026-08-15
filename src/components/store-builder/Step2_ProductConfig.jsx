@@ -58,12 +58,12 @@ const Step2_ProductConfig = () => {
     productData.categories?.length > 0 ? productData.categories : [
       {
         id: 1,
-        name: 'Flours & Grains',
+        name: '',
         products: [
           {
             id: 1,
-            name: 'Whole Wheat Flour',
-            description: 'Premium quality stone-ground whole wheat flour',
+            name: '',
+            description: '',
             images: [],
             bulkPricing: false,
             discount: 20,
@@ -83,8 +83,8 @@ const Step2_ProductConfig = () => {
 
   // Hero Banner State
   const [bannerImage, setBannerImage] = useState(productData.banner?.image || null);
-  const [bannerTagline, setBannerTagline] = useState(productData.banner?.tagline || 'Fresh, Organic & Delivered');
-  const [bannerSubtitle, setBannerSubtitle] = useState(productData.banner?.subtitle || '100% Natural Stone-Ground Flour');
+  const [bannerTagline, setBannerTagline] = useState(productData.banner?.tagline || '');
+  const [bannerSubtitle, setBannerSubtitle] = useState(productData.banner?.subtitle || '');
   const [bannerCta, setBannerCta] = useState(productData.banner?.cta || 'Shop Now');
   const [bannerHeight, setBannerHeight] = useState(productData.banner?.height || 400);
   const [bannerBgColor, setBannerBgColor] = useState(productData.banner?.bgColor || '#25D366');
@@ -108,8 +108,8 @@ const Step2_ProductConfig = () => {
     }
     if (currentStoreId && productData.banner) {
       setBannerImage(productData.banner.image || null);
-      setBannerTagline(productData.banner.tagline || 'Fresh, Organic & Delivered');
-      setBannerSubtitle(productData.banner.subtitle || '100% Natural Stone-Ground Flour');
+      setBannerTagline(productData.banner.tagline || '');
+      setBannerSubtitle(productData.banner.subtitle || '');
       setBannerCta(productData.banner.cta || 'Shop Now');
       setBannerHeight(productData.banner.height || 400);
       setBannerBgColor(productData.banner.bgColor || '#25D366');
@@ -862,10 +862,10 @@ const Step2_ProductConfig = () => {
                       {showText && (
                         <div className="max-w-2xl">
                           <h1 className="text-3xl md:text-4xl font-bold text-white drop-shadow-lg mb-2" style={{ color: textColor || '#FFFFFF' }}>
-                            {bannerTagline || 'Fresh, Organic & Delivered'}
+                            {bannerTagline || 'Your store tagline'}
                           </h1>
                           <p className="text-lg md:text-xl text-white/90 drop-shadow-md" style={{ color: textColor || '#FFFFFF', opacity: 0.9 }}>
-                            {bannerSubtitle || '100% Natural Stone-Ground Flour'}
+                            {bannerSubtitle || 'Your store subtitle'}
                           </p>
                         </div>
                       )}
@@ -881,10 +881,10 @@ const Step2_ProductConfig = () => {
                     {showText && (
                       <div className="max-w-2xl">
                         <h1 className="text-3xl md:text-4xl font-bold text-white drop-shadow-lg mb-2" style={{ color: textColor || '#FFFFFF' }}>
-                          {bannerTagline || 'Fresh, Organic & Delivered'}
+                          {bannerTagline || 'Your store tagline'}
                         </h1>
                         <p className="text-lg md:text-xl text-white/90 drop-shadow-md" style={{ color: textColor || '#FFFFFF', opacity: 0.9 }}>
-                          {bannerSubtitle || '100% Natural Stone-Ground Flour'}
+                          {bannerSubtitle || 'Your store subtitle'}
                         </p>
                       </div>
                     )}

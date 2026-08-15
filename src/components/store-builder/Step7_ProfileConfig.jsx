@@ -20,10 +20,10 @@ const Step7_ProfileConfig = () => {
   }
 
   var [profile, setProfile] = useState({
-    officeNumber: profileData.officeNumber || '+91 8800244169',
+    officeNumber: profileData.officeNumber || '',
     supportTime: profileData.supportTime || '9:00 AM - 6:00 PM',
-    supportEmail: profileData.supportEmail || 'support@chakki.com',
-    aboutUs: profileData.aboutUs || 'We help small businesses create their own e-commerce stores easily.',
+    supportEmail: profileData.supportEmail || '',
+    aboutUs: profileData.aboutUs || '',
     facebook: profileData.socialLinks && profileData.socialLinks.facebook ? profileData.socialLinks.facebook : '',
     instagram: profileData.socialLinks && profileData.socialLinks.instagram ? profileData.socialLinks.instagram : '',
     twitter: profileData.socialLinks && profileData.socialLinks.twitter ? profileData.socialLinks.twitter : '',

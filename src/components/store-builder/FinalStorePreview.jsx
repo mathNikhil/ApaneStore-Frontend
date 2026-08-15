@@ -53,8 +53,8 @@ const FinalStorePreview = () => {
                 enableImageZoom: productData.enableImageZoom || false,
                 banner: {
                     image: productData.banner?.image || null,
-                    tagline: productData.banner?.tagline || 'Fresh, Organic & Delivered',
-                    subtitle: productData.banner?.subtitle || '100% Natural Stone-Ground Flour',
+                    tagline: productData.banner?.tagline || '',
+                    subtitle: productData.banner?.subtitle || '',
                     cta: productData.banner?.cta || 'Shop Now',
                     height: productData.banner?.height || 400,
                     bgColor: productData.banner?.bgColor || '#25D366',

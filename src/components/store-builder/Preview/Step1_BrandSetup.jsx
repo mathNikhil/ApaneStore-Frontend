@@ -11,7 +11,7 @@ const Step1_BrandSetup = () => {
 
   // Load from context on mount
   const [formData, setFormData] = useState({
-    brandName: brandData.brandName || 'Organic Flour Co.',
+    brandName: brandData.brandName || '',
     tagline: brandData.tagline || 'Fresh, Organic & Delivered to Your Doorstep',
     colors: brandData.colors || {
       primary: '#25D366',

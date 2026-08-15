@@ -18,7 +18,7 @@ const Step4_PaymentConfig = () => {
     // Phase 1: UPI QR Code (No Gateway) - ACTIVE
     upiEnabled: paymentData.upiEnabled !== undefined ? paymentData.upiEnabled : true,
     upiId: paymentData.upiId || '',
-    upiAppName: paymentData.upiAppName || 'GPay/PhonePe',
+    upiAppName: paymentData.upiAppName || '',
     showQRCode: paymentData.showQRCode !== undefined ? paymentData.showQRCode : true,
     showUPIId: paymentData.showUPIId !== undefined ? paymentData.showUPIId : true,
     

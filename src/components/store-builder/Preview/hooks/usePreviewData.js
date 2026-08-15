@@ -81,7 +81,7 @@ const formatAddressLine = (addr) => {
 export const usePreviewData = (builderData, storeId, customerToken) => {
   const [storeData, setStoreData] = useState({
     brand: {
-      name: 'Organic Flour Co.',
+      name: '',
       tagline: 'Fresh, Organic & Delivered to Your Doorstep',
       logo: null,
       colors: {

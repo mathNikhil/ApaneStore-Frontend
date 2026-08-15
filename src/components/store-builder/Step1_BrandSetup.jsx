@@ -89,7 +89,7 @@ const Step1_BrandSetup = () => {
   // Load from context on mount
   const [formData, setFormData] = useState({
     brandName: brandData.brandName || '',
-    tagline: brandData.tagline || 'Fresh, Organic & Delivered to Your Doorstep',
+    tagline: brandData.tagline || '',
     colors: normalizeBrandColors(brandData.brandColors),
     typography: {
       headingFont: brandData.headingFont || 'Inter',
@@ -115,7 +115,7 @@ const Step1_BrandSetup = () => {
     if (currentStoreId) {
       setFormData({
         brandName: brandData.brandName || '',
-        tagline: brandData.tagline || 'Fresh, Organic & Delivered to Your Doorstep',
+        tagline: brandData.tagline || '',
         colors: normalizeBrandColors(brandData.brandColors),
         typography: {
           headingFont: brandData.headingFont || 'Inter',

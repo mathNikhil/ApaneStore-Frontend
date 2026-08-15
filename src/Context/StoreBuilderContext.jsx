@@ -81,13 +81,13 @@ export const StoreBuilderProvider = ({ children }) => {
 
     // Step 3: Cart Data
     const [cartData, setCartData] = useState({
-        freeDelivery: true,
-        freeDeliveryThreshold: 500,
-        deliveryCharge: 40,
+        freeDelivery: false,
+        freeDeliveryThreshold: 0,
+        deliveryCharge: 0,
         showProgressBar: true,
         showDeliveryMessage: true,
         enableGST: true,
-        gstRate: 5,
+        gstRate: 0,
         taxLabel: 'GST',
         showGSTBreakdownCart: true,
         showGSTBreakdownCheckout: true,
@@ -95,12 +95,12 @@ export const StoreBuilderProvider = ({ children }) => {
 
     // Step 4: Payment Data
     const [paymentData, setPaymentData] = useState({
-        codEnabled: true,
-        upiEnabled: true,
+        codEnabled: false,
+        upiEnabled: false,
         cardEnabled: false,
         netBankingEnabled: false,
-        upiId: '8800244169@upi',
-        upiAppName: 'GPay/PhonePe',
+        upiId: '',
+        upiAppName: '',
         showQRCode: true,
         showUPIId: true,
         defaultPayment: 'cod',
@@ -138,10 +138,10 @@ export const StoreBuilderProvider = ({ children }) => {
 
     // Step 7: Profile Data
     const [profileData, setProfileData] = useState({
-        officeNumber: '+91 8800244169',
-        supportTime: '9:00 AM - 6:00 PM',
-        supportEmail: 'support@chakki.com',
-        aboutUs: 'We help small businesses create their own e-commerce stores easily.',
+        officeNumber: '',
+        supportTime: '',
+        supportEmail: '',
+        aboutUs: '',
         socialLinks: {
             facebook: '',
             instagram: '',
