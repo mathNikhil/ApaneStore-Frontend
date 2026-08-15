@@ -169,12 +169,12 @@ const Step1_BrandSetup = () => {
     // 🛡️ Only tenantId needs to be ready — currentStoreId is legitimately
     // null for a brand-new store until the save below creates it.
     if (!isReady || !tenantId) {
-      setUploadError('Store is still loading. Please wait a moment and try again.');
+      showError('Store is still loading. Please wait a moment and try again.');
       return;
     }
 
     setIsUploading(true);
-    setUploadError('');
+    
 
     try {
       // ✅ FIX: Save FIRST so a brand-new store actually gets created (and
@@ -186,7 +186,7 @@ const Step1_BrandSetup = () => {
       let saveResult = await saveStore();
 
       if (!saveResult.success) {
-        setUploadError(saveResult.error || 'Failed to save. Please try again.');
+        showError(saveResult.error || 'Failed to save. Please try again.');
         setIsUploading(false);
         return;
       }
@@ -204,7 +204,7 @@ const Step1_BrandSetup = () => {
         );
 
         if (!response.success) {
-          setUploadError(`Logo upload failed: ${response.error}`);
+          showError(`Logo upload failed: ${response.error}`);
           setIsUploading(false);
           return;
         }
@@ -218,7 +218,7 @@ const Step1_BrandSetup = () => {
         // won't reflect the ID we just got back from the save above.
         saveResult = await saveStore(savedStoreId);
         if (!saveResult.success) {
-          setUploadError(saveResult.error || 'Logo uploaded, but failed to save. Please try again.');
+          showError(saveResult.error || 'Logo uploaded, but failed to save. Please try again.');
           setIsUploading(false);
           return;
         }
@@ -229,7 +229,7 @@ const Step1_BrandSetup = () => {
       navigate(`/store-builder/step/2?storeId=${saveResult.data?.data?.id || savedStoreId}`);
     } catch (error) {
       console.error('❌ Save/upload error:', error);
-      setUploadError(error.response?.data?.error || error.message || 'Failed to save. Please try again.');
+      showError(error.response?.data?.error || error.message || 'Failed to save. Please try again.');
     } finally {
       setIsUploading(false);
     }
@@ -283,14 +283,14 @@ const Step1_BrandSetup = () => {
   const processLogoFile = (file) => {
     const validTypes = ['image/png'];
     if (!validTypes.includes(file.type)) {
-      setUploadError('Please upload a PNG image only');
+      showError('Please upload a PNG image only');
       return;
     }
     if (file.size > 120 * 1024) {
-      setUploadError('File size should be less than 120KB');
+      showError('File size should be less than 120KB');
       return;
     }
-    setUploadError('');
+    
     
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -339,7 +339,7 @@ const Step1_BrandSetup = () => {
   const handleUseDefault = () => {
     setLogoPreview(null);
     setLogoData(null);
-    setUploadError('');
+    
   };
 
   const colorOptions = [
@@ -364,12 +364,6 @@ const Step1_BrandSetup = () => {
       onClose={handleClose}
       isUploading={isUploading}
     >
-      {uploadError && (
-        <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-lg text-sm mb-4">
-          ⚠️ {uploadError}
-        </div>
-      )}
-
       {/* Brand Name */}
       <div className="space-y-4 mb-6">
         <label className="font-label-md text-label-md text-[#3c4a3d] uppercase tracking-wider text-xs">
@@ -432,7 +426,7 @@ const Step1_BrandSetup = () => {
               </div>
               <p className="font-title-lg text-title-lg text-[#191c1e]">{isDragging ? 'Drop your logo here' : 'Drop your logo here or click to upload'}</p>
               <p className="font-caption text-caption text-[#556067] mt-1 text-xs">PNG only • 200×200px • Max 100KB</p>
-              {uploadError && <p className="text-[#ba1a1a] text-xs mt-2">{uploadError}</p>}
+              
               <button onClick={(e) => { e.stopPropagation(); handleUploadClick(); }} className="font-label-md text-label-md text-[#006d2f] border border-[#006d2f] px-4 py-2 rounded-lg hover:bg-[#25D366]/10 transition-colors mt-4">Browse Files</button>
             </>
           )}
