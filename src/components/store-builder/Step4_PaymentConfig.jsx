@@ -1,4 +1,5 @@
 import { showSuccess, showError } from '../../utils/toast';
+import cashfreeLogo from '../../assets/images/Cashfee-Logo.png';
 import React, { useState, useEffect } from 'react';
 import { useStoreBuilder } from '../../Context/StoreBuilderContext';
 import StoreBuilderLayout from './StoreBuilderLayout';
@@ -15,23 +16,68 @@ const Step4_PaymentConfig = () => {
   // ============================================
 
   const [settings, setSettings] = useState({
-    // Phase 1: UPI QR Code (No Gateway) - ACTIVE
     upiEnabled: paymentData.upiEnabled !== undefined ? paymentData.upiEnabled : true,
     upiId: paymentData.upiId || '',
     upiAppName: paymentData.upiAppName || '',
     showQRCode: paymentData.showQRCode !== undefined ? paymentData.showQRCode : true,
     showUPIId: paymentData.showUPIId !== undefined ? paymentData.showUPIId : true,
-    
-    // Phase 1: COD - ACTIVE
-    codEnabled: paymentData.codEnabled !== undefined ? paymentData.codEnabled : true,
-    
-    // Phase 2: Coming soon (disabled)
+    codEnabled: true, // Always ON — not affected by gateway selection
     cardEnabled: false,
     netBankingEnabled: false,
-    cashfreeEnabled: false,
+    cashfreeEnabled: paymentData.cashfreeEnabled || false,
     stripeEnabled: false,
     defaultPayment: paymentData.defaultPayment || 'upi',
   });
+
+  const [cashfreeAppId, setCashfreeAppId] = useState('');
+  const [cashfreeSecretKey, setCashfreeSecretKey] = useState('');
+  const [cashfreeMode, setCashfreeMode] = useState('sandbox');
+  const [cashfreeSaving, setCashfreeSaving] = useState(false);
+  const [cashfreeConfigured, setCashfreeConfigured] = useState(false);
+
+  useEffect(() => {
+    const storeId = localStorage.getItem('currentStoreId');
+    const token = localStorage.getItem('token');
+    if (!storeId || !token) return;
+    fetch((import.meta.env.VITE_API_URL || 'https://api.aapnaestore.com') + '/api/stores/' + storeId + '/payment-gateways', {
+      headers: { Authorization: 'Bearer ' + token }
+    }).then(r => r.json()).then(data => {
+      if (data.success) {
+        const cf = data.data.find(g => g.gateway_key === 'cashfree');
+        if (cf && cf.has_api_key) setCashfreeConfigured(true);
+      }
+    }).catch(() => {});
+  }, []);
+
+  const handleSaveCashfreeKeys = async () => {
+    if (!cashfreeAppId || !cashfreeSecretKey) {
+      showError('Please enter both App ID and Secret Key');
+      return;
+    }
+    setCashfreeSaving(true);
+    try {
+      const storeId = localStorage.getItem('currentStoreId');
+      const token = localStorage.getItem('token');
+      const res = await fetch((import.meta.env.VITE_API_URL || 'https://api.aapnaestore.com') + '/api/stores/' + storeId + '/payment-gateway/cashfree/keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+        body: JSON.stringify({ appId: cashfreeAppId, secretKey: cashfreeSecretKey, mode: cashfreeMode })
+      });
+      const data = await res.json();
+      if (data.success) {
+        showSuccess('Cashfree configured successfully!');
+        setCashfreeConfigured(true);
+        setCashfreeAppId('');
+        setCashfreeSecretKey('');
+      } else {
+        showError(data.error || 'Failed to save Cashfree keys');
+      }
+    } catch (e) {
+      showError('Failed to save. Please try again.');
+    } finally {
+      setCashfreeSaving(false);
+    }
+  };
 
   // Save to context on every change
   useEffect(() => {
@@ -39,8 +85,23 @@ const Step4_PaymentConfig = () => {
     setPaymentData(settings);
   }, [settings]);
 
+  const handleGatewaySelect = (selectedKey) => {
+    // Radio style — only one payment gateway at a time (COD is separate)
+    setSettings(prev => ({
+      ...prev,
+      upiEnabled: selectedKey === 'upiEnabled',
+      cashfreeEnabled: selectedKey === 'cashfreeEnabled',
+      stripeEnabled: selectedKey === 'stripeEnabled',
+      defaultPayment: selectedKey === 'upiEnabled' ? 'upi' : selectedKey === 'cashfreeEnabled' ? 'cashfree' : 'cod',
+    }));
+  };
+
   const handleToggle = (key) => {
-    setSettings(prev => ({ ...prev, [key]: !prev[key] }));
+    if (['upiEnabled', 'cashfreeEnabled', 'stripeEnabled'].includes(key)) {
+      handleGatewaySelect(key);
+    } else {
+      setSettings(prev => ({ ...prev, [key]: !prev[key] }));
+    }
   };
 
   // ============================================
@@ -50,22 +111,23 @@ const Step4_PaymentConfig = () => {
   // Phase 1: UPI and COD are active
   const activePaymentMethods = [
     { 
+      id: 'cod', 
+      label: 'Cash on Delivery (COD)', 
+      description: 'Collect cash at the doorstep • No transaction fees • Always enabled', 
+      key: 'codEnabled',
+      icon: 'payments',
+      badge: 'Always ON',
+      badgeColor: 'bg-green-100 text-green-800',
+      active: true,
+      alwaysOn: true,
+      phase: 'Phase 1',
+    },
+    { 
       id: 'upi', 
       label: 'UPI QR Code (No Gateway)', 
       description: '0% fee • No KYC • Customers scan QR code and pay directly • Manual verification required', 
       key: 'upiEnabled',
       icon: 'qr_code_2',
-      badge: 'Active',
-      badgeColor: 'bg-green-100 text-green-800',
-      active: true,
-      phase: 'Phase 1',
-    },
-    { 
-      id: 'cod', 
-      label: 'Cash on Delivery (COD)', 
-      description: 'Collect cash at the doorstep • No transaction fees', 
-      key: 'codEnabled',
-      icon: 'payments',
       badge: 'Active',
       badgeColor: 'bg-green-100 text-green-800',
       active: true,
@@ -81,9 +143,9 @@ const Step4_PaymentConfig = () => {
       description: 'UPI • Credit/Debit Cards • NetBanking • Digital Wallets (1.6-2.99% fee)', 
       key: 'cashfreeEnabled',
       icon: 'payments',
-      badge: 'Coming Soon',
-      badgeColor: 'bg-blue-100 text-blue-600',
-      active: false,
+      badge: cashfreeConfigured ? 'Configured' : 'Setup Required',
+      badgeColor: cashfreeConfigured ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-600',
+      active: true,
       phase: 'Phase 2',
       provider: 'Cashfree',
     },
@@ -290,9 +352,71 @@ const Step4_PaymentConfig = () => {
       )}
 
       {/* ============================================ */}
-      {/* HOW IT WORKS */}
-      {/* ============================================ */}
-      <Card className="mb-6">
+      {/* CASHFREE CONFIGURATION - shows when Cashfree selected */}
+      {settings.cashfreeEnabled && (
+        <Card className="mb-6">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="material-symbols-outlined text-[#006d2f]">payments</span>
+            <h3 className="font-semibold text-[#191c1e]">CASHFREE CONFIGURATION</h3>
+            {cashfreeConfigured && (
+              <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full font-semibold">Configured</span>
+            )}
+          </div>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+            <p className="text-sm text-blue-800">
+              <strong>Setup Required:</strong> Get your App ID and Secret Key from your Cashfree dashboard.
+            </p>
+            <a href="https://merchant.cashfree.com/merchants/signup" target="_blank" rel="noopener noreferrer"
+               className="text-sm text-blue-600 underline mt-1 inline-block">
+              Don't have a Cashfree account? Sign up here →
+            </a>
+          </div>
+          <div className="space-y-4">
+            <div>
+              <label className="text-xs font-semibold text-[#3c4a3d] uppercase tracking-wider">App ID *</label>
+              <input
+                type="text"
+                value={cashfreeAppId}
+                onChange={e => setCashfreeAppId(e.target.value)}
+                placeholder="Enter your Cashfree App ID"
+                className="w-full mt-1 px-4 py-3 border border-[#bbcbb9] rounded-lg text-sm focus:outline-none focus:border-[#006d2f]"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-[#3c4a3d] uppercase tracking-wider">Secret Key *</label>
+              <input
+                type="password"
+                value={cashfreeSecretKey}
+                onChange={e => setCashfreeSecretKey(e.target.value)}
+                placeholder="Enter your Cashfree Secret Key"
+                className="w-full mt-1 px-4 py-3 border border-[#bbcbb9] rounded-lg text-sm focus:outline-none focus:border-[#006d2f]"
+              />
+              <p className="text-xs text-[#556067] mt-1">Your secret key is encrypted and never shared.</p>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-[#3c4a3d] uppercase tracking-wider">Mode</label>
+              <select
+                value={cashfreeMode}
+                onChange={e => setCashfreeMode(e.target.value)}
+                className="w-full mt-1 px-4 py-3 border border-[#bbcbb9] rounded-lg text-sm focus:outline-none focus:border-[#006d2f]"
+              >
+                <option value="sandbox">Sandbox (Testing)</option>
+                <option value="production">Production (Live)</option>
+              </select>
+            </div>
+            <button
+              onClick={handleSaveCashfreeKeys}
+              disabled={cashfreeSaving}
+              className="w-full py-3 bg-[#006d2f] text-white font-semibold rounded-xl hover:brightness-110 transition-all disabled:opacity-50"
+            >
+              {cashfreeSaving ? 'Saving...' : cashfreeConfigured ? 'Update Cashfree Keys' : 'Save & Activate Cashfree'}
+            </button>
+          </div>
+        </Card>
+      )}
+
+      {/* HOW IT WORKS - only show for UPI */}
+      {settings.upiEnabled && <Card className="mb-6">
         <div className="flex items-center gap-2 mb-4">
           <span className="material-symbols-outlined text-[#006d2f]">help</span>
           <h2 className="font-label-md text-label-md text-[#556067] uppercase tracking-wider text-xs">How It Works</h2>
@@ -327,7 +451,7 @@ const Step4_PaymentConfig = () => {
             </div>
           </div>
         </div>
-      </Card>
+      </Card>}
 
       {/* ============================================ */}
       {/* PHASE 2 ROADMAP */}

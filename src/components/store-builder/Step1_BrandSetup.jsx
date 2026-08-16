@@ -145,7 +145,8 @@ const Step1_BrandSetup = () => {
       ...prev,
       brandName: formData.brandName,
       tagline: formData.tagline,
-      logoUrl: logoPreview,
+      // Only save server URL, not base64 preview
+      logoUrl: logoPreview?.startsWith('data:') ? (brandData.logoUrl || null) : (logoPreview || null),
       brandColors: formData.colors,
       headingFont: formData.typography.headingFont,
       bodyFont: formData.typography.bodyFont,
