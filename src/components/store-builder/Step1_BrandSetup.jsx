@@ -281,13 +281,14 @@ const Step1_BrandSetup = () => {
   };
 
   const processLogoFile = (file) => {
-    const validTypes = ['image/png'];
+    const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
     if (!validTypes.includes(file.type)) {
-      showError('Please upload a PNG image only');
+      showError('Invalid format. Please upload a PNG or JPG image.');
       return;
     }
-    if (file.size > 120 * 1024) {
-      showError('File size should be less than 120KB');
+    if (file.size > 2 * 1024 * 1024) {
+      const fileMB = (file.size / 1024 / 1024).toFixed(1);
+      showError('File too large (' + fileMB + 'MB). Maximum allowed: 2MB');
       return;
     }
     
@@ -393,10 +394,10 @@ const Step1_BrandSetup = () => {
       <div className="space-y-4 mb-6">
         <div className="flex items-center justify-between">
           <label className="font-label-md text-label-md text-[#3c4a3d] uppercase tracking-wider text-xs">Logo Upload</label>
-          <span className="text-xs text-gray-400">Recommended: PNG only</span>
+          <span className="text-xs text-gray-400">Recommended: 200×200px • Max 2MB • PNG/JPG</span>
         </div>
         
-        <input ref={fileInputRef} type="file" accept="image/png" onChange={handleFileSelect} className="hidden" />
+        <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/jpg,image/webp" onChange={handleFileSelect} className="hidden" />
         <div
           onClick={handleUploadClick}
           onDragEnter={handleDragEnter}
@@ -425,7 +426,7 @@ const Step1_BrandSetup = () => {
                 <span className="material-symbols-outlined text-4xl text-[#556067]">{isDragging ? 'file_upload' : 'storefront'}</span>
               </div>
               <p className="font-title-lg text-title-lg text-[#191c1e]">{isDragging ? 'Drop your logo here' : 'Drop your logo here or click to upload'}</p>
-              <p className="font-caption text-caption text-[#556067] mt-1 text-xs">PNG only • 200×200px • Max 100KB</p>
+              <p className="font-caption text-caption text-[#556067] mt-1 text-xs">Recommended: 200×200px • Max 2MB • PNG/JPG</p>
               
               <button onClick={(e) => { e.stopPropagation(); handleUploadClick(); }} className="font-label-md text-label-md text-[#006d2f] border border-[#006d2f] px-4 py-2 rounded-lg hover:bg-[#25D366]/10 transition-colors mt-4">Browse Files</button>
             </>
@@ -435,7 +436,7 @@ const Step1_BrandSetup = () => {
         <ImageGuidelineBadge 
           size="200×200px" 
           format="PNG" 
-          maxSize="100KB" 
+          maxSize="2MB" 
           ratio="1:1" 
         />
         

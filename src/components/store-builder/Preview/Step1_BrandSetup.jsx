@@ -187,7 +187,7 @@ const Step1_BrandSetup = () => {
                 <span className="material-symbols-outlined text-4xl text-[#556067]">{isDragging ? 'file_upload' : 'storefront'}</span>
               </div>
               <p className="font-title-lg text-title-lg text-[#191c1e]">{isDragging ? 'Drop your logo here' : 'Drop your logo here or click to upload'}</p>
-              <p className="font-caption text-caption text-[#556067] mt-1 text-xs">Recommended: 200×200px PNG, JPG, SVG (Max 5MB)</p>
+              <p className="font-caption text-caption text-[#556067] mt-1 text-xs">Recommended: 200×200px • Max 2MB • PNG/JPG</p>
               {uploadError && <p className="text-[#ba1a1a] text-xs mt-2">{uploadError}</p>}
               <button onClick={(e) => { e.stopPropagation(); handleUploadClick(); }} className="font-label-md text-label-md text-[#006d2f] border border-[#006d2f] px-4 py-2 rounded-lg hover:bg-[#25D366]/10 transition-colors mt-4">Browse Files</button>
             </>

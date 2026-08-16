@@ -985,7 +985,7 @@ const Step2_ProductConfig = () => {
               <div className="absolute inset-0 flex flex-col items-center justify-center text-[#556067] group-hover:text-[#006d2f] transition-colors">
                 <span className="material-symbols-outlined text-3xl mb-1">upload_file</span>
                 <span className="font-caption text-caption text-xs">Upload banner image</span>
-                <span className="font-caption text-caption text-xs opacity-60">Recommended: 1200×400px</span>
+                <span className="font-caption text-caption text-xs opacity-60">Recommended: 1200×400px • Max 3MB • JPG/PNG</span>
               </div>
             )}
             <input

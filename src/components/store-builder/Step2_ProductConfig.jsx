@@ -1097,7 +1097,7 @@ const Step2_ProductConfig = () => {
                     />
                     <div>
                       <p className="text-xs font-medium text-gray-600">Upload Category Image</p>
-                      <ImageGuidelineBadge size="200×200px" format="JPG/PNG" maxSize="70KB" ratio="1:1" />
+                      <ImageGuidelineBadge size="400×400px" format="JPG/PNG" maxSize="1MB" ratio="1:1" />
                       {categoryImgError && (
                         <div className="mt-1 text-xs text-red-600 bg-red-50 px-2 py-1 rounded border border-red-200 flex items-start gap-1">
                           <span className="material-symbols-outlined text-sm">error</span>
@@ -1216,7 +1216,7 @@ const Step2_ProductConfig = () => {
                               </div>
                               <div className="mt-1">
                                 <p className="text-[10px] text-gray-400">
-                                  {product.images?.length || 0}/20 • 400×400px • 200KB • 1:1
+                                  {product.images?.length || 0}/20 • Recommended: 800×800px • Max 2MB • JPG/PNG
                                 </p>
                               </div>
                               {productError && (
