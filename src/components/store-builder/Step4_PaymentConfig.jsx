@@ -161,28 +161,7 @@ const Step4_PaymentConfig = () => {
       phase: 'Phase 2',
       provider: 'Stripe',
     },
-    { 
-      id: 'card', 
-      label: 'Credit / Debit Card', 
-      description: 'Visa, Mastercard, RuPay', 
-      key: 'cardEnabled',
-      icon: 'credit_card',
-      badge: 'Coming Soon',
-      badgeColor: 'bg-gray-100 text-gray-500',
-      active: false,
-      phase: 'Phase 2',
-    },
-    { 
-      id: 'netbanking', 
-      label: 'Net Banking', 
-      description: 'Direct bank portal login', 
-      key: 'netBankingEnabled',
-      icon: 'account_balance',
-      badge: 'Coming Soon',
-      badgeColor: 'bg-gray-100 text-gray-500',
-      active: false,
-      phase: 'Phase 2',
-    },
+
   ];
 
   const allPaymentMethods = [...activePaymentMethods, ...comingSoonPaymentMethods];
@@ -238,9 +217,13 @@ const Step4_PaymentConfig = () => {
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <span className={`material-symbols-outlined text-2xl ${method.active ? 'text-[#006d2f]' : 'text-gray-400'}`}>
-                    {method.icon}
-                  </span>
+                  {method.id === 'cashfree' ? (
+                    <img src={cashfreeLogo} alt="Cashfree" className="w-6 h-6 object-contain" />
+                  ) : (
+                    <span className={`material-symbols-outlined text-2xl ${method.active ? 'text-[#006d2f]' : 'text-gray-400'}`}>
+                      {method.icon}
+                    </span>
+                  )}
                   <div>
                     <div className="flex items-center gap-2">
                       <span className={`font-semibold ${method.active ? 'text-[#191c1e]' : 'text-gray-500'}`}>
