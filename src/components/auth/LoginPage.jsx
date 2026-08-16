@@ -23,7 +23,6 @@ const LoginPage = () => {
     }
 
     setLoading(true);
-    showError('');
 
     try {
       const result = await sendOTP(mobile, 'login');

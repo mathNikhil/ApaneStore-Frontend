@@ -37,7 +37,6 @@ const VerifyOTPPage = () => {
     const newOtp = [...otp];
     newOtp[index] = value;
     setOtp(newOtp);
-    showError('');
 
     if (value && index < 5) {
       inputRefs.current[index + 1].focus();
@@ -73,7 +72,6 @@ const VerifyOTPPage = () => {
     }
 
     setLoading(true);
-    showError('');
     try {
       const result = await loginWithOTP(mobile, otpString, 'login');
       if (!result.success) {
@@ -92,7 +90,6 @@ const VerifyOTPPage = () => {
   const handleResend = async () => {
     setTimeLeft(30);
     setCanResend(false);
-    showError('');
     setDevOtp(null);
     const result = await sendOTP(mobile, 'login');
     if (result.success) {
