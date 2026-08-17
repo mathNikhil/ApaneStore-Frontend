@@ -9,7 +9,7 @@ const Step6_OrderTrackerConfig = () => {
   const { orderData, setOrderData } = useStoreBuilder();
 
   const [settings, setSettings] = useState({
-    enableCancellation: orderData.enableCancellation !== undefined ? orderData.enableCancellation : true,
+    enableCancellation: orderData.enableCancellation !== undefined ? orderData.enableCancellation : false,
     cancellationWindow: orderData.cancellationWindow || 2,
     cancelOnlyConfirmed: orderData.cancelOnlyConfirmed !== undefined ? orderData.cancelOnlyConfirmed : true,
     showCancelReason: orderData.showCancelReason !== undefined ? orderData.showCancelReason : true,
@@ -41,26 +41,8 @@ const Step6_OrderTrackerConfig = () => {
 
   return (
     <StoreBuilderLayout currentStep={6} totalSteps={8} title="Order Configuration" subtitle="Step 6 of 8">
+      {/* Order Status Flow - always on top */}
       <Card className="mb-6">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-10 h-10 rounded-lg bg-[#ffdad6] text-[#93000a] flex items-center justify-center">
-            <span className="material-symbols-outlined">cancel</span>
-          </div>
-          <h2 className="font-headline-md text-headline-md text-on-background uppercase text-base">Order Cancellation</h2>
-        </div>
-
-        <Toggle label="Enable Order Cancellation" description="Allow customers to cancel orders from their tracker" checked={settings.enableCancellation} onChange={() => handleToggle('enableCancellation')} className="mb-4" />
-
-        <Slider label="Cancellation Window" value={settings.cancellationWindow} onChange={handleSliderChange} valueLabel={`${settings.cancellationWindow} Hours`} min={0} max={24} unit="h" className="mb-4" />
-
-        <div className="space-y-3 pt-3 border-t border-[#e0e3e6]">
-          <Toggle label='Allow cancellation only for "Confirmed" orders' checked={settings.cancelOnlyConfirmed} onChange={() => handleToggle('cancelOnlyConfirmed')} />
-          <Toggle label="Show cancellation reason option" checked={settings.showCancelReason} onChange={() => handleToggle('showCancelReason')} />
-          <Toggle label="Send cancellation confirmation email" checked={settings.sendCancelEmail} onChange={() => handleToggle('sendCancelEmail')} />
-        </div>
-      </Card>
-
-      <Card>
         <div className="flex items-center gap-2 mb-4">
           <div className="w-10 h-10 rounded-lg bg-[#67c9af] text-[#005343] flex items-center justify-center">
             <span className="material-symbols-outlined">analytics</span>
@@ -87,6 +69,28 @@ const Step6_OrderTrackerConfig = () => {
         <div className="space-y-3 pt-3 border-t border-[#e0e3e6]">
           <Toggle label="Show status timeline on tracker page" checked={settings.showStatusTimeline} onChange={() => handleToggle('showStatusTimeline')} />
           <Toggle label="Show estimated delivery time" checked={settings.showEstimatedDelivery} onChange={() => handleToggle('showEstimatedDelivery')} />
+        </div>
+      </Card>
+
+      {/* Order Cancellation - default OFF, sub-options greyed when OFF */}
+      <Card>
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-10 h-10 rounded-lg bg-[#ffdad6] text-[#93000a] flex items-center justify-center">
+            <span className="material-symbols-outlined">cancel</span>
+          </div>
+          <h2 className="font-headline-md text-headline-md text-on-background uppercase text-base">Order Cancellation</h2>
+        </div>
+
+        <Toggle label="Enable Order Cancellation" description="Allow customers to cancel orders from their tracker" checked={settings.enableCancellation} onChange={() => handleToggle('enableCancellation')} className="mb-4" />
+
+        <div className={`transition-opacity duration-200 ${settings.enableCancellation ? 'opacity-100' : 'opacity-40 pointer-events-none'}`}>
+          <Slider label="Cancellation Window" value={settings.cancellationWindow} onChange={handleSliderChange} valueLabel={`${settings.cancellationWindow} Hours`} min={0} max={24} unit="h" className="mb-4" />
+
+          <div className="space-y-3 pt-3 border-t border-[#e0e3e6]">
+            <Toggle label='Allow cancellation only for "Confirmed" orders' checked={settings.cancelOnlyConfirmed} onChange={() => handleToggle('cancelOnlyConfirmed')} />
+            <Toggle label="Show cancellation reason option" checked={settings.showCancelReason} onChange={() => handleToggle('showCancelReason')} />
+            <Toggle label="Send cancellation confirmation email" checked={settings.sendCancelEmail} onChange={() => handleToggle('sendCancelEmail')} />
+          </div>
         </div>
       </Card>
     </StoreBuilderLayout>

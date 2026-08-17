@@ -23,7 +23,7 @@ const Step8_ReturnPolicy = () => {
     // returnData with these, so this just guards against any field being
     // undefined before the user touches it.
     const settings = {
-        isEnabled: true,
+        isEnabled: false,
         returnWindowDays: 7,
         restockingFeePercent: 0,
         returnShippingMethod: 'customer-pays',
