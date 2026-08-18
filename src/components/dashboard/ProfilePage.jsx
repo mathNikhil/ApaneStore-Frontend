@@ -157,7 +157,7 @@ const ProfilePage = () => {
 
                     <div className="space-y-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Business Name</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
                             <input
                                 type="text"
                                 name="company_name"
@@ -233,14 +233,49 @@ const ProfilePage = () => {
                         <span className="material-symbols-outlined text-[#006d2f]">info</span>
                         <h3 className="font-bold text-gray-800">About Aapna eStore</h3>
                     </div>
-                    <div className="text-sm text-gray-600 space-y-2">
+                    <div className="text-sm text-gray-600 space-y-4 overflow-y-auto" style={{ maxHeight: '220px' }}>
                         <p>
-                            Aapna eStore is a complete e-commerce platform that helps you build, manage, and grow your online store. 
-                            With our intuitive store builder, you can create a professional online store without any coding knowledge.
+                            AapnaEstore is a white-label e-commerce SaaS platform that empowers anyone to create their own branded online store — without writing a single line of code. Whether you're a kirana store owner, a home baker, a fashion boutique, or a service provider, AapnaEstore gives you everything you need to sell online in minutes.
                         </p>
-                        <p>
-                            From product management to order tracking, we provide all the tools you need to succeed in the digital marketplace.
-                        </p>
+                        <div>
+                            <p className="font-semibold text-gray-800 mb-1">Our Mission</p>
+                            <p>To make e-commerce accessible to every small business in India — regardless of technical knowledge, budget, or background.</p>
+                        </div>
+                        <div>
+                            <p className="font-semibold text-gray-800 mb-1">Your Responsibilities</p>
+                            <ul className="space-y-1 list-disc pl-4">
+                                <li>You are solely responsible for all products, descriptions, images and pricing in your store.</li>
+                                <li>Ensure all products comply with applicable Indian laws and regulations.</li>
+                                <li>You are responsible for handling customer queries, disputes and order fulfillment.</li>
+                                <li>Provide accurate business and contact information at all times.</li>
+                                <li>You may not sell counterfeit, illegal, or prohibited goods or services.</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <p className="font-semibold text-gray-800 mb-1">Platform Policy</p>
+                            <ul className="space-y-1 list-disc pl-4">
+                                <li>AapnaEstore provides technology platform only. We do not hold inventory on behalf of any tenant.</li>
+                                <li>We reserve the right to suspend any store that violates our terms of service.</li>
+                                <li>Subscription fees, once paid, are non-refundable unless explicitly stated otherwise.</li>
+                                <li>AapnaEstore is not liable for any loss of business or revenue arising from platform downtime.</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <p className="font-semibold text-gray-800 mb-1">Refund Policy</p>
+                            <ul className="space-y-1 list-disc pl-4">
+                                <li>All new tenants get a free trial. No payment required during trial.</li>
+                                <li>Paid subscription fees are non-refundable after payment is processed.</li>
+                                <li>Refunds may be considered for duplicate payment or proven technical failure. Contact support within 7 days.</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <p className="font-semibold text-gray-800 mb-1">Privacy</p>
+                            <ul className="space-y-1 list-disc pl-4">
+                                <li>We collect your mobile number, email and business information to provide the service.</li>
+                                <li>We do not sell your data to third parties.</li>
+                                <li>Your store data, products and customer information remain yours.</li>
+                            </ul>
+                        </div>
                     </div>
                 </Card>
 
@@ -276,7 +311,7 @@ const ProfilePage = () => {
                 </Card>
 
                 {/* Logout Button */}
-                <div className="pt-4">
+                <div className="pt-2">
                     <button
                         onClick={handleLogout}
                         className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-red-50 hover:bg-red-100 border-2 border-red-200 text-red-600 font-semibold rounded-xl transition-all active:scale-[0.98]"
