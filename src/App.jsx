@@ -5,6 +5,7 @@ import { AuthProvider } from './Context/AuthContext';
 import { StoreBuilderProvider } from './Context/StoreBuilderContext';
 import LoginPage from './components/auth/LoginPage';
 import VerifyOTPPage from './components/auth/VerifyOTPPage';
+import OnboardingPage from './components/auth/OnboardingPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import DashboardPage from './components/dashboard/DashboardPage';
 import ProfilePage from './components/dashboard/ProfilePage';
@@ -39,6 +40,7 @@ function App() {
             {/* Public Routes */}
             <Route path="/" element={<LoginPage />} />
             <Route path="/verify-otp" element={<VerifyOTPPage />} />
+            <Route path="/onboarding" element={<OnboardingPage />} />
             
             {/* Tenant Routes (Protected) */}
             <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />

@@ -251,6 +251,8 @@ export const usePreviewData = (builderData, storeId, customerToken) => {
         settings: {
           ...prev.settings,
           enableImageZoom: builderData.enableImageZoom !== false,
+          categoryImageShape: builderData.categoryImageShape || 'circle',
+          categoryImageSize: builderData.categoryImageSize || 'S',
         },
         cart: {
           ...prev.cart,

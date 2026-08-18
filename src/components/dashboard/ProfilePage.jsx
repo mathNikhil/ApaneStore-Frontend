@@ -6,6 +6,27 @@ import TopAppBar from '../Common/TopAppBar';
 import BottomNav from '../Common/BottomNav';
 import Card from '../Common/Card';
 
+const BUSINESS_TYPES = [
+  { value: 'grocery_kirana', label: 'Grocery & Kirana', icon: '🛒' },
+  { value: 'fashion_clothing', label: 'Fashion & Clothing', icon: '👗' },
+  { value: 'food_restaurant', label: 'Food & Restaurant', icon: '🍔' },
+  { value: 'bakery_sweets', label: 'Bakery & Sweets', icon: '🍰' },
+  { value: 'electronics_gadgets', label: 'Electronics & Gadgets', icon: '📱' },
+  { value: 'beauty_cosmetics', label: 'Beauty & Cosmetics', icon: '💄' },
+  { value: 'health_pharmacy', label: 'Health & Pharmacy', icon: '💊' },
+  { value: 'home_furniture', label: 'Home & Furniture', icon: '🏠' },
+  { value: 'jewellery', label: 'Jewellery', icon: '💍' },
+  { value: 'books_stationery', label: 'Books & Stationery', icon: '📚' },
+  { value: 'organic_natural', label: 'Organic & Natural', icon: '🌿' },
+  { value: 'sports_fitness', label: 'Sports & Fitness', icon: '🏋️' },
+  { value: 'toys_kids', label: 'Toys & Kids', icon: '🧸' },
+  { value: 'gifts_handicrafts', label: 'Gifts & Handicrafts', icon: '🎁' },
+  { value: 'pet_supplies', label: 'Pet Supplies', icon: '🐾' },
+  { value: 'automotive', label: 'Automotive', icon: '🚗' },
+  { value: 'services', label: 'Services', icon: '🔧' },
+  { value: 'other', label: 'Other', icon: '📦' },
+];
+
 const ProfilePage = () => {
     const { token, user, logout } = useAuth();
     const [loading, setLoading] = useState(true);
@@ -175,14 +196,22 @@ const ProfilePage = () => {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Business Type</label>
-                            <input
-                                type="text"
-                                name="business_type"
-                                value={profile.business_type || ''}
-                                onChange={handleChange}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                                placeholder="e.g., Retail, Wholesale, Manufacturing"
-                            />
+                            <div className="relative">
+                                <select
+                                    name="business_type"
+                                    value={profile.business_type || ''}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 appearance-none bg-white"
+                                >
+                                    <option value="">Select business type</option>
+                                    {BUSINESS_TYPES.map(type => (
+                                        <option key={type.value} value={type.value}>
+                                            {type.icon} {type.label}
+                                        </option>
+                                    ))}
+                                </select>
+                                <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">expand_more</span>
+                            </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-200">

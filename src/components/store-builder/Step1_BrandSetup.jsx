@@ -37,6 +37,26 @@ const ImageGuidelineBadge = ({ size, format, maxSize, ratio }) => (
 // Header/Body, Secondary repurposed from "muted text" to "default/inactive
 // state of toggles, checkboxes, progress bars" (muted text now comes from
 // Font Body instead).
+
+const BRAND_THEMES = [
+  { name: 'Custom', emoji: '🎨' },
+  { name: 'Forest', emoji: '🌿', colors: { primary: '#25D366', secondary: '#E0E3E6', background: '#FFFFFF', button: '#25D366', buttonLabel: '#005523', fontHeader: '#191C1E', fontBody: '#556067' } },
+  { name: 'Ocean', emoji: '🌊', colors: { primary: '#0077B6', secondary: '#CAF0F8', background: '#F0F8FF', button: '#0077B6', buttonLabel: '#FFFFFF', fontHeader: '#03045E', fontBody: '#0096C7' } },
+  { name: 'Sunset', emoji: '🌅', colors: { primary: '#FF6B35', secondary: '#FFE8DF', background: '#FFF8F5', button: '#FF6B35', buttonLabel: '#FFFFFF', fontHeader: '#2D1A0E', fontBody: '#7A3B1E' } },
+  { name: 'Midnight', emoji: '🌙', colors: { primary: '#6C63FF', secondary: '#2D2B55', background: '#0F0F1A', button: '#6C63FF', buttonLabel: '#FFFFFF', fontHeader: '#FFFFFF', fontBody: '#B0AAFF' } },
+  { name: 'Rose', emoji: '🌸', colors: { primary: '#E91E8C', secondary: '#FCE4F3', background: '#FFF5F9', button: '#E91E8C', buttonLabel: '#FFFFFF', fontHeader: '#4A0028', fontBody: '#9C2666' } },
+  { name: 'Earth', emoji: '🪵', colors: { primary: '#8B4513', secondary: '#E8D5C4', background: '#FAF7F2', button: '#8B4513', buttonLabel: '#FFFFFF', fontHeader: '#2C1A0E', fontBody: '#6B4226' } },
+  { name: 'Royal', emoji: '👑', colors: { primary: '#7B2FBE', secondary: '#EDE0FF', background: '#FAF7FF', button: '#7B2FBE', buttonLabel: '#FFFFFF', fontHeader: '#2D0063', fontBody: '#6B21A8' } },
+  { name: 'Mint', emoji: '🍃', colors: { primary: '#00B894', secondary: '#D4F5EE', background: '#F5FFFD', button: '#00B894', buttonLabel: '#003D30', fontHeader: '#003D30', fontBody: '#2D7A6A' } },
+  { name: 'Candy', emoji: '🍬', colors: { primary: '#FF4D8D', secondary: '#FFD6E7', background: '#FFF0F6', button: '#FF4D8D', buttonLabel: '#FFFFFF', fontHeader: '#3D0020', fontBody: '#A3004E' } },
+  { name: 'Slate', emoji: '🩶', colors: { primary: '#475569', secondary: '#E2E8F0', background: '#F8FAFC', button: '#475569', buttonLabel: '#FFFFFF', fontHeader: '#0F172A', fontBody: '#64748B' } },
+  { name: 'Saffron', emoji: '🟡', colors: { primary: '#F59E0B', secondary: '#FEF3C7', background: '#FFFBEB', button: '#F59E0B', buttonLabel: '#451A03', fontHeader: '#1C1400', fontBody: '#92400E' } },
+  { name: 'Arctic', emoji: '❄️', colors: { primary: '#38BDF8', secondary: '#E0F2FE', background: '#F0F9FF', button: '#38BDF8', buttonLabel: '#0C2A40', fontHeader: '#0C2A40', fontBody: '#0369A1' } },
+  { name: 'Olive', emoji: '🫒', colors: { primary: '#65A30D', secondary: '#ECFCCB', background: '#F7FEE7', button: '#65A30D', buttonLabel: '#1A2E05', fontHeader: '#1A2E05', fontBody: '#3F6212' } },
+  { name: 'Crimson', emoji: '🔴', colors: { primary: '#DC143C', secondary: '#FFE4E8', background: '#FFF8F9', button: '#DC143C', buttonLabel: '#FFFFFF', fontHeader: '#3D0010', fontBody: '#9B0E2A' } },
+  { name: 'Dusk', emoji: '🌆', colors: { primary: '#C084FC', secondary: '#F3E8FF', background: '#FAF5FF', button: '#A855F7', buttonLabel: '#FFFFFF', fontHeader: '#3B0764', fontBody: '#7C3AED' } },
+];
+
 const DEFAULT_BRAND_COLORS = {
   primary: '#25D366',
   secondary: '#E0E3E6',
@@ -247,7 +267,12 @@ const Step1_BrandSetup = () => {
   const freeFonts = [
     'Inter', 'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Poppins',
     'Nunito', 'Quicksand', 'Manrope', 'Work Sans', 'Plus Jakarta Sans',
-    'DM Sans', 'Karla', 'Figtree', 'Outfit', 'Epilogue', 'Public Sans', 'Sora'
+    'DM Sans', 'Karla', 'Figtree', 'Outfit', 'Epilogue', 'Public Sans', 'Sora',
+    'Raleway', 'Josefin Sans', 'Urbanist', 'Jost', 'Lexend', 'Mulish',
+    'Playfair Display', 'Merriweather', 'Lora', 'EB Garamond', 'Cormorant Garamond',
+    'DM Serif Display', 'Libre Baskerville', 'Source Serif 4',
+    'Pacifico', 'Lobster', 'Dancing Script', 'Righteous', 'Fredoka',
+    'Noto Sans Devanagari', 'Mukta', 'Hind', 'Baloo 2', 'Tiro Devanagari', 'Rozha One',
   ];
 
   const [customFonts, setCustomFonts] = useState([]);
@@ -271,7 +296,19 @@ const Step1_BrandSetup = () => {
     }
   };
 
+  const [selectedTheme, setSelectedTheme] = useState('Custom');
+  const [themeDropdownOpen, setThemeDropdownOpen] = useState(false);
+  const [headingFontOpen, setHeadingFontOpen] = useState(false);
+  const [bodyFontOpen, setBodyFontOpen] = useState(false);
+
+  const handleThemeSelect = (theme) => {
+    if (theme.name === 'Custom') return;
+    setSelectedTheme(theme.name);
+    setFormData(prev => ({ ...prev, colors: { ...theme.colors } }));
+  };
+
   const handleColorChange = (colorKey, value) => {
+    setSelectedTheme('Custom');
     setFormData((prev) => ({
       ...prev,
       colors: {
@@ -449,6 +486,55 @@ const Step1_BrandSetup = () => {
       {/* Brand Colors */}
       <div className="space-y-4 mb-6">
         <label className="font-label-md text-label-md text-[#3c4a3d] uppercase tracking-wider text-xs">Brand Colors</label>
+        <div className="mb-3">
+          <label className="text-xs text-[#556067] mb-1 block">Start with a theme</label>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setThemeDropdownOpen(prev => !prev)}
+              className="w-full border border-[#bbcbb9] rounded-lg px-3 py-2 text-sm bg-white text-[#191C1E] flex items-center justify-between cursor-pointer hover:border-[#25D366] transition-colors"
+              style={{ borderColor: themeDropdownOpen ? '#25D366' : undefined }}
+            >
+              <div className="flex items-center gap-2">
+                <span>{BRAND_THEMES.find(t => t.name === selectedTheme)?.emoji}</span>
+                <span>{selectedTheme}</span>
+                {selectedTheme !== 'Custom' && (
+                  <div className="flex gap-1 ml-1">
+                    {Object.values(BRAND_THEMES.find(t => t.name === selectedTheme)?.colors || {}).slice(0, 5).map((hex, i) => (
+                      <div key={i} style={{ width: 12, height: 12, borderRadius: '50%', background: hex, border: '0.5px solid rgba(0,0,0,0.1)' }} />
+                    ))}
+                  </div>
+                )}
+              </div>
+              <span className="material-symbols-outlined text-[#556067] text-lg" style={{ transform: themeDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>expand_more</span>
+            </button>
+            {themeDropdownOpen && (
+              <div className="absolute z-50 w-full mt-1 bg-white border border-[#e0e3e6] rounded-lg shadow-lg overflow-hidden" style={{ maxHeight: 320, overflowY: 'auto' }}>
+                {BRAND_THEMES.map(theme => (
+                  <button
+                    key={theme.name}
+                    type="button"
+                    onClick={() => { handleThemeSelect(theme); setThemeDropdownOpen(false); }}
+                    className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-[#f0faf4] transition-colors text-sm"
+                    style={{ background: selectedTheme === theme.name ? '#f0faf4' : undefined, borderLeft: selectedTheme === theme.name ? '3px solid #25D366' : '3px solid transparent' }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span>{theme.emoji}</span>
+                      <span className="font-medium text-[#191C1E]">{theme.name}</span>
+                    </div>
+                    {theme.colors && (
+                      <div className="flex gap-1">
+                        {Object.values(theme.colors).map((hex, i) => (
+                          <div key={i} style={{ width: 14, height: 14, borderRadius: '50%', background: hex, border: '0.5px solid rgba(0,0,0,0.1)' }} />
+                        ))}
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
         <Card>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {colorOptions.map((color) => (
@@ -497,30 +583,76 @@ const Step1_BrandSetup = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1">
             <span className="font-caption text-caption text-[#556067] text-xs">Heading Font</span>
-            <div className="bg-white border border-[#bbcbb9] rounded-lg flex items-center px-3">
-              <select name="typography.headingFont" value={formData.typography.headingFont} onChange={handleChange} className="w-full bg-transparent border-none py-3 font-body-md text-body-md text-[#191c1e] focus:ring-0 outline-none appearance-none">
-                {allFonts.map((font) => <option key={font} value={font} style={{ fontFamily: font }}>{font}</option>)}
-              </select>
-              <span className="material-symbols-outlined text-[#556067]">expand_more</span>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => { setHeadingFontOpen(p => !p); setBodyFontOpen(false); }}
+                className="w-full bg-white border border-[#bbcbb9] rounded-lg flex items-center justify-between px-3 py-2.5 hover:border-[#25D366] transition-colors"
+                style={{ borderColor: headingFontOpen ? '#25D366' : undefined }}
+              >
+                <span className="font-bold text-[#191C1E] text-sm" style={{ fontFamily: formData.typography.headingFont }}>{formData.typography.headingFont}</span>
+                <span className="material-symbols-outlined text-[#556067] text-lg" style={{ transform: headingFontOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>expand_more</span>
+              </button>
+              {headingFontOpen && (
+                <div className="absolute z-50 w-full mt-1 bg-white border border-[#e0e3e6] rounded-lg shadow-lg overflow-hidden" style={{ maxHeight: 260, overflowY: 'auto' }}>
+                  {allFonts.map(font => (
+                    <button
+                      key={font}
+                      type="button"
+                      onClick={() => { handleChange({ target: { name: 'typography.headingFont', value: font } }); setHeadingFontOpen(false); }}
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-[#f0faf4] transition-colors"
+                      style={{ fontFamily: font, fontWeight: 600, color: formData.typography.headingFont === font ? '#006d2f' : '#191C1E', background: formData.typography.headingFont === font ? '#f0faf4' : undefined, borderLeft: formData.typography.headingFont === font ? '3px solid #25D366' : '3px solid transparent' }}
+                    >
+                      {font}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
+            <span className="text-[11px] mt-1 block px-1" style={{ fontFamily: formData.typography.headingFont, color: formData.colors.fontHeader, fontWeight: 600 }}>
+              The quick brown fox jumps
+            </span>
           </div>
           <div className="space-y-1">
             <span className="font-caption text-caption text-[#556067] text-xs">Body Font</span>
-            <div className="bg-white border border-[#bbcbb9] rounded-lg flex items-center px-3">
-              <select name="typography.bodyFont" value={formData.typography.bodyFont} onChange={handleChange} className="w-full bg-transparent border-none py-3 font-body-md text-body-md text-[#191c1e] focus:ring-0 outline-none appearance-none">
-                {allFonts.map((font) => <option key={font} value={font} style={{ fontFamily: font }}>{font}</option>)}
-              </select>
-              <span className="material-symbols-outlined text-[#556067]">expand_more</span>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => { setBodyFontOpen(p => !p); setHeadingFontOpen(false); }}
+                className="w-full bg-white border border-[#bbcbb9] rounded-lg flex items-center justify-between px-3 py-2.5 hover:border-[#25D366] transition-colors"
+                style={{ borderColor: bodyFontOpen ? '#25D366' : undefined }}
+              >
+                <span className="text-[#556067] text-sm" style={{ fontFamily: formData.typography.bodyFont }}>{formData.typography.bodyFont}</span>
+                <span className="material-symbols-outlined text-[#556067] text-lg" style={{ transform: bodyFontOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>expand_more</span>
+              </button>
+              {bodyFontOpen && (
+                <div className="absolute z-50 w-full mt-1 bg-white border border-[#e0e3e6] rounded-lg shadow-lg overflow-hidden" style={{ maxHeight: 260, overflowY: 'auto' }}>
+                  {allFonts.map(font => (
+                    <button
+                      key={font}
+                      type="button"
+                      onClick={() => { handleChange({ target: { name: 'typography.bodyFont', value: font } }); setBodyFontOpen(false); }}
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-[#f0faf4] transition-colors"
+                      style={{ fontFamily: font, color: formData.typography.bodyFont === font ? '#006d2f' : '#556067', background: formData.typography.bodyFont === font ? '#f0faf4' : undefined, borderLeft: formData.typography.bodyFont === font ? '3px solid #25D366' : '3px solid transparent' }}
+                    >
+                      {font}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
+            <span className="text-[11px] mt-1 block px-1" style={{ fontFamily: formData.typography.bodyFont, color: formData.colors.fontBody }}>
+              The quick brown fox jumps
+            </span>
           </div>
-          <div className="md:col-span-2 space-y-1">
+          <div className="md:col-span-2 space-y-1 hidden">
             <span className="font-caption text-caption text-[#556067] text-xs">Base Font Size</span>
             <Input type="text" name="typography.baseFontSize" value={formData.typography.baseFontSize} onChange={handleChange} className="bg-white border border-[#bbcbb9] rounded-lg" />
           </div>
         </div>
         <div className="mt-3">
-          <input ref={fontInputRef} type="file" accept=".ttf,.otf,.woff,.woff2" onChange={handleFontUpload} className="hidden" />
-          <button onClick={handleFontUploadClick} className="flex items-center gap-2 text-[#006d2f] font-semibold text-sm hover:bg-[#25D366]/10 px-4 py-2 rounded-lg transition-colors">
+          <input ref={fontInputRef} type="file" accept=".ttf,.otf,.woff,.woff2" className="hidden" />
+          <button onClick={handleFontUploadClick} className="hidden flex items-center gap-2 text-[#006d2f] font-semibold text-sm hover:bg-[#25D366]/10 px-4 py-2 rounded-lg transition-colors">
             <span className="material-symbols-outlined text-base">upload_file</span> Upload Custom Font
           </button>
           {customFonts.length > 0 && (

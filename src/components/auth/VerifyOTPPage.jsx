@@ -1,4 +1,5 @@
 import { showSuccess, showError } from '../../utils/toast';
+import logo from '../../assets/images/Apnaestore-Logo.png';
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import TopAppBar from '../Common/TopAppBar';
@@ -79,7 +80,13 @@ const VerifyOTPPage = () => {
         setLoading(false);
         return;
       }
-      navigate('/dashboard');
+      // Check if new tenant (no business name yet)
+      const tenantUser = result.data?.tenant;
+      if (!tenantUser?.business_name && !tenantUser?.company_name) {
+        navigate('/onboarding');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err) {
       showError('Invalid OTP. Please try again.');
     } finally {
@@ -108,8 +115,8 @@ const VerifyOTPPage = () => {
         <div className="bg-white rounded-xl w-full max-w-[440px] p-8 shadow-md border border-[#E9EDEF] animate-in slide-in-from-bottom-4">
           {/* Icon & Title - Matching your HTML */}
           <div className="flex flex-col items-center text-center gap-3">
-            <div className="w-16 h-16 bg-[#25D366]/10 rounded-full flex items-center justify-center mb-2">
-              <span className="material-symbols-outlined text-[#006d2f] text-3xl filled">verified_user</span>
+            <div className="mb-2">
+              <img src={logo} alt="Apna eStore" className="h-12" />
             </div>
             <h2 className="text-2xl font-semibold text-[#191c1e]">Enter OTP</h2>
             <p className="text-sm text-[#3c4a3d]">

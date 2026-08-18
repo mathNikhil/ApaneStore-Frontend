@@ -77,6 +77,10 @@ export const StoreBuilderProvider = ({ children }) => {
     const [productData, setProductData] = useState({
         categories: [],
         products: [],
+        enableImageZoom: true,
+        categoryImageShape: 'circle',
+        categoryImageSize: 'S',
+        autoSlideProductImages: false,
     });
 
     // Step 3: Cart Data
@@ -391,6 +395,9 @@ export const StoreBuilderProvider = ({ children }) => {
                 categories: productData.categories || [],
                 productBanner: productData.banner || {},
                 enableImageZoom: productData.enableImageZoom,
+                categoryImageShape: productData.categoryImageShape || 'circle',
+                categoryImageSize: productData.categoryImageSize || 'S',
+                autoSlideProductImages: productData.autoSlideProductImages || false,
                 cartSettings: cartData,
                 paymentSettings: paymentData,
                 addressSettings: addressData,
@@ -556,11 +563,14 @@ export const StoreBuilderProvider = ({ children }) => {
                 }
                 
                 // Populate Product Data
-                if (config.products?.categories) {
+                if (config.products) {
                     setProductData({ 
-                        categories: sanitizeCategories(config.products.categories),
+                        categories: sanitizeCategories(config.products.categories || []),
                         banner: config.products.banner || {},
                         enableImageZoom: config.products.enableImageZoom !== false,
+                        categoryImageShape: config.products.categoryImageShape || 'circle',
+                        categoryImageSize: config.products.categoryImageSize || 'S',
+                        autoSlideProductImages: config.products.autoSlideProductImages || false,
                     });
                 }
                 

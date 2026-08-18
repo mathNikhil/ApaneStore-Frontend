@@ -94,6 +94,9 @@ const Step2_ProductConfig = () => {
   const [textColor, setTextColor] = useState(productData.banner?.textColor || '#FFFFFF');
 
   const [enableImageZoom, setEnableImageZoom] = useState(productData.enableImageZoom !== false);
+  const [categoryImageShape, setCategoryImageShape] = useState(productData.categoryImageShape || 'circle');
+  const [categoryImageSize, setCategoryImageSize] = useState(productData.categoryImageSize || 'S');
+  const [autoSlideProductImages, setAutoSlideProductImages] = useState(productData.autoSlideProductImages || false);
 
   // ✅ FIX: Re-hydrate product/banner state once loadStore() actually finishes.
   // categories/banner fields above are only captured once at mount, but loadStore()
@@ -120,6 +123,15 @@ const Step2_ProductConfig = () => {
     }
     if (currentStoreId && productData.enableImageZoom !== undefined) {
       setEnableImageZoom(productData.enableImageZoom !== false);
+    }
+    if (currentStoreId && productData.categoryImageShape) {
+      setCategoryImageShape(productData.categoryImageShape);
+    }
+    if (currentStoreId && productData.categoryImageSize) {
+      setCategoryImageSize(productData.categoryImageSize);
+    }
+    if (currentStoreId && productData.autoSlideProductImages !== undefined) {
+      setAutoSlideProductImages(productData.autoSlideProductImages || false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStoreId]);
@@ -353,6 +365,9 @@ const Step2_ProductConfig = () => {
     setProductData({
       categories: categories,
       enableImageZoom: enableImageZoom,
+      categoryImageShape: categoryImageShape,
+      categoryImageSize: categoryImageSize,
+      autoSlideProductImages: autoSlideProductImages,
       banner: {
         image: bannerImage,
         tagline: bannerTagline,
@@ -366,7 +381,7 @@ const Step2_ProductConfig = () => {
         textColor: textColor,
       }
     });
-  }, [categories, bannerImage, bannerTagline, bannerSubtitle, bannerCta, bannerHeight, bannerBgColor, showCta, showText, textAlignment, textColor, enableImageZoom]);
+  }, [categories, bannerImage, bannerTagline, bannerSubtitle, bannerCta, bannerHeight, bannerBgColor, showCta, showText, textAlignment, textColor, enableImageZoom, categoryImageShape, categoryImageSize, autoSlideProductImages]);
 
   const generateId = () => Math.floor(Date.now() + Math.random() * 1000);
 
@@ -978,15 +993,85 @@ const Step2_ProductConfig = () => {
         );
       })()}
 
-      {/* Store-wide Image Settings */}
+      {/* Store-wide Settings - Two column layout */}
       <Card className="mb-6">
-        <h2 className="font-title-lg text-title-lg text-[#191c1e] mb-4">Image Settings</h2>
-        <Toggle
-          label="Allow customers to expand/zoom product images"
-          description="When enabled, tapping a product image opens a bigger view with all variants, sizes and pricing — applies to every product across every category"
-          checked={enableImageZoom}
-          onChange={() => setEnableImageZoom(!enableImageZoom)}
-        />
+        <div className="flex gap-4">
+
+          {/* LEFT: Image Settings */}
+          <div className="flex-1">
+            <h3 className="font-semibold text-sm text-[#191c1e] mb-3">Image Settings</h3>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => setEnableImageZoom(!enableImageZoom)}
+                className={`p-3 rounded-xl border-2 text-left transition-all ${enableImageZoom ? 'border-[#006d2f] bg-[#f0faf4]' : 'border-[#e0e3e6]'}`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="material-symbols-outlined text-sm text-[#006d2f]">zoom_in</span>
+                  <div className={`w-7 h-3.5 rounded-full transition-colors flex items-center px-0.5 ${enableImageZoom ? 'bg-[#006d2f]' : 'bg-[#e0e3e6]'}`}>
+                    <div className={`w-2.5 h-2.5 bg-white rounded-full transition-transform ${enableImageZoom ? 'translate-x-3' : 'translate-x-0'}`} />
+                  </div>
+                </div>
+                <p className="text-xs font-semibold text-[#191c1e]">Image Zoom</p>
+                <p className="text-[10px] text-[#556067]">Tap to expand</p>
+              </button>
+
+              <button
+                onClick={() => setAutoSlideProductImages(!autoSlideProductImages)}
+                className={`p-3 rounded-xl border-2 text-left transition-all ${autoSlideProductImages ? 'border-[#006d2f] bg-[#f0faf4]' : 'border-[#e0e3e6]'}`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="material-symbols-outlined text-sm text-[#006d2f]">slideshow</span>
+                  <div className={`w-7 h-3.5 rounded-full transition-colors flex items-center px-0.5 ${autoSlideProductImages ? 'bg-[#006d2f]' : 'bg-[#e0e3e6]'}`}>
+                    <div className={`w-2.5 h-2.5 bg-white rounded-full transition-transform ${autoSlideProductImages ? 'translate-x-3' : 'translate-x-0'}`} />
+                  </div>
+                </div>
+                <p className="text-xs font-semibold text-[#191c1e]">Auto-slide</p>
+                <p className="text-[10px] text-[#556067]">Slide product images</p>
+              </button>
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div className="w-px bg-[#e0e3e6]" />
+
+          {/* RIGHT: Category Display */}
+          <div className="flex-1">
+            <h3 className="font-semibold text-sm text-[#191c1e] mb-3">Category Display</h3>
+
+            <p className="text-xs text-[#556067] mb-1.5">Shape</p>
+            <div className="flex gap-2 mb-3">
+              {['circle', 'square'].map(shape => (
+                <button
+                  key={shape}
+                  onClick={() => setCategoryImageShape(shape)}
+                  className={`flex-1 py-2 rounded-lg border-2 text-xs font-semibold transition-all flex flex-col items-center gap-1 ${categoryImageShape === shape ? 'border-[#006d2f] bg-[#f0faf4] text-[#006d2f]' : 'border-[#e0e3e6] text-[#556067]'}`}
+                >
+                  <div className={`w-4 h-4 bg-[#006d2f] opacity-60 ${shape === 'circle' ? 'rounded-full' : 'rounded-sm'}`} />
+                  <span className="capitalize">{shape}</span>
+                </button>
+              ))}
+            </div>
+
+            <p className="text-xs text-[#556067] mb-1.5">Size</p>
+            <div className="flex gap-1">
+              {[
+                { value: 'S', sub: '4/row' },
+                { value: 'M', sub: '3/row' },
+                { value: 'L', sub: '2/row' },
+              ].map(size => (
+                <button
+                  key={size.value}
+                  onClick={() => setCategoryImageSize(size.value)}
+                  className={`flex-1 py-2 rounded-lg border-2 transition-all flex flex-col items-center gap-0.5 ${categoryImageSize === size.value ? 'border-[#006d2f] bg-[#f0faf4] text-[#006d2f]' : 'border-[#e0e3e6] text-[#556067]'}`}
+                >
+                  <span className="text-sm font-bold">{size.value}</span>
+                  <span className="text-[10px]">{size.sub}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+        </div>
       </Card>
 
       {/* Categories Section */}

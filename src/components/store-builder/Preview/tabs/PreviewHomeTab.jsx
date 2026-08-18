@@ -3,34 +3,28 @@ import PreviewBanner from '../components/PreviewBanner';
 import PreviewProductCard from '../components/PreviewProductCard';
 
 const PreviewHomeTab = ({ data, onAddToCart, device = 'desktop' }) => {
-  const { banner, categories, brand, products, enableProductSearch } = data;
+  const { banner, categories, brand, products, enableProductSearch, settings = {} } = data;
+  const brandFonts = brand.fonts || { heading: 'Inter', body: 'Inter' };
+  const imgSize = settings.categoryImageSize || 'S';
+  const imgShape = settings.categoryImageShape || 'circle';
+  const imgSizeClass = imgSize === 'L' ? 'w-[72px] h-[72px]' : imgSize === 'M' ? 'w-16 h-16' : 'w-12 h-12';
+  const imgShapeClass = imgShape === 'circle' ? 'rounded-full' : 'rounded-lg';
   const [selectedCategory, setSelectedCategory] = useState('all');
-  // ✅ Search state — live filter, no submit button (per spec).
   const [searchQuery, setSearchQuery] = useState('');
 
   const allProducts = products || [];
   const allCategories = categories || [];
-  // Default true — matches "active by default" even for older builderData
-  // shapes saved before this field existed.
   const searchEnabled = enableProductSearch !== false;
 
   const trimmedQuery = searchQuery.trim();
   const isSearching = searchEnabled && trimmedQuery.length > 0;
 
-  // The Mobile/Tablet/Desktop toggle only shrinks a container div — it does NOT
-  // change the real browser viewport. Tailwind's sm:/md:/lg: prefixes respond to
-  // the actual window width, so they'd stay "desktop" even when this box is
-  // narrowed. We compute columns from the `device` prop directly instead.
   const gridColsClass = {
     mobile: 'grid-cols-2',
     tablet: 'grid-cols-2',
     desktop: 'grid-cols-3',
   }[device] || 'grid-cols-3';
 
-  // ✅ ANY-word match against name + description, case-insensitive. Search
-  // always runs against the WHOLE store (allProducts), not whatever
-  // category is currently selected — per spec, search overrides category
-  // filtering rather than narrowing within it.
   const getSearchResults = () => {
     const words = trimmedQuery.toLowerCase().split(/\s+/).filter(Boolean);
     if (words.length === 0) return allProducts;
@@ -51,9 +45,6 @@ const PreviewHomeTab = ({ data, onAddToCart, device = 'desktop' }) => {
   const filteredProducts = getFilteredProducts();
   const hasProducts = allProducts.length > 0;
 
-  // Typing a search query overrides/clears whatever category was selected,
-  // per spec — so the category buttons visually deselect too, not just the
-  // product list underneath them silently changing.
   const handleSearchChange = (e) => {
     const value = e.target.value;
     setSearchQuery(value);
@@ -66,7 +57,6 @@ const PreviewHomeTab = ({ data, onAddToCart, device = 'desktop' }) => {
 
   return (
     <div className="p-4 max-w-7xl mx-auto">
-      {/* Hero Banner - Responsive */}
       <PreviewBanner
         image={banner.image}
         tagline={banner.tagline}
@@ -82,17 +72,13 @@ const PreviewHomeTab = ({ data, onAddToCart, device = 'desktop' }) => {
         device={device}
       />
 
-      {/* Product Search — between banner and category buttons, per spec */}
       {searchEnabled && (
         <div className="mb-4 mt-4">
           <div
             className="relative flex items-center rounded-full border-2 px-4 py-2"
             style={{ borderColor: isSearching ? brand.colors.primary : brand.colors.secondary }}
           >
-            <span
-              className="material-symbols-outlined text-lg mr-2"
-              style={{ color: brand.colors.fontBody }}
-            >
+            <span className="material-symbols-outlined text-lg mr-2" style={{ color: brand.colors.fontBody}}>
               search
             </span>
             <input
@@ -101,13 +87,13 @@ const PreviewHomeTab = ({ data, onAddToCart, device = 'desktop' }) => {
               onChange={handleSearchChange}
               placeholder="Search products..."
               className="flex-1 bg-transparent outline-none text-sm"
-              style={{ color: brand.colors.fontBody }}
+              style={{ color: brand.colors.fontBody, fontFamily: brand.fonts?.body || 'Inter' }}
             />
             {searchQuery.length > 0 && (
               <button
                 onClick={clearSearch}
                 className="ml-2 opacity-60 hover:opacity-100 transition-opacity"
-                style={{ color: brand.colors.fontBody }}
+                style={{ color: brand.colors.fontBody, fontFamily: brand.fonts?.body || 'Inter' }}
                 aria-label="Clear search"
               >
                 <span className="material-symbols-outlined text-lg">close</span>
@@ -117,58 +103,101 @@ const PreviewHomeTab = ({ data, onAddToCart, device = 'desktop' }) => {
         </div>
       )}
 
-      {/* Category Filter Tabs - Scrollable on mobile */}
-      {/* ✅ FIX: border-b now lives on this OUTER full-width container, not
-          the inner button row — the inner row uses min-w-max (sized to its
-          own content) so the line used to stop wherever the buttons ended,
-          reading as short/off-center against the full-width search bar
-          above it. The line now spans the same width as the search bar
-          regardless of how many categories there are. */}
       {allCategories.length > 0 && (
-        <div className="mb-6 pt-4 pb-4 border-b border-[#e0e3e6] overflow-x-auto">
-          <div className="flex gap-4 min-w-max">
+        <div className="mb-6 pt-4 pb-6 border-b border-[#e0e3e6] overflow-x-auto hide-scrollbar">
+          <div className="flex gap-3 min-w-max items-end">
+
+            {/* All pill — always simple text pill */}
             <button
               onClick={() => { setSelectedCategory('all'); clearSearch(); }}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-full font-medium text-sm transition-colors whitespace-nowrap border-2 bg-transparent hover:opacity-80"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full font-medium text-sm transition-colors whitespace-nowrap border-2 hover:opacity-80 flex-shrink-0"
               style={selectedCategory === 'all' && !isSearching
-                ? { borderColor: brand.colors.primary, color: brand.colors.primary }
-                : { borderColor: brand.colors.secondary, color: brand.colors.fontBody }
+                ? { borderColor: brand.colors.primary, backgroundColor: brand.colors.primary, color: '#fff', fontFamily: brand.fonts?.body || 'Inter' }
+                : { borderColor: brand.colors.secondary, backgroundColor: 'transparent', color: brand.colors.fontBody, fontFamily: brand.fonts?.body || 'Inter' }
               }
             >
               All ({allProducts.length})
             </button>
-            {allCategories.map((category) => (
-              <button
-                key={category.id}
-                onClick={() => { setSelectedCategory(category.id); clearSearch(); }}
-                className={`relative flex items-center py-1 pr-4 rounded-full font-medium text-sm transition-colors whitespace-nowrap border-2 bg-transparent hover:opacity-80 ${category.image?.url ? 'pl-16' : 'pl-4'}`}
-                style={selectedCategory === category.id && !isSearching
-                  ? { borderColor: brand.colors.primary, color: brand.colors.primary }
-                  : { borderColor: brand.colors.secondary, color: brand.colors.fontBody }
-                }
-              >
-                {category.image?.url && (
-                  <img
-                    src={category.image.url}
-                    alt={category.name}
-                    className="absolute left-0 top-1/2 -translate-y-1/2 w-14 h-14 rounded-full object-cover flex-shrink-0"
-                  />
-                )}
-                {category.name} ({category.products?.length || 0})
-              </button>
-            ))}
+
+            {allCategories.map((category) => {
+              const isSelected = selectedCategory === category.id && !isSearching;
+              const hasImage = !!category.image?.url;
+              const selectedStyle = { borderColor: brand.colors.primary, backgroundColor: brand.colors.primary, color: '#fff', fontFamily: brand.fonts?.body || 'Inter' };
+              const defaultStyle = { borderColor: brand.colors.secondary, backgroundColor: 'transparent', color: brand.colors.fontBody, fontFamily: brand.fonts?.body || 'Inter' };
+
+              // No image → always simple pill
+              if (!hasImage) {
+                return (
+                  <button
+                    key={category.id}
+                    onClick={() => { setSelectedCategory(category.id); clearSearch(); }}
+                    className="flex items-center px-4 py-2 rounded-full font-medium text-sm transition-colors whitespace-nowrap border-2 hover:opacity-80 flex-shrink-0"
+                    style={isSelected ? selectedStyle : defaultStyle}
+                  >
+                    {category.name} ({category.products?.length || 0})
+                  </button>
+                );
+              }
+
+              // S size → horizontal pill: image left, text right
+              if (imgSize === 'S') {
+                return (
+                  <button
+                    key={category.id}
+                    onClick={() => { setSelectedCategory(category.id); clearSearch(); }}
+                    className="flex items-center gap-2 pl-1.5 pr-4 py-1.5 rounded-full font-medium text-sm transition-colors whitespace-nowrap border-2 hover:opacity-80 flex-shrink-0"
+                    style={isSelected ? selectedStyle : defaultStyle}
+                  >
+                    <img src={category.image.url} alt={category.name} className={`w-6 h-6 ${imgShapeClass} object-cover flex-shrink-0`} />
+                    {category.name} ({category.products?.length || 0})
+                  </button>
+                );
+              }
+
+              // M size → vertical card: image top, text below
+              if (imgSize === 'M') {
+                return (
+                  <button
+                    key={category.id}
+                    onClick={() => { setSelectedCategory(category.id); clearSearch(); }}
+                    className="flex flex-col items-center gap-1.5 p-2 font-medium text-sm transition-colors border-2 hover:opacity-80 flex-shrink-0 rounded-xl"
+                    style={{ ...(isSelected ? selectedStyle : defaultStyle), width: '80px' }}
+                  >
+                    <img src={category.image.url} alt={category.name} className={`w-14 h-14 ${imgShapeClass} object-cover flex-shrink-0`} />
+                    <span className="text-xs text-center leading-tight">{category.name} ({category.products?.length || 0})</span>
+                  </button>
+                );
+              }
+
+              // L size → overlay card: image fills, text overlaid
+              if (imgSize === 'L') {
+                return (
+                  <button
+                    key={category.id}
+                    onClick={() => { setSelectedCategory(category.id); clearSearch(); }}
+                    className={`relative flex items-end justify-center overflow-hidden font-medium text-sm transition-colors border-2 hover:opacity-80 flex-shrink-0 ${imgShapeClass}`}
+                    style={{ width: '110px', height: '110px', borderColor: isSelected ? brand.colors.primary : brand.colors.secondary }}
+                  >
+                    <img src={category.image.url} alt={category.name} className="absolute inset-0 w-full h-full object-cover" />
+                    <div className="absolute inset-0" style={{ background: isSelected ? `${brand.colors.primary}99` : 'linear-gradient(to top, rgba(0,0,0,0.6) 40%, transparent 100%)' }} />
+                    <span className="relative z-10 text-white text-xs text-center pb-2 px-1 leading-tight font-semibold drop-shadow">
+                      {category.name} ({category.products?.length || 0})
+                    </span>
+                  </button>
+                );
+              }
+            })}
           </div>
         </div>
       )}
 
-      {/* Products Grid - Fully Responsive */}
       {!hasProducts ? (
-        <div className="text-center py-12" style={{ color: brand.colors.fontBody }}>
+        <div className="text-center py-12" style={{ color: brand.colors.fontBody, fontFamily: brand.fonts?.body || 'Inter' }}>
           <span className="material-symbols-outlined text-6xl block mb-4 opacity-30">storefront</span>
           <p>No products added yet. Add some products to see preview.</p>
         </div>
       ) : filteredProducts.length === 0 ? (
-        <div className="text-center py-10" style={{ color: brand.colors.fontBody }}>
+        <div className="text-center py-10" style={{ color: brand.colors.fontBody, fontFamily: brand.fonts?.body || 'Inter' }}>
           {isSearching ? (
             <>
               <span className="material-symbols-outlined text-5xl block mb-3 opacity-30">search_off</span>
@@ -185,7 +214,9 @@ const PreviewHomeTab = ({ data, onAddToCart, device = 'desktop' }) => {
               key={product.id}
               product={product}
               brandColors={brand.colors}
+              brandFonts={brand.fonts}
               onAddToCart={onAddToCart}
+              autoSlide={settings?.autoSlideProductImages || false}
             />
           ))}
         </div>

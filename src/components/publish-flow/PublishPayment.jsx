@@ -112,8 +112,6 @@ const PublishPayment = () => {
         setPaying(true);
         showError('');
         try {
-            // Simulated — no real payment gateway yet.
-            await new Promise((resolve) => setTimeout(resolve, 1500));
             const result = await storeAPI.completePayment(storeId, paymentMethod, selectedCycle, termsAccepted);
             if (result.success) {
                 navigate(`/store-builder/publish/success?storeId=${storeId}`);
@@ -300,7 +298,7 @@ const PublishPayment = () => {
                 <p className="text-xs text-[#8e9eab] mb-1">Card and Net Banking will be added when the payment gateway goes live.</p>
 
                 <p className="text-xs text-[#8e9eab] text-center mt-4">
-                    🔒 This is a simulated payment for testing — no real charge will be made.
+                    🔒 Payments powered by Cashfree. Your data is secure.
                 </p>
 
                 {terms && (

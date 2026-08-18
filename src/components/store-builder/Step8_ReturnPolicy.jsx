@@ -16,7 +16,7 @@ import Toggle from '../Common/Toggle';
 // other step.
 const Step8_ReturnPolicy = () => {
     const navigate = useNavigate();
-    const { saveStore, returnData, updateReturnData } = useStoreBuilder();
+    const { saveStore, returnData, updateReturnData, currentStoreId } = useStoreBuilder();
     const [saving, setSaving] = React.useState(false);
 
     // Sensible defaults on first visit — context already initializes
@@ -55,7 +55,7 @@ const Step8_ReturnPolicy = () => {
         try {
             const result = await saveStore();
             if (result.success) {
-                const storeId = result.data?.id || localStorage.getItem('currentStoreId');
+                const storeId = currentStoreId || result.data?.data?.id || localStorage.getItem('currentStoreId');
                 navigate(`/store-builder/preview?storeId=${storeId}`);
             } else {
                 showError(result.error || 'Failed to save. Please try again.');
@@ -108,6 +108,9 @@ const Step8_ReturnPolicy = () => {
                     </p>
                 </div>
             </Card>
+
+            {/* Sub-options greyed out when Returns disabled */}
+            <div className={`transition-opacity duration-200 ${settings.isEnabled ? 'opacity-100' : 'opacity-40 pointer-events-none'}`}>
 
             {/* Return Window — 7 to 60 days, matching the platform's own min/max */}
             <Card className="mb-6">
@@ -253,6 +256,7 @@ const Step8_ReturnPolicy = () => {
                     />
                 </div>
             </Card>
+            </div>
         </StoreBuilderLayout>
     );
 };

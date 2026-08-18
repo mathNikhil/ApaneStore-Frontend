@@ -21,11 +21,17 @@ const FinalStorePreview = () => {
         returnData,
         uploadedImages,
         currentStoreId,
+        loadStore,
         saveStore 
     } = useStoreBuilder();
 
     // ✅ Build complete builderData object - THIS IS THE ONLY PLACE DATA IS MAPPED
     const getAllBuilderData = () => {
+        console.log('🎯 getAllBuilderData - productData:', JSON.stringify({
+            categoryImageShape: productData?.categoryImageShape,
+            categoryImageSize: productData?.categoryImageSize,
+            autoSlide: productData?.autoSlideProductImages
+        }));
         return {
             brand: {
                 brandName: brandData.brandName || '',
@@ -51,6 +57,9 @@ const FinalStorePreview = () => {
             products: {
                 categories: productData.categories || [],
                 enableImageZoom: productData.enableImageZoom || false,
+                categoryImageShape: productData.categoryImageShape || 'circle',
+                categoryImageSize: productData.categoryImageSize || 'S',
+                autoSlideProductImages: productData.autoSlideProductImages || false,
                 banner: {
                     image: productData.banner?.image || null,
                     tagline: productData.banner?.tagline || '',
@@ -74,7 +83,7 @@ const FinalStorePreview = () => {
         };
     };
 
-    const builderData = getAllBuilderData();
+    const builderData = React.useMemo(() => getAllBuilderData(), [productData, brandData, cartData, paymentData, addressData, orderData, profileData, returnData, uploadedImages]);
 
     const [device, setDevice] = useState('desktop');
     const [publishing, setPublishing] = useState(false);

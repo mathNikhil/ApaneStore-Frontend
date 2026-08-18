@@ -5,6 +5,11 @@ import { customerAuthAPI } from '../../../services/api';
 // (same OTP mechanism the main tenant dashboard uses, scoped to this
 // specific store — a phone number is a separate customer at every store).
 const PreviewCustomerAuth = ({ brand, storeId, onAuthenticated, onCancel }) => {
+  const headingFont = brand?.fonts?.heading || 'Inter';
+  const bodyFont = brand?.fonts?.body || 'Inter';
+  const primaryColor = brand?.colors?.primary || '#25D366';
+  const fontHeader = brand?.colors?.fontHeader || '#191C1E';
+  const fontBody = brand?.colors?.fontBody || '#556067';
   const [step, setStep] = useState('mobile'); // 'mobile' | 'otp'
   const [mobile, setMobile] = useState('');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -123,15 +128,15 @@ const PreviewCustomerAuth = ({ brand, storeId, onAuthenticated, onCancel }) => {
             ) : (
               <span className="text-4xl mb-1">🛒</span>
             )}
-            <p className="text-sm text-gray-700 font-medium mt-1">Welcome to {brand?.name || 'the Store'}</p>
+            <p className="text-sm font-medium mt-1" style={{ fontFamily: headingFont, color: fontHeader }}>Welcome to {brand?.name || 'the Store'}</p>
             {brand?.tagline && (
               <p className="text-xs text-gray-500 mt-1 px-6 text-center">{brand.tagline}</p>
             )}
           </div>
 
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold text-gray-800 mb-2">Customer Login</h1>
-            <p className="text-gray-500 text-sm">Enter your mobile number to receive OTP</p>
+            <h1 className="text-2xl font-bold mb-2" style={{ fontFamily: headingFont, color: fontHeader }}>Customer Login</h1>
+            <p className="text-sm" style={{ fontFamily: bodyFont, color: fontBody }}>Enter your mobile number to receive OTP</p>
           </div>
 
           <form onSubmit={handleSendOtp} className="space-y-4">
