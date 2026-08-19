@@ -580,41 +580,9 @@ const Step1_BrandSetup = () => {
       {/* Typography */}
       <div className="space-y-4 mb-6">
         <label className="font-label-md text-label-md text-[#3c4a3d] uppercase tracking-wider text-xs">Typography</label>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4">
           <div className="space-y-1">
-            <span className="font-caption text-caption text-[#556067] text-xs">Heading Font</span>
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => { setHeadingFontOpen(p => !p); setBodyFontOpen(false); }}
-                className="w-full bg-white border border-[#bbcbb9] rounded-lg flex items-center justify-between px-3 py-2.5 hover:border-[#25D366] transition-colors"
-                style={{ borderColor: headingFontOpen ? '#25D366' : undefined }}
-              >
-                <span className="font-bold text-[#191C1E] text-sm" style={{ fontFamily: formData.typography.headingFont }}>{formData.typography.headingFont}</span>
-                <span className="material-symbols-outlined text-[#556067] text-lg" style={{ transform: headingFontOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>expand_more</span>
-              </button>
-              {headingFontOpen && (
-                <div className="absolute z-50 w-full mt-1 bg-white border border-[#e0e3e6] rounded-lg shadow-lg overflow-hidden" style={{ maxHeight: 260, overflowY: 'auto' }}>
-                  {allFonts.map(font => (
-                    <button
-                      key={font}
-                      type="button"
-                      onClick={() => { handleChange({ target: { name: 'typography.headingFont', value: font } }); setHeadingFontOpen(false); }}
-                      className="w-full text-left px-3 py-2 text-sm hover:bg-[#f0faf4] transition-colors"
-                      style={{ fontFamily: font, fontWeight: 600, color: formData.typography.headingFont === font ? '#006d2f' : '#191C1E', background: formData.typography.headingFont === font ? '#f0faf4' : undefined, borderLeft: formData.typography.headingFont === font ? '3px solid #25D366' : '3px solid transparent' }}
-                    >
-                      {font}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-            <span className="text-[11px] mt-1 block px-1" style={{ fontFamily: formData.typography.headingFont, color: formData.colors.fontHeader, fontWeight: 600 }}>
-              The quick brown fox jumps
-            </span>
-          </div>
-          <div className="space-y-1">
-            <span className="font-caption text-caption text-[#556067] text-xs">Body Font</span>
+            <span className="font-caption text-caption text-[#556067] text-xs">Font</span>
             <div className="relative">
               <button
                 type="button"
