@@ -82,7 +82,9 @@ const VerifyOTPPage = () => {
       }
       // Check if new tenant (no business name yet)
       const tenantUser = result.data?.tenant;
-      if (!tenantUser?.business_name && !tenantUser?.company_name) {
+      const name = tenantUser?.company_name || tenantUser?.business_name || '';
+      const isFakeName = !name || /^User \d+$/.test(name);
+      if (isFakeName) {
         navigate('/onboarding');
       } else {
         navigate('/dashboard');

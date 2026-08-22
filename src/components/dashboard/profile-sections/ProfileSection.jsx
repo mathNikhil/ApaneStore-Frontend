@@ -78,6 +78,20 @@ const ProfileSection = () => {
     if (window.confirm('Are you sure you want to logout?')) await logout();
   };
 
+  if (!token) return (
+    <div className="p-8 flex flex-col items-center justify-center min-h-[400px] text-center">
+      <div className="w-16 h-16 rounded-full bg-[#006d2f]/10 flex items-center justify-center mb-4">
+        <span className="material-symbols-outlined text-[#006d2f] text-3xl">lock</span>
+      </div>
+      <h2 className="text-lg font-bold text-[#191c1e] mb-2">Login Required</h2>
+      <p className="text-sm text-[#556067] mb-6">Please login to view and manage your profile.</p>
+      <a href="/" className="px-6 py-3 bg-[#006d2f] text-white font-semibold rounded-xl hover:brightness-110 transition-all flex items-center gap-2">
+        <span className="material-symbols-outlined text-base">login</span>
+        Login / Sign Up
+      </a>
+    </div>
+  );
+
   if (loading) return (
     <div className="p-6 flex items-center gap-2 text-[#556067]">
       <span className="material-symbols-outlined animate-spin">progress_activity</span>

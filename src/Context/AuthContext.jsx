@@ -57,7 +57,7 @@ export const AuthProvider = ({ children }) => {
                 setUser(result.data.tenant);
                 setToken(result.data.token);
                 
-                return { success: true, isNewTenant: result.data.isNewTenant };
+                return { success: true, isNewTenant: result.data.isNewTenant, data: result.data };
             }
             
             console.log('❌ No token in response:', result);

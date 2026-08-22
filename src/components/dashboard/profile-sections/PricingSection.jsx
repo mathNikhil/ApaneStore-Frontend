@@ -37,6 +37,10 @@ const PricingSection = () => {
   Object.values(grouped).forEach(group => {
     group.sort((a, b) => CYCLE_ORDER.indexOf(a.billing_cycle) - CYCLE_ORDER.indexOf(b.billing_cycle));
   });
+  // Remove any cycles not in CYCLE_ORDER (old monthly/quarterly/annual)
+  Object.keys(grouped).forEach(key => {
+    grouped[key] = grouped[key].filter(p => CYCLE_ORDER.includes(p.billing_cycle));
+  });
 
   const totalFor = (plan) => {
     const base = parseFloat(plan.base_amount || 0);

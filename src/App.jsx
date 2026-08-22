@@ -45,6 +45,7 @@ function App() {
             {/* Tenant Routes (Protected) */}
             <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+            <Route path="/profile/:section" element={<ProfilePage />} />
             
             {/* Publish Flow Routes - outside StoreBuilderRouter to avoid context conflicts */}
             <Route path="/store-builder/publish/domain" element={<ProtectedRoute><PublishDomainSelection /></ProtectedRoute>} />

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useAuth } from '../../Context/AuthContext';
 import { useParams, useNavigate } from 'react-router-dom';
 import TopAppBar from '../Common/TopAppBar';
 import BottomNav from '../Common/BottomNav';
@@ -11,31 +12,35 @@ import PlatformSection from './profile-sections/PlatformSection';
 import PricingSection from './profile-sections/PricingSection';
 
 const NAV_ITEMS = [
-  { key: 'profile',   label: 'Profile',          icon: 'person',          protected: true  },
-  { key: 'about',     label: 'About AapnaEstore', icon: 'info',            protected: false },
-  { key: 'privacy',   label: 'Privacy Policy',    icon: 'lock',            protected: false },
-  { key: 'refund',    label: 'Refund Policy',     icon: 'currency_rupee',  protected: false },
-  { key: 'terms',     label: 'Terms & Conditions',icon: 'description',     protected: false },
-  { key: 'platform',  label: 'Platform Policy',   icon: 'policy',          protected: false },
-  { key: 'pricing',   label: 'Pricing Plans',     icon: 'payments',        protected: false },
+  { key: 'about',     label: 'About AapnaEstore', icon: 'info'           },
+  { key: 'privacy',   label: 'Privacy Policy',    icon: 'lock'           },
+  { key: 'refund',    label: 'Refund Policy',     icon: 'currency_rupee' },
+  { key: 'terms',     label: 'Terms & Conditions',icon: 'description'    },
+  { key: 'platform',  label: 'Platform Policy',   icon: 'policy'         },
+  { key: 'pricing',   label: 'Pricing Plans',     icon: 'payments'       },
 ];
 
-const SECTION_MAP = {
-  profile:  <ProfileSection />,
-  about:    <AboutSection />,
-  privacy:  <PrivacySection />,
-  refund:   <RefundSection />,
-  terms:    <TermsSection />,
-  platform: <PlatformSection />,
-  pricing:  <PricingSection />,
+const getSectionComponent = (key) => {
+  switch(key) {
+    case 'profile':  return <ProfileSection />;
+    case 'about':    return <AboutSection />;
+    case 'privacy':  return <PrivacySection />;
+    case 'refund':   return <RefundSection />;
+    case 'terms':    return <TermsSection />;
+    case 'platform': return <PlatformSection />;
+    case 'pricing':  return <PricingSection />;
+    default:         return <AboutSection />;
+  }
 };
 
 const ProfilePage = () => {
   const { section } = useParams();
+  const { token } = useAuth();
+  const isLoggedIn = !!token;
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const activeKey = section || 'profile';
+  const activeKey = section || (isLoggedIn ? 'profile' : 'about');
 
   const handleNav = (key) => {
     navigate(key === 'profile' ? '/profile' : `/profile/${key}`);
@@ -72,7 +77,7 @@ const ProfilePage = () => {
             </div>
 
             {/* Nav Items */}
-            <nav className="p-2 flex-1">
+            <nav className="p-2">
               {NAV_ITEMS.map(item => {
                 const isActive = activeKey === item.key;
                 return (
@@ -99,10 +104,31 @@ const ProfilePage = () => {
               })}
             </nav>
 
-            {/* Bottom branding */}
-            <div className="p-4 border-t border-[#e0e3e6]">
-              <p className="text-xs text-[#556067] text-center">AapnaEstore v1.0.0</p>
-              <p className="text-xs text-[#556067] text-center">Nikhil Mathur HUF</p>
+            {/* Bottom — Profile or Login */}
+            <div className="p-3">
+              {isLoggedIn ? (
+                <button
+                  onClick={() => handleNav('profile')}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all ${
+                    activeKey === 'profile'
+                      ? 'bg-[#006d2f]/10 text-[#006d2f]'
+                      : 'text-[#556067] hover:bg-[#f2f4f7]'
+                  }`}
+                >
+                  <span className={`material-symbols-outlined text-base flex-shrink-0 ${activeKey === 'profile' ? 'text-[#006d2f]' : 'text-[#556067]'}`}>person</span>
+                  <span className={`text-sm ${activeKey === 'profile' ? 'font-bold' : 'font-medium'}`}>Profile</span>
+                  {activeKey === 'profile' && <span className="ml-auto material-symbols-outlined text-sm text-[#006d2f]">chevron_right</span>}
+                </button>
+              ) : (
+                
+                <a href="/"
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-[#006d2f] text-white font-semibold text-sm hover:brightness-110 transition-all"
+                >
+                  <span className="material-symbols-outlined text-base">login</span>
+                  Login / Sign Up
+                </a>
+              )}
+              <p className="text-xs text-[#556067] text-center mt-2">AapnaEstore v1.0.0</p>
             </div>
           </aside>
 
@@ -132,14 +158,14 @@ const ProfilePage = () => {
 
             {/* Content area */}
             <div className="bg-white lg:rounded-xl lg:shadow-sm min-h-full overflow-y-auto">
-              {SECTION_MAP[activeKey] || SECTION_MAP.profile}
+              {getSectionComponent(activeKey)}
             </div>
           </main>
 
         </div>
       </div>
 
-      <BottomNav />
+      {isLoggedIn && <BottomNav />}
     </div>
   );
 };
