@@ -13,9 +13,13 @@ const INDIAN_STATES = [
 const API_URL = import.meta.env.VITE_API_URL || 'https://api.aapnaestore.com';
 
 const InvoiceModal = ({ subscription, onClose, onSuccess }) => {
-  const [gstStatus, setGstStatus] = useState('not_applicable'); // 'has_gstin' | 'not_applicable'
+  const tenantName = (() => {
+    try { return JSON.parse(localStorage.getItem('user') || '{}').company_name || ''; } catch { return ''; }
+  })();
+
+  const [gstStatus, setGstStatus] = useState('not_applicable');
   const [form, setForm] = useState({
-    tenant_business_name: '',
+    tenant_business_name: tenantName,
     tenant_gstin: '',
     tenant_address: '',
     tenant_state: '',
@@ -124,16 +128,16 @@ const InvoiceModal = ({ subscription, onClose, onSuccess }) => {
           {/* Business name */}
           <div>
             <label className="block text-xs font-semibold text-[#3c4a3d] uppercase tracking-wider mb-1">
-              Business / Full Name *
+              Name on Invoice
             </label>
             <input
               type="text"
               name="tenant_business_name"
               value={form.tenant_business_name}
-              onChange={handleChange}
-              placeholder="Your business name or full name"
-              className="w-full px-4 py-2.5 border border-[#bbcbb9] rounded-lg text-sm focus:outline-none focus:border-[#006d2f]"
+              readOnly
+              className="w-full px-4 py-2.5 border border-[#e0e3e6] rounded-lg text-sm bg-[#f2f4f7] text-[#556067] cursor-not-allowed"
             />
+            <p className="text-xs text-[#556067] mt-1">Auto-filled from your profile. Update your name in Profile settings.</p>
           </div>
 
           {/* GST Status */}

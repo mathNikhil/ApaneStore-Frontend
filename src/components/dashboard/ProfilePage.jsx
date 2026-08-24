@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../Context/AuthContext';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import TopAppBar from '../Common/TopAppBar';
 import BottomNav from '../Common/BottomNav';
 import ProfileSection from './profile-sections/ProfileSection';
@@ -10,6 +10,7 @@ import RefundSection from './profile-sections/RefundSection';
 import TermsSection from './profile-sections/TermsSection';
 import PlatformSection from './profile-sections/PlatformSection';
 import PricingSection from './profile-sections/PricingSection';
+import InvoiceList from './Invoice/InvoiceList';
 
 const NAV_ITEMS = [
   { key: 'about',     label: 'About AapnaEstore', icon: 'info'           },
@@ -29,6 +30,7 @@ const getSectionComponent = (key) => {
     case 'terms':    return <TermsSection />;
     case 'platform': return <PlatformSection />;
     case 'pricing':  return <PricingSection />;
+    case 'invoices': return <InvoiceList />;
     default:         return <AboutSection />;
   }
 };
@@ -38,9 +40,12 @@ const ProfilePage = () => {
   const { token } = useAuth();
   const isLoggedIn = !!token;
   const navigate = useNavigate();
+  const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const activeKey = section || (isLoggedIn ? 'profile' : 'about');
+  // Derive activeKey from URL — works for both /profile and /profile/:section
+  const pathSection = location.pathname.split('/profile/')[1] || null;
+  const activeKey = pathSection || section || (isLoggedIn ? 'profile' : 'about');
 
   const handleNav = (key) => {
     navigate(key === 'profile' ? '/profile' : `/profile/${key}`);
@@ -104,23 +109,28 @@ const ProfilePage = () => {
               })}
             </nav>
 
-            {/* Bottom — Profile or Login */}
+            {/* Bottom — Invoices + Profile or Login */}
             <div className="p-3">
               {isLoggedIn ? (
-                <button
-                  onClick={() => handleNav('profile')}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all ${
-                    activeKey === 'profile'
-                      ? 'bg-[#006d2f]/10 text-[#006d2f]'
-                      : 'text-[#556067] hover:bg-[#f2f4f7]'
-                  }`}
-                >
-                  <span className={`material-symbols-outlined text-base flex-shrink-0 ${activeKey === 'profile' ? 'text-[#006d2f]' : 'text-[#556067]'}`}>person</span>
-                  <span className={`text-sm ${activeKey === 'profile' ? 'font-bold' : 'font-medium'}`}>Profile</span>
-                  {activeKey === 'profile' && <span className="ml-auto material-symbols-outlined text-sm text-[#006d2f]">chevron_right</span>}
-                </button>
+                <>
+                  <button
+                    onClick={() => handleNav('invoices')}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl mb-1 text-left transition-all ${activeKey === 'invoices' ? 'bg-[#006d2f]/10 text-[#006d2f]' : 'text-[#556067] hover:bg-[#f2f4f7]'}`}
+                  >
+                    <span className={`material-symbols-outlined text-base flex-shrink-0 ${activeKey === 'invoices' ? 'text-[#006d2f]' : 'text-[#556067]'}`}>receipt_long</span>
+                    <span className={`text-sm ${activeKey === 'invoices' ? 'font-bold' : 'font-medium'}`}>My Invoices</span>
+                    {activeKey === 'invoices' && <span className="ml-auto material-symbols-outlined text-sm text-[#006d2f]">chevron_right</span>}
+                  </button>
+                  <button
+                    onClick={() => handleNav('profile')}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all ${activeKey === 'profile' ? 'bg-[#006d2f]/10 text-[#006d2f]' : 'text-[#556067] hover:bg-[#f2f4f7]'}`}
+                  >
+                    <span className={`material-symbols-outlined text-base flex-shrink-0 ${activeKey === 'profile' ? 'text-[#006d2f]' : 'text-[#556067]'}`}>person</span>
+                    <span className={`text-sm ${activeKey === 'profile' ? 'font-bold' : 'font-medium'}`}>Profile</span>
+                    {activeKey === 'profile' && <span className="ml-auto material-symbols-outlined text-sm text-[#006d2f]">chevron_right</span>}
+                  </button>
+                </>
               ) : (
-                
                 <a href="/"
                   className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-[#006d2f] text-white font-semibold text-sm hover:brightness-110 transition-all"
                 >
