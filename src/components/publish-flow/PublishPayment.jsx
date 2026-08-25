@@ -36,10 +36,28 @@ const PublishPayment = () => {
     const [trialActivating, setTrialActivating] = useState(false);
     const [paying, setPaying] = useState(false);
     const [error, setError] = useState('');
+    const [pgStatus, setPgStatus] = useState({ enabled: false, provider: 'cashfree' });
+    const [isTestTenant, setIsTestTenant] = useState(false);
 
     useEffect(() => {
         const load = async () => {
             try {
+                // Fetch platform payment gateway status
+                fetch((import.meta.env.VITE_API_URL || 'https://api.aapnaestore.com') + '/api/public/payment-gateway-status')
+                    .then(r => r.json())
+                    .then(d => { if (d.success) setPgStatus(d.data); })
+                    .catch(() => {});
+
+                // Check if test tenant
+                const userStr = localStorage.getItem('user');
+                const userPhone = userStr ? JSON.parse(userStr).phone : null;
+                if (userPhone) {
+                    fetch((import.meta.env.VITE_API_URL || 'https://api.aapnaestore.com') + '/api/public/is-test-tenant?phone=' + userPhone)
+                        .then(r => r.json())
+                        .then(d => { if (d.success) setIsTestTenant(d.isTestTenant); })
+                        .catch(() => {});
+                }
+
                 const [flowResult, storeResult, pricingResult, termsResult] = await Promise.all([
                     storeAPI.getPublishFlowState(storeId),
                     storeAPI.getById(storeId),
@@ -112,6 +130,52 @@ const PublishPayment = () => {
         setPaying(true);
         showError('');
         try {
+            if (paymentMethod === 'cashfree') {
+                // Initiate Cashfree payment
+                const token = localStorage.getItem('token');
+                const API = import.meta.env.VITE_API_URL || 'https://api.aapnaestore.com';
+                const res = await fetch(`${API}/api/stores/${storeId}/payment/initiate-cashfree`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                    body: JSON.stringify({ billingCycle: selectedCycle, termsAccepted }),
+                });
+                const data = await res.json();
+                if (!data.success) {
+                    setError(data.error || 'Failed to initiate payment');
+                    setPaying(false);
+                    return;
+                }
+
+                // Load Cashfree SDK and open checkout
+                const { paymentSessionId, orderId } = data.data;
+                const cashfreeEnv = pgStatus.environment === 'production' ? 'production' : 'sandbox';
+
+                if (!window.Cashfree) {
+                    await new Promise((resolve, reject) => {
+                        const script = document.createElement('script');
+                        script.src = 'https://sdk.cashfree.com/js/v3/cashfree.js';
+                        script.onload = resolve;
+                        script.onerror = reject;
+                        document.head.appendChild(script);
+                    });
+                }
+
+                const cashfree = await window.Cashfree({ mode: cashfreeEnv });
+                cashfree.checkout({
+                    paymentSessionId,
+                    redirectTarget: '_modal',
+                }).then((result) => {
+                    if (result.error) {
+                        setError(result.error.message || 'Payment failed');
+                        setPaying(false);
+                    } else if (result.paymentDetails) {
+                        navigate(`/store-builder/publish/success?storeId=${storeId}`);
+                    }
+                });
+                return;
+            }
+
+            // UPI or other methods
             const result = await storeAPI.completePayment(storeId, paymentMethod, selectedCycle, termsAccepted);
             if (result.success) {
                 navigate(`/store-builder/publish/success?storeId=${storeId}`);
@@ -276,26 +340,35 @@ const PublishPayment = () => {
                 </div>
 
                 <h4 className="text-xs font-semibold text-[#8e9eab] uppercase tracking-wide mb-2">Select Payment Method</h4>
-                {/* Only UPI for now — card/netbanking come back once a real
-                    payment gateway is integrated. paymentMethod defaults to
-                    'upi' and isn't changed elsewhere, so this is the only
-                    option sent to completePayment below. */}
-                {['upi'].map((method) => (
+                {/* UPI — only for test tenants or when gateway is disabled */}
+                {(isTestTenant || !pgStatus.enabled) && <button
+                    onClick={() => setPaymentMethod('upi')}
+                    className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 mb-2 transition-all ${
+                        paymentMethod === 'upi' ? 'border-[#006d2f] bg-[#25D366]/5' : 'border-[#e0e3e6] bg-white'
+                    }`}
+                >
+                    <span className="flex items-center gap-2 text-sm font-medium text-[#191c1e]">
+                        <span className="material-symbols-outlined text-base text-[#556067]">account_balance_wallet</span>
+                        UPI
+                    </span>
+                    {paymentMethod === 'upi' && <span className="material-symbols-outlined text-[#006d2f]">check_circle</span>}
+                </button>}
+
+                {/* Cashfree — only if platform has it enabled AND not a test tenant */}
+                {pgStatus.enabled && pgStatus.provider === 'cashfree' && !isTestTenant && (
                     <button
-                        key={method}
-                        onClick={() => setPaymentMethod(method)}
+                        onClick={() => setPaymentMethod('cashfree')}
                         className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 mb-2 transition-all ${
-                            paymentMethod === method ? 'border-[#006d2f] bg-[#25D366]/5' : 'border-[#e0e3e6] bg-white'
+                            paymentMethod === 'cashfree' ? 'border-[#006d2f] bg-[#25D366]/5' : 'border-[#e0e3e6] bg-white'
                         }`}
                     >
                         <span className="flex items-center gap-2 text-sm font-medium text-[#191c1e]">
-                            <span className="material-symbols-outlined text-base text-[#556067]">account_balance_wallet</span>
-                            UPI
+                            <span className="material-symbols-outlined text-base text-[#556067]">credit_card</span>
+                            Cashfree (Cards, UPI, NetBanking)
                         </span>
-                        {paymentMethod === method && <span className="material-symbols-outlined text-[#006d2f]">check_circle</span>}
+                        {paymentMethod === 'cashfree' && <span className="material-symbols-outlined text-[#006d2f]">check_circle</span>}
                     </button>
-                ))}
-                <p className="text-xs text-[#8e9eab] mb-1">Card and Net Banking will be added when the payment gateway goes live.</p>
+                )}
 
                 <p className="text-xs text-[#8e9eab] text-center mt-4">
                     🔒 Payments powered by Cashfree. Your data is secure.
