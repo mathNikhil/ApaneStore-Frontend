@@ -11,6 +11,7 @@ import TermsSection from './profile-sections/TermsSection';
 import PlatformSection from './profile-sections/PlatformSection';
 import PricingSection from './profile-sections/PricingSection';
 import InvoiceList from './Invoice/InvoiceList';
+import ReferSection from './profile-sections/ReferSection';
 
 const NAV_ITEMS = [
   { key: 'about',     label: 'About AapnaEstore', icon: 'info'           },
@@ -31,6 +32,7 @@ const getSectionComponent = (key) => {
     case 'platform': return <PlatformSection />;
     case 'pricing':  return <PricingSection />;
     case 'invoices': return <InvoiceList />;
+    case 'refer':    return <ReferSection />;
     default:         return <AboutSection />;
   }
 };
@@ -120,6 +122,14 @@ const ProfilePage = () => {
                     <span className={`material-symbols-outlined text-base flex-shrink-0 ${activeKey === 'invoices' ? 'text-[#006d2f]' : 'text-[#556067]'}`}>receipt_long</span>
                     <span className={`text-sm ${activeKey === 'invoices' ? 'font-bold' : 'font-medium'}`}>My Invoices</span>
                     {activeKey === 'invoices' && <span className="ml-auto material-symbols-outlined text-sm text-[#006d2f]">chevron_right</span>}
+                  </button>
+                  <button
+                    onClick={() => handleNav('refer')}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl mb-1 text-left transition-all ${activeKey === 'refer' ? 'bg-[#006d2f]/10 text-[#006d2f]' : 'text-[#556067] hover:bg-[#f2f4f7]'}`}
+                  >
+                    <span className={`material-symbols-outlined text-base flex-shrink-0 ${activeKey === 'refer' ? 'text-[#006d2f]' : 'text-[#556067]'}`}>share</span>
+                    <span className={`text-sm ${activeKey === 'refer' ? 'font-bold' : 'font-medium'}`}>Refer & Earn</span>
+                    {activeKey === 'refer' && <span className="ml-auto material-symbols-outlined text-sm text-[#006d2f]">chevron_right</span>}
                   </button>
                   <button
                     onClick={() => handleNav('profile')}

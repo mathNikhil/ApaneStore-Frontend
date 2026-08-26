@@ -38,24 +38,35 @@ const PublishPayment = () => {
     const [error, setError] = useState('');
     const [pgStatus, setPgStatus] = useState({ enabled: false, provider: 'cashfree' });
     const [isTestTenant, setIsTestTenant] = useState(false);
+    const [discountInfo, setDiscountInfo] = useState(null);
+    const [allCycleDiscounts, setAllCycleDiscounts] = useState({});
 
     useEffect(() => {
         const load = async () => {
             try {
-                // Fetch platform payment gateway status
-                fetch((import.meta.env.VITE_API_URL || 'https://api.aapnaestore.com') + '/api/public/payment-gateway-status')
-                    .then(r => r.json())
-                    .then(d => { if (d.success) setPgStatus(d.data); })
-                    .catch(() => {});
-
-                // Check if test tenant
+                // Check test tenant first, then set payment method accordingly
                 const userStr = localStorage.getItem('user');
                 const userPhone = userStr ? JSON.parse(userStr).phone : null;
-                if (userPhone) {
-                    fetch((import.meta.env.VITE_API_URL || 'https://api.aapnaestore.com') + '/api/public/is-test-tenant?phone=' + userPhone)
-                        .then(r => r.json())
-                        .then(d => { if (d.success) setIsTestTenant(d.isTestTenant); })
-                        .catch(() => {});
+                const API = import.meta.env.VITE_API_URL || 'https://api.aapnaestore.com';
+
+                const [pgRes, testRes] = await Promise.all([
+                    fetch(`${API}/api/public/payment-gateway-status`).then(r => r.json()).catch(() => ({ success: false })),
+                    userPhone
+                        ? fetch(`${API}/api/public/is-test-tenant?phone=${userPhone}`).then(r => r.json()).catch(() => ({ success: false, isTestTenant: false }))
+                        : Promise.resolve({ success: true, isTestTenant: false })
+                ]);
+
+                const isTest = testRes.success ? testRes.isTestTenant : false;
+                setIsTestTenant(isTest);
+
+                if (pgRes.success) {
+                    setPgStatus(pgRes.data);
+                    // Auto-select: test tenants always UPI, real tenants get cashfree if enabled
+                    if (isTest) {
+                        setPaymentMethod('upi');
+                    } else if (pgRes.data.enabled && pgRes.data.provider === 'cashfree') {
+                        setPaymentMethod('cashfree');
+                    }
                 }
 
                 const [flowResult, storeResult, pricingResult, termsResult] = await Promise.all([
@@ -122,6 +133,28 @@ const PublishPayment = () => {
 
     const plan = availablePlans.find((p) => p.billing_cycle === selectedCycle) || null;
 
+    // Fetch discounts for all cycles when store loads
+    useEffect(() => {
+        if (!storeId) return;
+        const token = localStorage.getItem('token');
+        const API = import.meta.env.VITE_API_URL || 'https://api.aapnaestore.com';
+        ['30days', '90days', '365days'].forEach(cycle => {
+            fetch(`${API}/api/stores/${storeId}/publish-discount?billingCycle=${cycle}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            }).then(r => r.json()).then(d => {
+                if (d.success) {
+                    setAllCycleDiscounts(prev => ({ ...prev, [cycle]: d.data }));
+                    if (cycle === selectedCycle) setDiscountInfo(d.data);
+                }
+            }).catch(() => {});
+        });
+    }, [storeId]);
+
+    // Update discountInfo when cycle changes
+    useEffect(() => {
+        if (allCycleDiscounts[selectedCycle]) setDiscountInfo(allCycleDiscounts[selectedCycle]);
+    }, [selectedCycle, allCycleDiscounts]);
+
     const handlePay = async () => {
         if (!termsAccepted) {
             showError('Please read and accept the Terms & Conditions to continue.');
@@ -137,7 +170,7 @@ const PublishPayment = () => {
                 const res = await fetch(`${API}/api/stores/${storeId}/payment/initiate-cashfree`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                    body: JSON.stringify({ billingCycle: selectedCycle, termsAccepted }),
+                    body: JSON.stringify({ billingCycle: selectedCycle, termsAccepted, discountAmount: discountInfo?.discountAmount || 0 }),
                 });
                 const data = await res.json();
                 if (!data.success) {
@@ -237,7 +270,8 @@ const PublishPayment = () => {
     const baseAmount = parseFloat(plan.base_amount);
     const taxAmount = baseAmount * (parseFloat(plan.tax_percentage) / 100);
     const totalAmount = baseAmount + taxAmount;
-    const perDay = (totalAmount / (plan.validity_days || 365)).toFixed(2);
+    const finalAmount = discountInfo ? discountInfo.finalAmount : totalAmount;
+    const perDay = (finalAmount / (plan.validity_days || 365)).toFixed(2);
 
     const backPath = domainConfig?.dns_status === 'verified'
         ? `/store-builder/publish/dns-success?storeId=${storeId}`
@@ -291,6 +325,9 @@ const PublishPayment = () => {
                                     }`}
                                 >
                                     <div className="text-sm font-semibold text-[#191c1e]">{CYCLE_LABELS[p.billing_cycle] || p.billing_cycle}</div>
+                                    {allCycleDiscounts[p.billing_cycle]?.totalDiscountPercent > 0 && (
+                                        <div className="text-xs text-green-600 font-bold">{allCycleDiscounts[p.billing_cycle].totalDiscountPercent}% off</div>
+                                    )}
                                     <div className="text-xs text-[#8e9eab] mt-0.5">₹{parseFloat(p.base_amount).toLocaleString('en-IN')}</div>
                                 </button>
                             ))}
@@ -328,14 +365,47 @@ const PublishPayment = () => {
                     </div>
                     <div className="flex justify-between text-sm mb-3 pb-3 border-b border-[#f2f4f7]">
                         <span className="text-[#556067]">GST ({plan.tax_percentage}%)</span>
-                        <span className="text-[#191c1e]">₹{taxAmount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                        <span className="text-[#191c1e]">
+                            ₹{taxAmount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                        </span>
                     </div>
                     <div className="flex justify-between items-center">
                         <span className="font-semibold text-[#191c1e]">Total Amount</span>
-                        <span className="text-xl font-bold text-[#006d2f]">₹{totalAmount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                        <div className="text-right">
+                            {discountInfo && discountInfo.totalDiscountPercent > 0 && (
+                                <div className="text-sm text-[#556067] line-through">₹{totalAmount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</div>
+                            )}
+                            <span className="text-xl font-bold text-[#006d2f]">₹{finalAmount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                        </div>
                     </div>
                     <div className="mt-3 text-xs text-[#8e9eab] bg-[#f2f4f7] rounded-lg p-2 text-center">
                         That's just ₹{perDay}/day
+                    {discountInfo && discountInfo.totalDiscountPercent > 0 && (
+                        <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-xl space-y-1">
+                            {discountInfo.isFirstPublish && (
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-green-700">🎉 First publish discount</span>
+                                    <span className="text-green-700 font-semibold">-{discountInfo.baseDiscountPercent}%</span>
+                                </div>
+                            )}
+                            {!discountInfo.isFirstPublish && (
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-green-700">Loyal tenant discount</span>
+                                    <span className="text-green-700 font-semibold">-{discountInfo.baseDiscountPercent}%</span>
+                                </div>
+                            )}
+                            {discountInfo.usableReferrals > 0 && (
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-green-700">Referral bonus ({discountInfo.usableReferrals} referral{discountInfo.usableReferrals > 1 ? 's' : ''})</span>
+                                    <span className="text-green-700 font-semibold">-{discountInfo.referralDiscountDisplay}%</span>
+                                </div>
+                            )}
+                            <div className="flex justify-between text-sm font-bold pt-1 border-t border-green-200">
+                                <span className="text-green-800">Total savings</span>
+                                <span className="text-green-800">₹{discountInfo.discountAmount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                            </div>
+                        </div>
+                    )}
                     </div>
                 </div>
 

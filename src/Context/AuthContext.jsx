@@ -35,11 +35,19 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    // Save referral code from URL if present
+    useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const ref = urlParams.get('ref');
+        if (ref) localStorage.setItem('referralCode', ref);
+    }, []);
+
     const loginWithOTP = async (phone, otp, purpose = 'login') => {
         try {
             console.log('🔐 loginWithOTP called:', { phone, otp, purpose });
             
-            const result = await authAPI.verifyOTP({ phone, otp, purpose });
+            const referralCode = localStorage.getItem('referralCode');
+            const result = await authAPI.verifyOTP({ phone, otp, purpose, referralCode });
             
             console.log('🔐 OTP Response:', result);
             
