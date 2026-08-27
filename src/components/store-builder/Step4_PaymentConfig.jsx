@@ -133,7 +133,31 @@ const Step4_PaymentConfig = () => {
     setPaymentData(settings);
   }, [settings]);
 
+  const deleteGatewayKeys = async (provider) => {
+    const token = localStorage.getItem('token');
+    const API = import.meta.env.VITE_API_URL || 'https://api.aapnaestore.com';
+    try {
+      await fetch(`${API}/api/stores/${effectiveStoreId}/payment-gateway/${provider}/keys`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setConfiguredGateways(prev => ({ ...prev, [provider]: false }));
+      setGatewayHints(prev => ({ ...prev, [provider]: null }));
+      setEditingGateway(null);
+      showSuccess(`${provider} credentials deleted`);
+    } catch (e) {
+      showError('Failed to delete credentials');
+    }
+  };
+
   const handleGatewaySelect = (selectedKey) => {
+    // If switching away from payment gateway, delete all gateway keys
+    console.log('Gateway select:', selectedKey, 'cashfreeEnabled:', settings.cashfreeEnabled, 'configuredGateways:', configuredGateways);
+    if (selectedKey !== 'cashfreeEnabled' && settings.cashfreeEnabled) {
+      if (configuredGateways.cashfree) deleteGatewayKeys('cashfree');
+      if (configuredGateways.razorpay) deleteGatewayKeys('razorpay');
+      if (configuredGateways.stripe) deleteGatewayKeys('stripe');
+    }
     setSettings(prev => ({
       ...prev,
       upiEnabled: selectedKey === 'upiEnabled',

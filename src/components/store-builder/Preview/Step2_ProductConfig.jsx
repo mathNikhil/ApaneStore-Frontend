@@ -58,6 +58,7 @@ const Step2_ProductConfig = () => {
   const [showAddCategory, setShowAddCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [showQuickPreview, setShowQuickPreview] = useState(false);
+  const [addToCartLabel, setAddToCartLabel] = useState(productData.addToCartLabel || 'Add to Cart');
   const fileInputRefs = useRef({});
   const variationImageInputRefs = useRef({});
 
@@ -66,6 +67,7 @@ const Step2_ProductConfig = () => {
     setProductData({
       categories: categories,
       enableImageZoom: enableImageZoom,
+      addToCartLabel: addToCartLabel,
       banner: {
         image: bannerImage,
         tagline: bannerTagline,
@@ -79,7 +81,7 @@ const Step2_ProductConfig = () => {
         textColor: textColor,
       }
     });
-  }, [categories, bannerImage, bannerTagline, bannerSubtitle, bannerCta, bannerHeight, bannerBgColor, showCta, showText, textAlignment, textColor, enableImageZoom]);
+  }, [categories, bannerImage, bannerTagline, bannerSubtitle, bannerCta, bannerHeight, bannerBgColor, showCta, showText, textAlignment, textColor, enableImageZoom, addToCartLabel]);
 
   const generateId = () => Date.now() + Math.random() * 1000;
 

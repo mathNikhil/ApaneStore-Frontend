@@ -398,6 +398,7 @@ export const StoreBuilderProvider = ({ children }) => {
                 categoryImageShape: productData.categoryImageShape || 'circle',
                 categoryImageSize: productData.categoryImageSize || 'S',
                 autoSlideProductImages: productData.autoSlideProductImages || false,
+                addToCartLabel: productData.addToCartLabel || 'Add to Cart',
                 cartSettings: cartData,
                 paymentSettings: paymentData,
                 addressSettings: addressData,
@@ -571,6 +572,7 @@ export const StoreBuilderProvider = ({ children }) => {
                         categoryImageShape: config.products.categoryImageShape || 'circle',
                         categoryImageSize: config.products.categoryImageSize || 'S',
                         autoSlideProductImages: config.products.autoSlideProductImages || false,
+                        addToCartLabel: config.products.addToCartLabel || 'Add to Cart',
                     });
                 }
                 

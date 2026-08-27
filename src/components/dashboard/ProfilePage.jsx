@@ -37,6 +37,54 @@ const getSectionComponent = (key) => {
   }
 };
 
+const ContactSupportLink = () => {
+  const [href, setHref] = React.useState('mailto:aapnaestore@gmail.com?subject=Support Request - AapnaEstore');
+
+  React.useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const API = import.meta.env.VITE_API_URL || 'https://api.aapnaestore.com';
+    fetch(`${API}/api/tenants/profile`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(d => {
+        if (d.success) {
+          const p = d.data;
+          const bodyText = [
+            'Hi AapnaEstore Team,',
+            '',
+            'Tenant Details:',
+            'Name: ' + (p.company_name || 'N/A'),
+            'Phone: +91 ' + (p.phone || 'N/A'),
+            'Email: ' + (p.email || 'N/A'),
+            'Tenant ID: ' + (p.id || 'N/A'),
+            '',
+            'Issue Description:',
+            '[Please describe your issue here]',
+            '',
+            'Thank you'
+          ].join('\n');
+          const encodedBody = encodeURIComponent(bodyText);
+          const encodedSubject = encodeURIComponent('Support Request - AapnaEstore');
+          const gmailUrl = 'https://mail.google.com/mail/?view=cm&to=aapnaestore@gmail.com&su=' + encodedSubject + '&body=' + encodedBody;
+          setHref(gmailUrl);
+        }
+      }).catch(() => {});
+  }, []);
+
+  const handleClick = () => {
+    window.open(href, '_blank');
+  };
+
+  return (
+    <button onClick={handleClick}
+      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl mb-1 text-left transition-all text-[#556067] hover:bg-[#f2f4f7]"
+    >
+      <span className="material-symbols-outlined text-base flex-shrink-0 text-[#556067]">support_agent</span>
+      <span className="text-sm font-medium">Contact Support</span>
+    </button>
+  );
+};
+
 const ProfilePage = () => {
   const { section } = useParams();
   const { token } = useAuth();
@@ -139,6 +187,7 @@ const ProfilePage = () => {
                     <span className={`text-sm ${activeKey === 'profile' ? 'font-bold' : 'font-medium'}`}>Profile</span>
                     {activeKey === 'profile' && <span className="ml-auto material-symbols-outlined text-sm text-[#006d2f]">chevron_right</span>}
                   </button>
+                  <ContactSupportLink />
                 </>
               ) : (
                 <a href="/"

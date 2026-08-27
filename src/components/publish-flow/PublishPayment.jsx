@@ -105,7 +105,7 @@ const PublishPayment = () => {
                     setAvailablePlans(matches);
                     // Default to annual if available, otherwise whatever exists first
                     const hasAnnual = matches.some((p) => p.billing_cycle === 'annual');
-                    setSelectedCycle(hasAnnual ? 'annual' : matches[0]?.billing_cycle || 'annual');
+                    setSelectedCycle(matches.find(p => p.billing_cycle === '365days') ? '365days' : matches[0]?.billing_cycle || '365days');
                 }
                 // Check trial eligibility (Level 1: tenant default, Level 2: store-specific)
                 try {
@@ -325,10 +325,20 @@ const PublishPayment = () => {
                                     }`}
                                 >
                                     <div className="text-sm font-semibold text-[#191c1e]">{CYCLE_LABELS[p.billing_cycle] || p.billing_cycle}</div>
-                                    {allCycleDiscounts[p.billing_cycle]?.totalDiscountPercent > 0 && (
-                                        <div className="text-xs text-green-600 font-bold">{allCycleDiscounts[p.billing_cycle].totalDiscountPercent}% off</div>
-                                    )}
-                                    <div className="text-xs text-[#8e9eab] mt-0.5">₹{parseFloat(p.base_amount).toLocaleString('en-IN')}</div>
+                                    {(() => {
+                                        const full = Math.round(parseFloat(p.base_amount) * (1 + parseFloat(p.tax_percentage) / 100));
+                                        const disc = allCycleDiscounts[p.billing_cycle];
+                                        if (disc?.totalDiscountPercent > 0) {
+                                            return (
+                                                <>
+                                                    <div className="text-xs text-[#8e9eab] line-through mt-0.5">₹{full.toLocaleString('en-IN')}</div>
+                                                    <div className="text-xs font-bold text-green-600">{disc.totalDiscountPercent}% off</div>
+                                                    <div className="text-sm font-bold text-green-600">₹{Math.round(disc.finalAmount).toLocaleString('en-IN')}</div>
+                                                </>
+                                            );
+                                        }
+                                        return <div className="text-sm font-semibold text-[#191c1e] mt-0.5">₹{full.toLocaleString('en-IN')}</div>;
+                                    })()}
                                 </button>
                             ))}
                         </div>

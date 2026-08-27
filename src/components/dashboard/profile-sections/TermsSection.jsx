@@ -1,139 +1,42 @@
 import React from 'react';
-
-const Section = ({ title, children }) => (
-  <div className="mb-6">
-    <h2 className="text-base font-bold text-[#191c1e] mb-2 pb-1 border-b border-[#e0e3e6]">{title}</h2>
-    <div className="text-sm text-[#556067] leading-relaxed space-y-2">{children}</div>
-  </div>
-);
-
+const S = ({ children }) => <p className="text-sm text-[#556067] mb-3">{children}</p>;
+const H = ({ children }) => <h2 className="text-base font-bold text-[#191c1e] mt-6 mb-2">{children}</h2>;
+const UL = ({ items }) => <ul className="list-disc pl-5 space-y-1 text-sm text-[#556067] mb-3">{items.map((item, i) => <li key={i}>{item}</li>)}</ul>;
 const TermsSection = () => (
   <div className="p-6 max-w-3xl">
-    <div className="flex items-center gap-3 mb-6">
-      <div className="w-10 h-10 rounded-full bg-[#006d2f]/10 flex items-center justify-center">
-        <span className="material-symbols-outlined text-[#006d2f]">description</span>
-      </div>
-      <div>
-        <h1 className="text-xl font-bold text-[#191c1e]">Terms & Conditions</h1>
-        <p className="text-xs text-[#556067]">Last updated: August 2026 · Operated by Nikhil Mathur HUF</p>
-      </div>
-    </div>
-
-    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg mb-6 text-sm text-blue-800">
-      By registering and using AapnaEstore, you agree to these Terms & Conditions. Please read them carefully.
-    </div>
-
-    <Section title="1. Acceptance of Terms">
-      <p>By accessing or using the AapnaEstore platform, you agree to be bound by these Terms and Conditions. If you do not agree to these terms, you may not use the platform.</p>
-    </Section>
-
-    <Section title="2. Platform Description">
-      <p>AapnaEstore is a software-as-a-service (SaaS) platform that provides tools for creating and managing online stores. We provide the technology infrastructure only. We are not a marketplace, payment processor, or seller of any goods or services offered through tenant stores.</p>
-    </Section>
-
-    <Section title="3. Eligibility">
-      <ul className="list-disc pl-5 space-y-1">
-        <li>You must be at least 18 years of age to register</li>
-        <li>You must be a legal resident of India or have a registered Indian business entity</li>
-        <li>You must provide accurate and complete registration information</li>
-        <li>One mobile number may be associated with only one tenant account</li>
-      </ul>
-    </Section>
-
-    <Section title="4. Account Responsibilities">
-      <p>You are responsible for:</p>
-      <ul className="list-disc pl-5 space-y-1 mt-2">
-        <li>Maintaining the security and confidentiality of your account</li>
-        <li>All activities that occur under your account</li>
-        <li>Notifying us immediately of any unauthorized use of your account</li>
-        <li>Keeping your contact information (email, mobile) up to date</li>
-      </ul>
-    </Section>
-
-    <Section title="5. Store Owner Responsibilities">
-      <p>As a store owner (tenant), you are solely responsible for:</p>
-      <ul className="list-disc pl-5 space-y-1 mt-2">
-        <li>All products, descriptions, images, and pricing published on your store</li>
-        <li>Ensuring your products and business comply with applicable Indian laws and regulations</li>
-        <li>Handling all customer queries, disputes, returns, and order fulfilment</li>
-        <li>Providing accurate business, contact, and payment information</li>
-        <li>Obtaining all necessary licenses, permits, and registrations for your business</li>
-        <li>Collecting and remitting applicable taxes (GST, etc.) on your sales</li>
-      </ul>
-    </Section>
-
-    <Section title="6. Prohibited Activities">
-      <p>You may not use AapnaEstore to sell or promote:</p>
-      <ul className="list-disc pl-5 space-y-1 mt-2">
-        <li>Counterfeit, pirated, or unlicensed products</li>
-        <li>Illegal drugs, controlled substances, or drug paraphernalia</li>
-        <li>Weapons, ammunition, or explosives</li>
-        <li>Pornographic or sexually explicit content</li>
-        <li>Content that promotes violence, hatred, or discrimination</li>
-        <li>Products that infringe on intellectual property rights</li>
-        <li>Financial fraud, pyramid schemes, or misleading investment products</li>
-        <li>Any product or service prohibited under Indian law</li>
-      </ul>
-    </Section>
-
-    <Section title="7. Subscription and Payment">
-      <ul className="list-disc pl-5 space-y-1">
-        <li>Platform access requires a paid subscription after the free trial period</li>
-        <li>Subscription fees are charged in advance for the selected period (30, 90, or 365 days)</li>
-        <li>All prices are inclusive of applicable GST</li>
-        <li>Subscriptions do not auto-renew — you must manually renew before expiry</li>
-        <li>Failure to renew will result in your store being unpublished after the grace period</li>
-      </ul>
-    </Section>
-
-    <Section title="8. Intellectual Property">
-      <ul className="list-disc pl-5 space-y-1">
-        <li>The AapnaEstore platform, including its design, code, and features, is owned by Nikhil Mathur HUF</li>
-        <li>You retain ownership of the content (products, images, text) you upload to your store</li>
-        <li>By uploading content, you grant AapnaEstore a limited licence to display and serve that content as part of operating your store</li>
-        <li>You may not copy, reverse engineer, or reproduce any part of the AapnaEstore platform</li>
-      </ul>
-    </Section>
-
-    <Section title="9. Termination">
-      <p>We reserve the right to suspend or terminate your account if you:</p>
-      <ul className="list-disc pl-5 space-y-1 mt-2">
-        <li>Violate any of these Terms & Conditions</li>
-        <li>Engage in fraudulent or illegal activity</li>
-        <li>Fail to pay subscription fees</li>
-        <li>Abuse the platform or other users</li>
-      </ul>
-      <p className="mt-2">You may terminate your account at any time by contacting our support team.</p>
-    </Section>
-
-    <Section title="10. Limitation of Liability">
-      <p>AapnaEstore (operated by Nikhil Mathur HUF) shall not be liable for:</p>
-      <ul className="list-disc pl-5 space-y-1 mt-2">
-        <li>Any loss of business, revenue, or profits arising from use of the platform</li>
-        <li>Any disputes between you and your customers</li>
-        <li>Platform downtime or service interruptions beyond our reasonable control</li>
-        <li>Loss of data due to circumstances beyond our reasonable control</li>
-        <li>Actions taken by payment gateways or third-party service providers</li>
-      </ul>
-    </Section>
-
-    <Section title="11. Governing Law">
-      <p>These Terms & Conditions are governed by the laws of India. Any disputes shall be subject to the exclusive jurisdiction of the courts in New Delhi, India.</p>
-    </Section>
-
-    <Section title="12. Changes to Terms">
-      <p>We may update these Terms from time to time. Continued use of the platform after changes are posted constitutes acceptance of the updated terms. We will notify you of significant changes via email or in-app notification.</p>
-    </Section>
-
-    <Section title="13. Contact">
-      <div className="p-3 bg-[#f2f4f7] rounded-lg space-y-1">
-        <p><strong className="text-[#191c1e]">Nikhil Mathur HUF</strong></p>
-        <p>Udyam Registration: UDYAM-DL-06-0221356</p>
-        <p>Email: nikhil.mathur1215@gmail.com</p>
-        <p>Phone: +91 9818410640</p>
-      </div>
-    </Section>
+    <h1 className="text-2xl font-bold text-[#191c1e] mb-1">Terms & Conditions</h1>
+    <p className="text-xs text-[#8e9eab] mb-6">Effective date: 1 September 2026 | Last updated: 1 September 2026</p>
+    <H>1. Agreement</H>
+    <S>These Terms & Conditions form a legally binding agreement between you and NIKHIL MATHUR HUF, operating AapnaEstore. By registering, accessing, or using AapnaEstore, you agree to these Terms, the Privacy Policy, Refund Policy, and Platform Policy.</S>
+    <H>2. Definitions</H>
+    <UL items={['"AapnaEstore" means the software platform operated by NIKHIL MATHUR HUF, accessible at aapnaestore.com.', '"Tenant" or "Store Owner" means a person or organisation using the platform to create and operate an online store.', '"Customer" means a person purchasing from or interacting with a tenant store.', '"Platform" means the website, software, infrastructure, APIs, store builder, storefront, admin panels, and related services.', '"Store" means a branded online storefront created by a Tenant using the Platform.']} />
+    <H>3. Eligibility and Account</H>
+    <UL items={["You must be at least 18 years old or have legal capacity to enter a binding agreement under applicable Indian law.", "You must provide accurate and complete information during registration.", "You must have authority to operate the business or store you create on the Platform.", "You must maintain account security and promptly report suspected unauthorised access to aapnaestore@gmail.com.", "You are responsible for all activity conducted under your account."]} />
+    <H>4. Tenant Responsibilities</H>
+    <S>The Tenant is solely responsible for its store, products, services, pricing, descriptions, images, availability, customers, communications, orders, fulfilment, delivery, returns, refunds, cancellations, taxes, invoices, licences, permits, advertising, intellectual property, privacy notices, and regulatory compliance.</S>
+    <S>The Tenant must provide accurate seller identity and contact information and ensure that required disclosures are visible on the storefront before customers make purchases.</S>
+    <H>5. Payment Providers</H>
+    <S>Tenants must independently open and maintain accounts with supported payment providers (Cashfree, Razorpay, Stripe), complete required KYC and onboarding, and comply with provider terms. AapnaEstore does not receive, pool, hold, escrow, or settle tenant customer funds. Payment processing is governed solely by the applicable payment provider's terms.</S>
+    <H>6. Subscriptions, Pricing, and Taxes</H>
+    <S>Subscription plans, features, prices, trial terms, and available billing periods are shown at checkout or on the pricing page at the time of purchase. We may change prices for future periods after providing reasonable advance notice. NIKHIL MATHUR HUF is not currently GST registered; prices are as displayed.</S>
+    <H>7. Intellectual Property and Content</H>
+    <S>AapnaEstore software, code, interface, design, branding, and technology are owned by or licensed to NIKHIL MATHUR HUF. Tenants retain all rights in content they upload. AapnaEstore will not use tenant logos, store content, or testimonials for marketing without the tenant's express prior written consent.</S>
+    <H>8. Availability and Third Parties</H>
+    <S>The Platform depends on internet connectivity, AWS hosting, domain services, payment providers, SMS gateways, and other third-party services. We do not guarantee uninterrupted or error-free operation. No formal SLA is offered under these Terms unless separately agreed in writing.</S>
+    <H>9. Suspension and Termination</H>
+    <S>We may suspend or terminate a tenant's account or store for:</S>
+    <UL items={["Violation of these Terms or the Platform Policy.", "Fraudulent, illegal, deceptive, or harmful activity.", "Listing of prohibited products or services.", "Malware, phishing, credential theft, or security threats.", "Disruption or abuse of the platform or other tenants.", "Non-payment or subscription expiry.", "Legal, regulatory, court, government, or payment-provider requirements."]} />
+    <H>10. Indemnity</H>
+    <S>To the maximum extent permitted by applicable law, the Tenant will indemnify and hold harmless NIKHIL MATHUR HUF from claims, losses, liabilities, and expenses arising from the Tenant's products, services, store content, advertising, IP infringement, privacy or legal violations, tax obligations, fraud, or breach of these Terms.</S>
+    <H>11. Disclaimers and Liability</H>
+    <S>AapnaEstore does not guarantee sales, revenue, customer acquisition, or business growth. To the maximum extent permitted by applicable law, NIKHIL MATHUR HUF will not be liable for indirect, incidental, special, consequential, or punitive losses.</S>
+    <S>Aggregate liability cap: our total aggregate liability to any Tenant shall not exceed the total subscription fees paid by that Tenant in the 3 months immediately preceding the event giving rise to the claim.</S>
+    <H>12. Confidentiality</H>
+    <S>Each party will protect non-public information received from the other party using reasonable care and use it only for the agreed purpose. This obligation survives termination of the agreement for a period of 3 years.</S>
+    <H>13. Governing Law and Disputes</H>
+    <S>These Terms are governed by the laws of India. Before formal proceedings, the parties will attempt good-faith resolution by emailing aapnaestore@gmail.com. If unresolved within 30 days, disputes will be subject to the exclusive jurisdiction of the courts at New Delhi, India.</S>
+    <H>14. Changes and Notices</H>
+    <S>We may update these Terms at any time. Material changes will be communicated by email at least 15 days before taking effect. Legal notices must be sent to: NIKHIL MATHUR, Karta, NIKHIL MATHUR HUF, C-143 Maharana Pratap Enclave, Pitampura, New Delhi – 110034, and by email to aapnaestore@gmail.com.</S>
   </div>
 );
-
 export default TermsSection;

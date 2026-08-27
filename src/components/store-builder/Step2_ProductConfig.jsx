@@ -86,6 +86,7 @@ const Step2_ProductConfig = () => {
   const [bannerTagline, setBannerTagline] = useState(productData.banner?.tagline || '');
   const [bannerSubtitle, setBannerSubtitle] = useState(productData.banner?.subtitle || '');
   const [bannerCta, setBannerCta] = useState(productData.banner?.cta || 'Shop Now');
+  const [addToCartLabel, setAddToCartLabel] = useState(productData.addToCartLabel || 'Add to Cart');
   const [bannerHeight, setBannerHeight] = useState(productData.banner?.height || 400);
   const [bannerBgColor, setBannerBgColor] = useState(productData.banner?.bgColor || '#25D366');
   const [showCta, setShowCta] = useState(productData.banner?.showCta !== undefined ? productData.banner.showCta : true);
@@ -114,6 +115,7 @@ const Step2_ProductConfig = () => {
       setBannerTagline(productData.banner.tagline || '');
       setBannerSubtitle(productData.banner.subtitle || '');
       setBannerCta(productData.banner.cta || 'Shop Now');
+      setAddToCartLabel(productData.addToCartLabel || 'Add to Cart');
       setBannerHeight(productData.banner.height || 400);
       setBannerBgColor(productData.banner.bgColor || '#25D366');
       setShowCta(productData.banner.showCta !== undefined ? productData.banner.showCta : true);
@@ -368,6 +370,7 @@ const Step2_ProductConfig = () => {
       categoryImageShape: categoryImageShape,
       categoryImageSize: categoryImageSize,
       autoSlideProductImages: autoSlideProductImages,
+      addToCartLabel: addToCartLabel,
       banner: {
         image: bannerImage,
         tagline: bannerTagline,
@@ -381,7 +384,7 @@ const Step2_ProductConfig = () => {
         textColor: textColor,
       }
     });
-  }, [categories, bannerImage, bannerTagline, bannerSubtitle, bannerCta, bannerHeight, bannerBgColor, showCta, showText, textAlignment, textColor, enableImageZoom, categoryImageShape, categoryImageSize, autoSlideProductImages]);
+  }, [categories, bannerImage, bannerTagline, bannerSubtitle, bannerCta, bannerHeight, bannerBgColor, showCta, showText, textAlignment, textColor, enableImageZoom, categoryImageShape, categoryImageSize, autoSlideProductImages, addToCartLabel]);
 
   const generateId = () => Math.floor(Date.now() + Math.random() * 1000);
 
@@ -966,7 +969,7 @@ const Step2_ProductConfig = () => {
                                   </div>
                                 )}
                                 <button className="w-full mt-3 py-1.5 rounded-lg font-semibold text-sm hover:brightness-105 transition-all" style={{ backgroundColor: previewColors.button, color: previewColors.buttonLabel }}>
-                                  Add to Cart
+                                  {addToCartLabel || 'Add to Cart'}
                                 </button>
                               </div>
                             </div>
@@ -1071,6 +1074,35 @@ const Step2_ProductConfig = () => {
             </div>
           </div>
 
+        </div>
+      </Card>
+
+      {/* Product CTA Label */}
+      <Card className="mb-6">
+        <div className="flex items-center gap-2 mb-4">
+          <span className="material-symbols-outlined text-[#006d2f]">shopping_cart</span>
+          <h2 className="font-label-md text-label-md text-[#556067] uppercase tracking-wider text-xs">Product CTA Button</h2>
+        </div>
+        <div className="space-y-1">
+          <label className="font-label-md text-label-md text-[#3c4a3d] text-xs uppercase tracking-wider">Button Label</label>
+          <Input
+            value={addToCartLabel}
+            onChange={(e) => setAddToCartLabel(e.target.value)}
+            placeholder="Add to Cart"
+            className="bg-surface-container"
+          />
+          <p className="text-xs text-[#8e9eab] italic">This text appears on the product card button. Default: "Add to Cart"</p>
+        </div>
+        <div className="mt-3 flex gap-2 flex-wrap">
+          {['Add to Cart', 'Buy Now', 'Order Now', 'Shop Now', 'Get It'].map(label => (
+            <button
+              key={label}
+              onClick={() => setAddToCartLabel(label)}
+              className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all ${addToCartLabel === label ? 'border-[#006d2f] bg-[#006d2f]/10 text-[#006d2f]' : 'border-[#e0e3e6] text-[#556067] hover:border-[#006d2f]'}`}
+            >
+              {label}
+            </button>
+          ))}
         </div>
       </Card>
 
