@@ -1748,6 +1748,16 @@ const Step2_ProductConfig = () => {
             </label>
           </div>
 
+          <div className="flex items-center justify-between py-2 border-b border-[#e0e3e6]">
+            <span className="font-body-md text-[#191c1e] font-medium">Text Color</span>
+            <div className="flex items-center gap-2">
+              <input type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)}
+                className="w-8 h-8 rounded-lg cursor-pointer"
+                style={{ WebkitAppearance: 'none', border: 'none', outline: 'none', backgroundColor: textColor }} />
+              <code className="text-xs bg-[#f2f4f7] px-2 py-1 rounded-lg text-[#3c4a3d]">{textColor}</code>
+            </div>
+          </div>
+
           <div>
             <label className="font-label-md text-label-md text-[#3c4a3d] block uppercase tracking-wider text-xs mb-1">Text Alignment</label>
             <div className="flex gap-2">
@@ -1756,40 +1766,6 @@ const Step2_ProductConfig = () => {
                   <span className="material-symbols-outlined text-base">{`format_align_${align}`}</span> {align.charAt(0).toUpperCase() + align.slice(1)}
                 </button>
               ))}
-            </div>
-          </div>
-
-          <div>
-            <label className="font-label-md text-label-md text-[#3c4a3d] block uppercase tracking-wider text-xs mb-1">Text Color</label>
-            <div className="flex items-center gap-3">
-              <input
-                type="color"
-                value={textColor}
-                onChange={(e) => setTextColor(e.target.value)}
-                className="w-10 h-10 rounded-lg border-2 border-[#bbcbb9] cursor-pointer hover:scale-105 transition-transform p-0"
-                style={{ 
-                  backgroundColor: textColor,
-                  WebkitAppearance: 'none',
-                  border: 'none',
-                  outline: 'none',
-                }}
-              />
-              <style>{`
-                input[type="color"]::-webkit-color-swatch-wrapper {
-                  padding: 0;
-                }
-                input[type="color"]::-webkit-color-swatch {
-                  border: 2px solid white;
-                  border-radius: 8px;
-                  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                }
-                input[type="color"]::-moz-color-swatch {
-                  border: 2px solid white;
-                  border-radius: 8px;
-                  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                }
-              `}</style>
-              <code className="text-sm bg-[#f2f4f7] px-3 py-1 rounded-lg text-[#3c4a3d]">{textColor}</code>
             </div>
           </div>
 
@@ -1816,37 +1792,13 @@ const Step2_ProductConfig = () => {
             </div>
           </div>
 
-          <div>
-            <label className="font-label-md text-label-md text-[#3c4a3d] block uppercase tracking-wider text-xs mb-1">Background Color</label>
-            <div className="flex items-center gap-3">
-              <input
-                type="color"
-                value={bannerBgColor}
-                onChange={(e) => setBannerBgColor(e.target.value)}
-                className="w-10 h-10 rounded-lg border-2 border-[#bbcbb9] cursor-pointer hover:scale-105 transition-transform p-0"
-                style={{ 
-                  backgroundColor: bannerBgColor,
-                  WebkitAppearance: 'none',
-                  border: 'none',
-                  outline: 'none',
-                }}
-              />
-              <style>{`
-                input[type="color"]::-webkit-color-swatch-wrapper {
-                  padding: 0;
-                }
-                input[type="color"]::-webkit-color-swatch {
-                  border: 2px solid white;
-                  border-radius: 8px;
-                  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                }
-                input[type="color"]::-moz-color-swatch {
-                  border: 2px solid white;
-                  border-radius: 8px;
-                  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                }
-              `}</style>
-              <code className="text-sm bg-[#f2f4f7] px-3 py-1 rounded-lg text-[#3c4a3d]">{bannerBgColor}</code>
+          <div className="flex items-center justify-between py-2 border-b border-[#e0e3e6]">
+            <span className="font-body-md text-[#191c1e] font-medium">Background Color</span>
+            <div className="flex items-center gap-2">
+              <input type="color" value={bannerBgColor} onChange={(e) => setBannerBgColor(e.target.value)}
+                className="w-8 h-8 rounded-lg cursor-pointer"
+                style={{ WebkitAppearance: 'none', border: 'none', outline: 'none', backgroundColor: bannerBgColor }} />
+              <code className="text-xs bg-[#f2f4f7] px-2 py-1 rounded-lg text-[#3c4a3d]">{bannerBgColor}</code>
             </div>
           </div>
         </div>
