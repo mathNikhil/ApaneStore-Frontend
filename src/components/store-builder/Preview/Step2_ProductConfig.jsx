@@ -79,6 +79,7 @@ const Step2_ProductConfig = () => {
         showText: showText,
         textAlignment: textAlignment,
         textColor: textColor,
+        textShadow: productData.banner?.textShadow !== undefined ? productData.banner.textShadow : true,
       }
     });
   }, [categories, bannerImage, bannerTagline, bannerSubtitle, bannerCta, bannerHeight, bannerBgColor, showCta, showText, textAlignment, textColor, enableImageZoom, addToCartLabel]);

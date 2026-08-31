@@ -18,7 +18,7 @@ const StorePreview = ({
   // Hero Banner Props
   bannerImage = null,
   bannerTagline = 'Fresh, Organic & Delivered',
-  bannerSubtitle = '100% Natural Stone-Ground Flour',
+  bannerSubtitle = '',
   bannerCta = 'Shop Now',
   bannerHeight = 400,
   bannerBgColor = '#25D366',
@@ -144,7 +144,7 @@ const StorePreview = ({
                         className="text-lg md:text-xl drop-shadow-md"
                         style={{ color: textColor || '#FFFFFF', opacity: 0.9 }}
                       >
-                        {bannerSubtitle || '100% Natural Stone-Ground Flour'}
+                        {bannerSubtitle}
                       </p>
                     </div>
                   )}
@@ -175,7 +175,7 @@ const StorePreview = ({
                       className="text-lg md:text-xl drop-shadow-md"
                       style={{ color: textColor || '#FFFFFF', opacity: 0.9 }}
                     >
-                      {bannerSubtitle || '100% Natural Stone-Ground Flour'}
+                      {bannerSubtitle}
                     </p>
                   </div>
                 )}

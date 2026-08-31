@@ -1,3 +1,4 @@
+import AIAssistant from './AIAssistant';
 import { showSuccess, showError } from '../../utils/toast';
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -394,6 +395,8 @@ const Step1_BrandSetup = () => {
   const allFonts = [...freeFonts, ...customFonts];
 
   return (
+    <>
+    <AIAssistant currentStep={1} brandData={formData} />
     <StoreBuilderLayout
       currentStep={1}
       totalSteps={8}
@@ -662,6 +665,7 @@ const Step1_BrandSetup = () => {
       </Card>
       
     </StoreBuilderLayout>
+  </>
   );
 };
 

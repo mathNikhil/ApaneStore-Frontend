@@ -1,3 +1,4 @@
+import AIAssistant from './AIAssistant';
 import { showSuccess, showError } from '../../utils/toast';
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -92,6 +93,7 @@ const Step2_ProductConfig = () => {
   const [showCta, setShowCta] = useState(productData.banner?.showCta !== undefined ? productData.banner.showCta : true);
   const [showText, setShowText] = useState(productData.banner?.showText !== undefined ? productData.banner.showText : true);
   const [textAlignment, setTextAlignment] = useState(productData.banner?.textAlignment || 'center');
+  const [textShadow, setTextShadow] = useState(productData.banner?.textShadow !== undefined ? productData.banner.textShadow : true);
   const [textColor, setTextColor] = useState(productData.banner?.textColor || '#FFFFFF');
 
   const [enableImageZoom, setEnableImageZoom] = useState(productData.enableImageZoom !== false);
@@ -121,6 +123,7 @@ const Step2_ProductConfig = () => {
       setShowCta(productData.banner.showCta !== undefined ? productData.banner.showCta : true);
       setShowText(productData.banner.showText !== undefined ? productData.banner.showText : true);
       setTextAlignment(productData.banner.textAlignment || 'center');
+      setTextShadow(productData.banner.textShadow !== undefined ? productData.banner.textShadow : true);
       setTextColor(productData.banner.textColor || '#FFFFFF');
     }
     if (currentStoreId && productData.enableImageZoom !== undefined) {
@@ -381,10 +384,11 @@ const Step2_ProductConfig = () => {
         showCta: showCta,
         showText: showText,
         textAlignment: textAlignment,
+        textShadow: textShadow,
         textColor: textColor,
       }
     });
-  }, [categories, bannerImage, bannerTagline, bannerSubtitle, bannerCta, bannerHeight, bannerBgColor, showCta, showText, textAlignment, textColor, enableImageZoom, categoryImageShape, categoryImageSize, autoSlideProductImages, addToCartLabel]);
+  }, [categories, bannerImage, bannerTagline, bannerSubtitle, bannerCta, bannerHeight, bannerBgColor, showCta, showText, textAlignment, textColor, textShadow, enableImageZoom, categoryImageShape, categoryImageSize, autoSlideProductImages, addToCartLabel]);
 
   const generateId = () => Math.floor(Date.now() + Math.random() * 1000);
 
@@ -813,6 +817,8 @@ const Step2_ProductConfig = () => {
   };
 
   return (
+    <>
+    <AIAssistant currentStep={2} brandData={brandData} productData={productData} />
     <StoreBuilderLayout 
       currentStep={2} 
       totalSteps={8} 
@@ -1715,11 +1721,11 @@ const Step2_ProductConfig = () => {
         <div className="space-y-3">
           <div>
             <label className="font-label-md text-label-md text-[#3c4a3d] block uppercase tracking-wider text-xs mb-1">Tagline</label>
-            <Input value={bannerTagline} onChange={(e) => setBannerTagline(e.target.value)} placeholder="e.g. Fresh, Organic & Delivered" className="bg-white border border-[#bbcbb9] rounded-lg" />
+            <textarea value={bannerTagline} onChange={(e) => setBannerTagline(e.target.value)} placeholder="e.g. Fresh, Organic & Delivered" rows={2} className="w-full px-3 py-2 bg-white border border-[#bbcbb9] rounded-lg text-sm focus:outline-none focus:border-[#006d2f] resize-none" />
           </div>
           <div>
             <label className="font-label-md text-label-md text-[#3c4a3d] block uppercase tracking-wider text-xs mb-1">Subtitle</label>
-            <Input value={bannerSubtitle} onChange={(e) => setBannerSubtitle(e.target.value)} placeholder="e.g. 100% Natural Stone-Ground Flour" className="bg-white border border-[#bbcbb9] rounded-lg" />
+            <textarea value={bannerSubtitle} onChange={(e) => setBannerSubtitle(e.target.value)} placeholder="e.g. 100% Natural Stone-Ground Flour" rows={2} className="w-full px-3 py-2 bg-white border border-[#bbcbb9] rounded-lg text-sm focus:outline-none focus:border-[#006d2f] resize-none" />
           </div>
 
           <div className="flex items-center justify-between py-2 border-b border-[#e0e3e6]">
@@ -1728,6 +1734,16 @@ const Step2_ProductConfig = () => {
               <input type="checkbox" checked={showText} onChange={() => setShowText(!showText)} className="sr-only peer" />
               <div className={`w-11 h-6 rounded-full transition-all duration-200 ease-in-out ${showText ? 'bg-[#006d2f]' : 'bg-[#e0e3e6]'} peer-focus:ring-2 peer-focus:ring-[#25D366]/50 relative`}>
                 <div className={`absolute top-[2px] left-[2px] bg-white w-5 h-5 rounded-full transition-all duration-200 ease-in-out border border-gray-300 ${showText ? 'translate-x-5' : 'translate-x-0'} shadow-sm`} />
+              </div>
+            </label>
+          </div>
+
+          <div className="flex items-center justify-between py-2 border-b border-[#e0e3e6]">
+            <span className="font-body-md text-[#191c1e] font-medium">Text Shadow</span>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" checked={textShadow} onChange={() => setTextShadow(!textShadow)} className="sr-only peer" />
+              <div className={`w-11 h-6 rounded-full transition-all duration-200 ease-in-out ${textShadow ? 'bg-[#006d2f]' : 'bg-[#e0e3e6]'} peer-focus:ring-2 peer-focus:ring-[#25D366]/50 relative`}>
+                <div className={`absolute top-[2px] left-[2px] bg-white w-5 h-5 rounded-full transition-all duration-200 ease-in-out border border-gray-300 ${textShadow ? 'translate-x-5' : 'translate-x-0'} shadow-sm`} />
               </div>
             </label>
           </div>
@@ -1836,6 +1852,7 @@ const Step2_ProductConfig = () => {
         </div>
       </Card>
     </StoreBuilderLayout>
+    </>
   );
 };
 

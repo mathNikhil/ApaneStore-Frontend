@@ -72,6 +72,7 @@ const FinalStorePreview = () => {
                     showText: productData.banner?.showText !== undefined ? productData.banner.showText : true,
                     textAlignment: productData.banner?.textAlignment || 'center',
                     textColor: productData.banner?.textColor || '#FFFFFF',
+                    textShadow: productData.banner?.textShadow !== undefined ? productData.banner.textShadow : true,
                 },
             },
             cart: cartData || {},

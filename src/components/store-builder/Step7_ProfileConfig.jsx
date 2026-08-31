@@ -1,3 +1,4 @@
+import AIAssistant from './AIAssistant';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStoreBuilder } from '../../Context/StoreBuilderContext';
@@ -7,7 +8,7 @@ import Input from '../Common/Input';
 
 const Step7_ProfileConfig = () => {
   const navigate = useNavigate();
-  const { profileData, setProfileData, productData } = useStoreBuilder();
+  const { profileData, setProfileData, productData, brandData } = useStoreBuilder();
 
   var hasProducts = false;
   if (productData.categories) {
@@ -75,6 +76,8 @@ const Step7_ProfileConfig = () => {
   ];
 
   return (
+    <>
+    <AIAssistant currentStep={7} brandData={brandData} />
     <StoreBuilderLayout
       currentStep={7}
       totalSteps={8}
@@ -199,6 +202,7 @@ const Step7_ProfileConfig = () => {
         </div>
       </Card>
     </StoreBuilderLayout>
+    </>
   );
 };
 

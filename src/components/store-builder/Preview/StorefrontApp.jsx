@@ -131,6 +131,7 @@ const StorefrontApp = ({ builderData, storeId, device = 'desktop', className = '
     showText: builderData.products.banner.showText,
     textAlignment: builderData.products.banner.textAlignment,
     textColor: builderData.products.banner.textColor,
+    textShadow: builderData.products.banner.textShadow !== undefined ? builderData.products.banner.textShadow : true,
 
     freeDelivery: builderData.cart.freeDelivery,
     freeDeliveryThreshold: builderData.cart.freeDeliveryThreshold,
