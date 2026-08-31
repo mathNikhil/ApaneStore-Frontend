@@ -60,6 +60,7 @@ const FinalStorePreview = () => {
                 categoryImageShape: productData.categoryImageShape || 'circle',
                 categoryImageSize: productData.categoryImageSize || 'S',
                 autoSlideProductImages: productData.autoSlideProductImages || false,
+                addToCartLabel: productData.addToCartLabel || 'Add to Cart',
                 banner: {
                     image: productData.banner?.image || null,
                     tagline: productData.banner?.tagline || '',

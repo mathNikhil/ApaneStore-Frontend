@@ -376,7 +376,7 @@ const DashboardReturnUser = ({ stores = [], subscriptions = {}, onStoreUpdate })
                 {/* Launch Button */}
                 <div className="mb-8">
                     <Button
-                        onClick={() => navigate('/store-builder/step/1')}
+                        onClick={() => navigate('/store-builder/step/1?new=true')}
                         icon="add"
                         size="lg"
                         className="bg-[#25D366] text-[#005523] hover:brightness-105 shadow-[0_4px_0_0_#005523] active:translate-y-[2px] active:shadow-[0_2px_0_0_#005523] px-8 py-4 text-lg font-bold"

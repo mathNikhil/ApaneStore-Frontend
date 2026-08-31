@@ -261,6 +261,7 @@ export const StoreBuilderProvider = ({ children }) => {
     // ✅ START NEW STORE
     const startNewStore = () => {
         console.log('🆕 Starting new store');
+        localStorage.removeItem('currentStoreId');
         setCurrentStoreId(null);
         // ✅ FIX: tenantId comes from the logged-in user's session, not from
         // any store — it should be available immediately, even before a

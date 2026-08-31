@@ -28,12 +28,16 @@ const StoreBuilderRouter = () => {
     const { loadStore, startNewStore, currentStoreId, ready } = useStoreBuilder();
     
     const storeId = searchParams.get('storeId');
+    const isNew = searchParams.get('new') === 'true';
 
     useEffect(() => {
         console.log('🔍 StoreBuilderRouter - storeId from URL:', storeId);
         console.log('🔍 StoreBuilderRouter - currentStoreId in Context:', currentStoreId);
 
-        if (storeId && storeId !== 'null' && storeId !== 'undefined') {
+        if (isNew) {
+            console.log('🆕 New store requested');
+            startNewStore();
+        } else if (storeId && storeId !== 'null' && storeId !== 'undefined') {
             if (storeId !== currentStoreId) {
                 console.log('📡 Loading store:', storeId);
                 loadStore(storeId);

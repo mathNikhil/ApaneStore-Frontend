@@ -100,6 +100,7 @@ export const usePreviewData = (builderData, storeId, customerToken) => {
     },
     products: [],
     categories: [],
+    addToCartLabel: 'Add to Cart',
     // Store-wide display settings (Step 2, applies to every product)
     settings: {
       enableImageZoom: true,
@@ -248,6 +249,7 @@ export const usePreviewData = (builderData, storeId, customerToken) => {
         },
         categories: builderData.categories ? builderData.categories.map(adaptCategoryForPreview) : prev.categories,
         products: builderData.categories ? builderData.categories.flatMap(cat => cat.products || []).map(adaptProductForPreview) : prev.products,
+        addToCartLabel: builderData.products?.addToCartLabel || builderData.addToCartLabel || 'Add to Cart',
         settings: {
           ...prev.settings,
           enableImageZoom: builderData.enableImageZoom !== false,

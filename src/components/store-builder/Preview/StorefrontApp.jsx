@@ -18,7 +18,8 @@ const StorefrontApp = ({ builderData, storeId, device = 'desktop', className = '
     console.log('🔍 StorefrontApp builderData.products:', JSON.stringify({
         categoryImageShape: builderData?.products?.categoryImageShape,
         categoryImageSize: builderData?.products?.categoryImageSize,
-        autoSlide: builderData?.products?.autoSlideProductImages
+        autoSlide: builderData?.products?.autoSlideProductImages,
+        addToCartLabel: builderData?.products?.addToCartLabel
     }));
   const [activeTab, setActiveTab] = useState('home');
   // ✅ Real customer session (was just the phone string before, from a fake
@@ -90,8 +91,9 @@ const StorefrontApp = ({ builderData, storeId, device = 'desktop', className = '
 
   // Load Google Fonts for heading and body fonts
   useEffect(() => {
-    const heading = builderData?.brand?.fonts?.heading || 'Inter';
-    const body = builderData?.brand?.fonts?.body || 'Inter';
+    const heading = builderData?.brand?.fonts?.heading || builderData?.headingFont || 'Inter';
+    const body = builderData?.brand?.fonts?.body || builderData?.bodyFont || 'Inter';
+    console.log('🔤 Loading fonts:', heading, body);
     const fonts = [...new Set([heading, body])].map(f => f.replace(/ /g, '+') + ':wght@400;500;600;700').join('&family=');
     const linkId = 'store-google-fonts';
     let link = document.getElementById(linkId);
@@ -102,7 +104,7 @@ const StorefrontApp = ({ builderData, storeId, device = 'desktop', className = '
       document.head.appendChild(link);
     }
     link.href = `https://fonts.googleapis.com/css2?family=${fonts}&display=swap`;
-  }, [builderData?.brand?.fonts?.heading, builderData?.brand?.fonts?.body]);
+  }, [builderData?.brand?.fonts?.heading, builderData?.brand?.fonts?.body, builderData?.headingFont, builderData?.bodyFont]);
 
   const flattenedData = useMemo(() => ({
     brandName: builderData.brand.brandName,
@@ -118,6 +120,7 @@ const StorefrontApp = ({ builderData, storeId, device = 'desktop', className = '
     categoryImageShape: builderData.products.categoryImageShape || 'circle',
     categoryImageSize: builderData.products.categoryImageSize || 'S',
     autoSlideProductImages: builderData.products.autoSlideProductImages || false,
+    addToCartLabel: builderData.products.addToCartLabel || 'Add to Cart',
     bannerImage: builderData.products.banner.image,
     bannerTagline: builderData.products.banner.tagline,
     bannerSubtitle: builderData.products.banner.subtitle,

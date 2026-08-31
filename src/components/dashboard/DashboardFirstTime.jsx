@@ -12,7 +12,7 @@ const DashboardFirstTime = () => {
         // Clear any existing store context and navigate to step 1
         localStorage.removeItem('currentStoreId');
         localStorage.removeItem('storeBuilderData');
-        navigate('/store-builder/new/step/1');
+        navigate('/store-builder/step/1?new=true');
     };
 
     return (
