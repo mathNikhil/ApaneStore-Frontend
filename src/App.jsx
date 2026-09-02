@@ -46,6 +46,7 @@ function App() {
             <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
             <Route path="/profile/:section" element={<ProfilePage />} />
+            <Route path="/market" element={<ProtectedRoute><MarketPage /></ProtectedRoute>} />
             
             {/* Publish Flow Routes - outside StoreBuilderRouter to avoid context conflicts */}
             <Route path="/store-builder/publish/domain" element={<ProtectedRoute><PublishDomainSelection /></ProtectedRoute>} />
