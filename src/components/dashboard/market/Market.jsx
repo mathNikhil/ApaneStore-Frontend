@@ -5,10 +5,10 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import MarketDashboard  from '../components/market/MarketDashboard';
-import MarketMessenger  from '../components/market/MarketMessenger';
-import MarketSetup      from '../components/market/MarketSetup';
-import useMarketStore   from '../hooks/useMarketStore';
+import MarketDashboard  from './MarketDashboard';
+import MarketMessenger  from './MarketMessenger';
+import MarketSetup      from './MarketSetup';
+import useMarketStore   from './useMarketStore';
 
 export default function Market() {
   const [activeTab, setActiveTab] = useState('dashboard');

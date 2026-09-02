@@ -9,6 +9,7 @@ import OnboardingPage from './components/auth/OnboardingPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import DashboardPage from './components/dashboard/DashboardPage';
 import ProfilePage from './components/dashboard/ProfilePage';
+import MarketPage from './components/dashboard/market/Market';
 import StoreBuilderRouter from './components/store-builder/StoreBuilderRouter';
 import PublishDomainSelection from './components/publish-flow/PublishDomainSelection';
 import PublishHostingChoice from './components/publish-flow/PublishHostingChoice';

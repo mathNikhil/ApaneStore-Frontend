@@ -1,6 +1,17 @@
 // src/components/market/MarketSetup.jsx
 import { useState, useEffect, useRef } from 'react';
-import api from '../../services/api';
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://api.aapnaestore.com';
+const getToken = () => localStorage.getItem('token') || localStorage.getItem('authToken') || '';
+const api = {
+  get:    (url) => fetch(`${API_BASE_URL}${url}`, { headers: { Authorization: `Bearer ${getToken()}`, 'Content-Type': 'application/json' } }).then(r => r.json()),
+  post:   (url, data) => fetch(`${API_BASE_URL}${url}`, { method: 'POST', headers: { Authorization: `Bearer ${getToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(r => r.json()),
+  put:    (url, data) => fetch(`${API_BASE_URL}${url}`, { method: 'PUT',  headers: { Authorization: `Bearer ${getToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(r => r.json()),
+  delete: (url) => fetch(`${API_BASE_URL}${url}`, { method: 'DELETE', headers: { Authorization: `Bearer ${getToken()}`, 'Content-Type': 'application/json' } }).then(r => r.json()),
+  patch:  (url, data) => fetch(`${API_BASE_URL}${url}`, { method: 'PATCH', headers: { Authorization: `Bearer ${getToken()}`, 'Content-Type': 'application/json' }, body: data ? JSON.stringify(data) : undefined }).then(r => r.json()),
+};
+
+
 
 const DAILY_LIMIT = 75;
 
