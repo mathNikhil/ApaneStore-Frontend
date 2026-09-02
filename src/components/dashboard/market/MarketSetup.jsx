@@ -20,7 +20,7 @@ export default function MarketSetup({ storeId, subscription, config, onRefresh }
   const [saving, setSaving]   = useState(false);
   const [saved, setSaved]     = useState(false);
 
-  if (!subscription?.is_active) {
+  if (false) { // TESTING
     return (
       <div className="bg-white rounded-xl border border-gray-200 p-8 text-center text-gray-400">
         <i className="ti ti-lock text-3xl block mb-2" />
@@ -102,10 +102,10 @@ function PersonalSection({ storeId, config, onRefresh }) {
     setLoading(true);
     try {
       const res = await api.post(`/stores/${storeId}/market/connect/qr`);
-      if (res.data.status === 'already_connected') { setConnected(true); return; }
-      if (res.data.status === 'qr') { setQr(res.data.qr); startTimer(); }
-      if (res.data.status === 'connected') { setConnected(true); setPhone(res.data.phone); onRefresh(); }
-    } catch { } finally { setLoading(false); }
+      if (res.status === 'already_connected') { setConnected(true); return; }
+      if (res.status === 'qr') { setQr(res.qr); startTimer(); }
+      if (res.status === 'connected') { setConnected(true); setPhone(res.phone); onRefresh(); }
+    } catch (e) { console.error('QR error:', e); } finally { setLoading(false); }
   };
 
   // Poll status after QR shown
@@ -114,7 +114,7 @@ function PersonalSection({ storeId, config, onRefresh }) {
     const poll = setInterval(async () => {
       try {
         const r = await api.get(`/stores/${storeId}/market/connect/status`);
-        if (r.data.connected) { setConnected(true); setPhone(r.data.phone); setQr(null); clearInterval(poll); onRefresh(); }
+        if (r.connected) { setConnected(true); setPhone(r.phone); setQr(null); clearInterval(poll); onRefresh(); }
       } catch {}
     }, 3000);
     return () => clearInterval(poll);

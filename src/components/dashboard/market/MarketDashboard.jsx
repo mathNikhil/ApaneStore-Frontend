@@ -17,7 +17,7 @@ export default function MarketDashboard({ storeId, subscription, config, onActiv
   const [stats, setStats]   = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const isActive = subscription?.is_active;
+  const isActive = true; // TESTING — restore to: subscription?.is_active
 
   useEffect(() => {
     if (!isActive) return;

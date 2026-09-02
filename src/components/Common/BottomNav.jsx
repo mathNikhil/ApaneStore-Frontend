@@ -6,6 +6,7 @@ const BottomNav = ({ items = [] }) => {
   
   const defaultItems = [
     { path: '/dashboard', icon: 'dashboard', label: 'Dashboard' },
+    { path: '/market', icon: 'campaign', label: 'Market' },
     { path: '/profile', icon: 'person', label: 'Profile' },
   ];
 

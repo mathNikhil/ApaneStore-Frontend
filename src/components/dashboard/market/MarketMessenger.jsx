@@ -22,20 +22,20 @@ export default function MarketMessenger({ storeId, subscription, config, onGoSet
   const [contacts, setContacts] = useState([]);
   const [todayCount, setTodayCount] = useState(0);
 
-  const isActive    = subscription?.is_active;
+  const isActive    = true; // TESTING
   const mode        = config?.mode || 'personal';
   const isConnected = config?.is_connected;
 
   useEffect(() => {
     if (!isActive) return;
     Promise.all([
-      api.get(`/stores/${storeId}/market/messages`),
-      api.get(`/stores/${storeId}/market/groups`),
-      api.get(`/stores/${storeId}/market/contacts`),
+      api.get(`/stores/${storeId}/market/messages`).catch(() => []),
+      api.get(`/stores/${storeId}/market/groups`).catch(() => []),
+      api.get(`/stores/${storeId}/market/contacts`).catch(() => []),
     ]).then(([m, g, c]) => {
-      setMessages(m.data);
-      setGroups(g.data);
-      setContacts(c.data);
+      setMessages(Array.isArray(m) ? m : (m?.data || []));
+      setGroups(Array.isArray(g) ? g : (g?.data || []));
+      setContacts(Array.isArray(c) ? c : (c?.data || []));
     });
     if (mode === 'personal' && isConnected) {
       api.get(`/stores/${storeId}/market/connect/status`).then(r => setTodayCount(r.data.todayCount));
@@ -158,8 +158,13 @@ function ComposeTab({ storeId, mode, groups, contacts, todayCount, isConnected, 
     try {
       const fd = new FormData();
       fd.append('image', file);
-      const res = await api.post(`/stores/${storeId}/market/media/upload`, fd);
-      setPhoto({ url: res.data.url, preview });
+      const uploadRes = await fetch(`${API_BASE_URL}/api/stores/${storeId}/market/media/upload`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${getToken()}` },
+        body: fd,
+      });
+      const res = await uploadRes.json();
+      setPhoto({ url: res.url, preview });
       setErrors(e => ({ ...e, photo: null }));
     } catch {
       setErrors(e => ({ ...e, photo: 'Upload failed — try again.' }));

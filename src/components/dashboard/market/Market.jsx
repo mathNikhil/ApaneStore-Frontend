@@ -1,68 +1,49 @@
-// src/pages/Market.jsx
-// Drop into ApaneStore-Frontend/src/pages/
-// Add route in App.jsx: <Route path="/market" element={<Market />} />
-// Add tab in bottom nav alongside Dashboard and Profile
-
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import MarketDashboard  from './MarketDashboard';
-import MarketMessenger  from './MarketMessenger';
-import MarketSetup      from './MarketSetup';
-import useMarketStore   from './useMarketStore';
+import { useState } from 'react';
+import TopAppBar from '../../Common/TopAppBar';
+import BottomNav from '../../Common/BottomNav';
+import MarketDashboard from './MarketDashboard';
+import MarketMessenger from './MarketMessenger';
+import MarketSetup     from './MarketSetup';
+import useMarketStore  from './useMarketStore';
 
 export default function Market() {
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const { subscription, config, loading, refetch } = useMarketStore();
-  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('messenger');
+  const { subscription, config, storeId, loading, refetch } = useMarketStore();
 
-  // Get storeId from auth context — adjust to match your existing auth pattern
-  const storeId = localStorage.getItem('storeId') || sessionStorage.getItem('storeId');
-
-  if (!storeId) {
-    navigate('/dashboard');
-    return null;
-  }
+  const isActive = true; // TODO: restore → subscription?.is_active
 
   const tabs = [
-    { key: 'dashboard', label: 'Dashboard', icon: 'ti-chart-bar' },
-    { key: 'messenger', label: 'Messenger',  icon: 'ti-brand-whatsapp' },
-    { key: 'setup',     label: 'Setup',      icon: 'ti-settings' },
+    { key: 'messenger', label: 'Messenger', icon: 'campaign' },
+    { key: 'setup',     label: 'Setup',     icon: 'settings' },
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Page header */}
-      <div className="bg-white border-b border-gray-200 px-4 pt-4 pb-0">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <i className="ti ti-brand-whatsapp text-green-500 text-xl" />
-            <span className="font-medium text-gray-900">WhatsApp Market</span>
-            {subscription?.is_active ? (
-              <span className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full">Active</span>
-            ) : (
-              <span className="text-xs bg-purple-50 text-purple-700 px-2 py-0.5 rounded-full">Premium</span>
-            )}
-          </div>
-          {config?.is_connected && (
-            <div className="flex items-center gap-1.5 text-xs text-gray-500">
-              <span className="w-2 h-2 rounded-full bg-green-500 inline-block" />
-              Connected
-            </div>
-          )}
+    <div className="min-h-screen bg-[#f7f9fc] flex flex-col">
+      {/* Top app bar — same as Dashboard and Profile */}
+      <TopAppBar title="" />
+
+      {/* Market sub-header */}
+      <div className="bg-white border-b border-[#bbcbb9] px-4 pt-3 pb-0 sticky top-[57px] z-40">
+        <div className="flex items-center gap-2 mb-3">
+          <span className="material-symbols-outlined text-[#25D366]">chat</span>
+          <span className="font-semibold text-[#1a1a2e] text-base">WhatsApp Market</span>
+          <span className="text-xs bg-purple-50 text-purple-700 px-2 py-0.5 rounded-full ml-1">
+            {isActive ? 'Active' : 'Premium'}
+          </span>
         </div>
 
         {/* Sub-tabs */}
         <div className="flex gap-0 -mb-px">
-          {tabs.map((t) => (
+          {tabs.map(t => (
             <button
               key={t.key}
               onClick={() => setActiveTab(t.key)}
               className={`flex items-center gap-1.5 px-4 py-2.5 text-sm border-b-2 transition-colors whitespace-nowrap
                 ${activeTab === t.key
-                  ? 'border-green-500 text-green-600 font-medium'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                  ? 'border-[#25D366] text-[#006d2f] font-semibold'
+                  : 'border-transparent text-[#556067] hover:text-[#1a1a2e]'}`}
             >
-              <i className={`ti ${t.icon} text-base`} />
+              <span className="material-symbols-outlined text-base">{t.icon}</span>
               {t.label}
             </button>
           ))}
@@ -70,24 +51,15 @@ export default function Market() {
       </div>
 
       {/* Content */}
-      <div className="p-4">
+      <div className="flex-1 p-4 pb-24">
         {loading ? (
-          <div className="text-center py-12 text-gray-400">
-            <i className="ti ti-loader text-3xl animate-spin block mb-2" />
+          <div className="text-center py-16 text-gray-400">
+            <span className="material-symbols-outlined text-4xl block mb-2">hourglass_empty</span>
             Loading...
           </div>
         ) : (
           <>
-            {activeTab === 'dashboard' && (
-              <MarketDashboard
-                storeId={storeId}
-                subscription={subscription}
-                config={config}
-                onActivate={() => { refetch(); setActiveTab('setup'); }}
-                onGoSetup={() => setActiveTab('setup')}
-                onGoMessenger={() => setActiveTab('messenger')}
-              />
-            )}
+
             {activeTab === 'messenger' && (
               <MarketMessenger
                 storeId={storeId}
@@ -107,6 +79,9 @@ export default function Market() {
           </>
         )}
       </div>
+
+      {/* Bottom nav — same as Dashboard and Profile */}
+      <BottomNav />
     </div>
   );
 }
