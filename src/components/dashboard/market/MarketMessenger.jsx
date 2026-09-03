@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { marketApi, DAILY_LIMIT } from './marketApi';
 
-export default function MarketMessenger({ storeId, subscription, config, onGoSetup, isSubscribed }) {
+export default function MarketMessenger({ storeId, subscription, config, onGoSetup, isSubscribed, onGoSetupTab }) {
   const [tab, setTab]               = useState('compose');
   const [messages, setMessages]     = useState([]);
   const [groups, setGroups]         = useState([]);
@@ -86,6 +86,7 @@ export default function MarketMessenger({ storeId, subscription, config, onGoSet
         <ScheduledTab
           messages={messages.filter(m => ['scheduled','draft'].includes(m.status))}
           storeId={storeId} onRefresh={refreshAll}
+          subscription={subscription}
           onEdit={(msg) => { setEditingMessage(msg); setTab('compose'); }} />
       )}
       {tab === 'contacts' && (
@@ -457,7 +458,11 @@ function ComposeTab({ storeId, mode, groups, contacts, todayCount, isConnected, 
 }
 
 // ── ScheduledTab ──────────────────────────────────────────────────────────────
-function ScheduledTab({ messages, storeId, onRefresh, onEdit }) {
+function ScheduledTab({ messages, storeId, onRefresh, onEdit, subscription }) {
+  const quotaUsed = subscription?.quota_used || 0;
+  const quotaLimit = subscription?.max_scheduled || 0;
+  const quotaPct = quotaLimit > 0 ? Math.min((quotaUsed / quotaLimit) * 100, 100) : 0;
+  const quotaColor = quotaPct >= 80 ? 'bg-red-400' : quotaPct >= 50 ? 'bg-amber-400' : 'bg-green-400';
   const deleteMsg = async (id) => {
     await marketApi.deleteMessage(storeId, id).catch(() => {});
     onRefresh();
@@ -471,6 +476,29 @@ function ScheduledTab({ messages, storeId, onRefresh, onEdit }) {
   );
   return (
     <div className="space-y-3">
+      {/* Quota bar */}
+      {quotaLimit > 0 && (
+        <div className="bg-white rounded-2xl border border-gray-100 p-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium text-gray-600">Schedule quota</span>
+            <span className="text-xs text-gray-500">{quotaUsed} / {quotaLimit} used</span>
+          </div>
+          <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+            <div className={`h-full rounded-full transition-all ${quotaColor}`}
+              style={{ width: `${quotaPct}%` }} />
+          </div>
+          {quotaPct >= 80 && quotaUsed < quotaLimit && (
+            <p className="text-xs text-red-500 mt-1">Only {quotaLimit - quotaUsed} send{quotaLimit - quotaUsed !== 1 ? 's' : ''} remaining</p>
+          )}
+          {subscription?.expires_at && (
+            <p className="text-xs text-gray-400 mt-1">
+              Expires {new Date(subscription.expires_at).toLocaleDateString(navigator.language || 'en-IN', {day:'numeric', month:'short', year:'numeric'})}
+              {subscription.days_remaining > 0 ? ` · ${subscription.days_remaining} days left` : ' · Expired'}
+            </p>
+          )}
+        </div>
+      )}
+
       {messages.map(m => (
         <MessageCard key={m.id} m={m}
           onDelete={() => deleteMsg(m.id)}

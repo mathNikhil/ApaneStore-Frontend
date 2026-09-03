@@ -83,6 +83,19 @@ export default function MarketSetup({ storeId, subscription, config, onRefresh, 
 
       {/* Safety info — always shown */}
       <SafetySection mode={mode} />
+      {/* Deactivate section — below How it works */}
+      <div className="mt-4 px-1">
+        <p className="text-xs text-red-500 mb-3">
+          Deactivating will disconnect WhatsApp, move scheduled messages to drafts and stop all sends. You will need to pay again to reactivate.
+        </p>
+        <button
+          onClick={handleDeactivate}
+          disabled={deactivating}
+          className="w-full py-3 rounded-xl bg-red-600 text-white text-sm font-bold hover:bg-red-700 disabled:opacity-60 transition-all">
+          {deactivating ? 'Deactivating...' : '⚠ Deactivate Plan'}
+        </button>
+      </div>
+
     </div>
   );
 }
@@ -90,7 +103,18 @@ export default function MarketSetup({ storeId, subscription, config, onRefresh, 
 // ── Personal QR section ───────────────────────────────────────────────────────
 function PersonalSection({ storeId, config, onRefresh }) {
   const [qr, setQr]               = useState(null);
-  const [connected, setConnected] = useState(config?.is_connected || false);
+  const [connected, setConnected] = useState(false);
+  // Check live connection status on mount
+  useEffect(() => {
+    if (!storeId) return;
+    const token = localStorage.getItem('token');
+    const base = import.meta.env.VITE_API_URL || 'https://api.aapnaestore.com';
+    fetch(`${base}/api/tenants/${storeId}/market/connect/status`, {
+      headers: { Authorization: `Bearer ${token}` }
+    }).then(r => r.json()).then(d => {
+      if (d.connected) { setConnected(true); setPhone(d.phone); }
+    }).catch(() => {});
+  }, [storeId]);
   const [phone, setPhone]         = useState(config?.session_phone || null);
   const [loading, setLoading]     = useState(false);
   const [gap, setGap]             = useState(config?.gap_seconds || 2);
@@ -124,6 +148,25 @@ function PersonalSection({ storeId, config, onRefresh }) {
     }, 3000);
     return () => clearInterval(poll);
   }, [qr]);
+
+  const [deactivating, setDeactivating] = useState(false);
+
+  const handleDeactivate = async () => {
+    if (!window.confirm('Your WhatsApp will disconnect and all scheduled messages will become drafts. Are you sure you want to deactivate?')) return;
+    setDeactivating(true);
+    try {
+      const token = localStorage.getItem('token');
+      const base = import.meta.env.VITE_API_URL || 'https://api.aapnaestore.com';
+      await fetch(`${base}/api/tenants/${storeId}/market/deactivate`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setConnected(false);
+      onRefresh(); // This will set isSubscribed=false → show paywall
+    } catch(e) {
+      alert('Failed to deactivate: ' + e.message);
+    } finally { setDeactivating(false); }
+  };
 
   const disconnect = async () => {
     await api.post(`/api/tenants/${storeId}/market/connect/disconnect`);
@@ -195,6 +238,7 @@ function PersonalSection({ storeId, config, onRefresh }) {
           )}
         </div>
       )}
+
     </div>
   );
 }
