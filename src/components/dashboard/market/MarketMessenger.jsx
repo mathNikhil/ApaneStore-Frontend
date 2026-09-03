@@ -10,7 +10,14 @@ export default function MarketMessenger({ storeId, subscription, config, onGoSet
   const [editingMessage, setEditingMessage] = useState(null);
   const isActive    = true;
   const mode        = config?.mode || 'personal';
-  const isConnected = config?.is_connected;
+  const [isConnected, setIsConnected] = useState(false);
+  useEffect(() => {
+    if (!storeId) return;
+    const checkStatus = () => marketApi.getStatus(storeId).then(r => setIsConnected(r.connected || false)).catch(() => {});
+    checkStatus();
+    const interval = setInterval(checkStatus, 10000); // poll every 10s
+    return () => clearInterval(interval);
+  }, [storeId]);
 
   useEffect(() => {
     if (!storeId) return;
@@ -113,8 +120,15 @@ function ComposeTab({ storeId, mode, groups, contacts, todayCount, isConnected, 
     if (!editingMessage) return;
     setCaption(editingMessage.caption || '');
     setPhoto(editingMessage.media_url ? { url: editingMessage.media_url, preview: editingMessage.media_url } : null);
-    setSendDate(editingMessage.scheduled_at ? editingMessage.scheduled_at.split('T')[0] : '');
-    setSendTime(editingMessage.scheduled_at ? editingMessage.scheduled_at.split('T')[1]?.slice(0,5) : '');
+    if (editingMessage.scheduled_at) {
+      // Convert UTC to local time for display
+      const localDate = new Date(editingMessage.scheduled_at);
+      const pad = n => String(n).padStart(2,'0');
+      setSendDate(`${localDate.getFullYear()}-${pad(localDate.getMonth()+1)}-${pad(localDate.getDate())}`);
+      setSendTime(`${pad(localDate.getHours())}:${pad(localDate.getMinutes())}`);
+    } else {
+      setSendDate(''); setSendTime('');
+    }
     setRepeat(editingMessage.repeat_type || 'none');
     setSelectedRecips(editingMessage.recipients || []);
   }, [editingMessage]);
@@ -168,7 +182,11 @@ function ComposeTab({ storeId, mode, groups, contacts, todayCount, isConnected, 
     if (!selectedRecips.length) e.recips = 'Add at least one recipient.';
     if (!photo?.url) e.photo = 'Upload a photo.';
     if (!sendDate || !sendTime) e.date = 'Set a send date and time.';
-    if (sendDate && sendTime && new Date(`${sendDate}T${sendTime}`) <= new Date()) e.date = 'Date must be in the future.';
+    if (sendDate && sendTime) {
+      const scheduled = new Date(`${sendDate}T${sendTime}`);
+      const now = new Date();
+      if (scheduled <= now) e.date = `Pick a future time. Now: ${now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`;
+    }
     if (recipientCount > remaining) e.recips = `Only ${remaining} messages remaining today.`;
     setErrors(e);
     return !Object.keys(e).length;
@@ -183,7 +201,7 @@ function ComposeTab({ storeId, mode, groups, contacts, todayCount, isConnected, 
         recipients: selectedRecips.map(r => ({ type:r.type, id:r.id, label:r.label, count:r.count })),
         media_url:  photo?.url,
         caption:    mode === 'waba' ? JSON.stringify(tplVars) : caption,
-        scheduled_at: sendDate && sendTime ? `${sendDate}T${sendTime}:00` : null,
+        scheduled_at: sendDate && sendTime ? new Date(`${sendDate}T${sendTime}`).toISOString() : null,
         repeat_type: repeat,
       };
       if (editingMessage?.id) {
@@ -200,7 +218,9 @@ function ComposeTab({ storeId, mode, groups, contacts, todayCount, isConnected, 
     } finally { setSaving(false); }
   };
 
-  const today = new Date().toISOString().split('T')[0];
+  // Use local date for min date restriction
+  const today = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000)
+    .toISOString().split('T')[0];
 
   return (
     <div className="space-y-4">
@@ -390,7 +410,7 @@ function ComposeTab({ storeId, mode, groups, contacts, todayCount, isConnected, 
         <div className="grid grid-cols-2 gap-3 mb-3">
           <div>
             <label className="text-xs text-gray-400 block mb-1">Send date</label>
-            <input type="date" min={today} value={sendDate} onChange={e=>setSendDate(e.target.value)}
+            <input type="date" value={sendDate} onChange={e=>setSendDate(e.target.value)}
               className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none" />
           </div>
           <div>
@@ -772,7 +792,10 @@ function MessageCard({ m, onDelete = null, onEdit = null }) {
   const recips = m.recipients || [];
   const total  = recips.reduce((s,r) => s+(r.count||1), 0);
   const dateStr = m.scheduled_at
-    ? new Date(m.scheduled_at).toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'})
+    ? new Date(m.scheduled_at).toLocaleString(navigator.language || 'en-IN', {
+        dateStyle: 'medium', timeStyle: 'short'
+        // Uses browser's local timezone automatically
+      })
     : 'No date';
   const statusColors = {
     scheduled:'bg-[#25D366]/10 text-[#006d2f]', sent:'bg-green-50 text-green-700',

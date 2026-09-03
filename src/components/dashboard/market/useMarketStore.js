@@ -8,11 +8,10 @@ export default function useMarketStore() {
   const [loading, setLoading]           = useState(true);
   const fetchedRef = useRef(false);
 
-  // Get tenant ID directly from user object — no store lookup needed
   const getTenantId = () => {
     try {
       const user = JSON.parse(localStorage.getItem('user') || '{}');
-      return user.id || null; // tenant id = user.id
+      return user.id || null;
     } catch { return null; }
   };
 
@@ -21,12 +20,9 @@ export default function useMarketStore() {
   useEffect(() => {
     if (fetchedRef.current || !tenantId) { setLoading(false); return; }
     fetchedRef.current = true;
-
     const token = localStorage.getItem('token');
     if (!token) { setLoading(false); return; }
-
     const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
-
     const run = async () => {
       try {
         const [subRes, cfgRes] = await Promise.all([
@@ -41,11 +37,9 @@ export default function useMarketStore() {
         setLoading(false);
       }
     };
-
     run();
   }, [tenantId]);
 
   const refetch = () => { fetchedRef.current = false; };
-
   return { subscription, config, storeId: tenantId, tenantId, loading, refetch };
 }
