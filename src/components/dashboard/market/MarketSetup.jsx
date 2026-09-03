@@ -31,7 +31,7 @@ export default function MarketSetup({ storeId, subscription, config, onRefresh }
 
   const saveMode = async (newMode) => {
     setMode(newMode);
-    await api.put(`/stores/${storeId}/market/config`, { mode: newMode });
+    await api.put(`/api/tenants/${storeId}/market/config`, { mode: newMode });
     onRefresh();
   };
 
@@ -57,14 +57,14 @@ export default function MarketSetup({ storeId, subscription, config, onRefresh }
           </button>
           <button
             onClick={() => saveMode('waba')}
-            className={`p-4 text-left transition-colors ${mode === 'waba' ? 'bg-blue-50' : 'hover:bg-gray-50'}`}
+            className={`p-4 text-left transition-colors ${mode === 'waba' ? 'bg-[#25D366]/10' : 'hover:bg-gray-50'}`}
           >
-            <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2 ${mode === 'waba' ? 'bg-blue-100' : 'bg-gray-100'}`}>
-              <i className={`ti ti-building-store text-base ${mode === 'waba' ? 'text-blue-600' : 'text-gray-400'}`} />
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2 ${mode === 'waba' ? 'bg-[#25D366]/20' : 'bg-gray-100'}`}>
+              <i className={`ti ti-building-store text-base ${mode === 'waba' ? 'text-[#006d2f]' : 'text-gray-400'}`} />
             </div>
-            <div className={`text-sm font-medium mb-0.5 ${mode === 'waba' ? 'text-blue-700' : 'text-gray-700'}`}>WhatsApp Business API</div>
+            <div className={`text-sm font-medium mb-0.5 ${mode === 'waba' ? 'text-[#006d2f]' : 'text-gray-700'}`}>WhatsApp Business API</div>
             <div className="text-xs text-gray-400">WABA · unlimited · Meta approved</div>
-            {mode === 'waba' && <span className="text-xs text-blue-600 mt-1 block font-medium">✓ Active</span>}
+            {mode === 'waba' && <span className="text-xs text-[#006d2f] mt-1 block font-medium">✓ Active</span>}
           </button>
         </div>
       </div>
@@ -101,7 +101,7 @@ function PersonalSection({ storeId, config, onRefresh }) {
   const fetchQR = async () => {
     setLoading(true);
     try {
-      const res = await api.post(`/stores/${storeId}/market/connect/qr`);
+      const res = await api.post(`/api/tenants/${storeId}/market/connect/qr`);
       if (res.status === 'already_connected') { setConnected(true); return; }
       if (res.status === 'qr') { setQr(res.qr); startTimer(); }
       if (res.status === 'connected') { setConnected(true); setPhone(res.phone); onRefresh(); }
@@ -113,7 +113,7 @@ function PersonalSection({ storeId, config, onRefresh }) {
     if (!qr) return;
     const poll = setInterval(async () => {
       try {
-        const r = await api.get(`/stores/${storeId}/market/connect/status`);
+        const r = await api.get(`/api/tenants/${storeId}/market/connect/status`);
         if (r.connected) { setConnected(true); setPhone(r.phone); setQr(null); clearInterval(poll); onRefresh(); }
       } catch {}
     }, 3000);
@@ -121,13 +121,13 @@ function PersonalSection({ storeId, config, onRefresh }) {
   }, [qr]);
 
   const disconnect = async () => {
-    await api.post(`/stores/${storeId}/market/connect/disconnect`);
+    await api.post(`/api/tenants/${storeId}/market/connect/disconnect`);
     setConnected(false); setPhone(null); setQr(null); onRefresh();
   };
 
   const saveGap = async (val) => {
     setGap(val);
-    await api.put(`/stores/${storeId}/market/config`, { gap_seconds: val });
+    await api.put(`/api/tenants/${storeId}/market/config`, { gap_seconds: val });
   };
 
   return (
@@ -165,7 +165,7 @@ function PersonalSection({ storeId, config, onRefresh }) {
             ['Done — session saved on server', 'You only scan once'],
           ].map(([title, desc], i) => (
             <div key={i} className="flex gap-3 mb-3">
-              <div className="w-6 h-6 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xs font-medium flex-shrink-0 mt-0.5">{i + 1}</div>
+              <div className="w-6 h-6 rounded-full bg-[#25D366]/10 text-[#006d2f] flex items-center justify-center text-xs font-medium flex-shrink-0 mt-0.5">{i + 1}</div>
               <div>
                 <div className="text-sm font-medium text-gray-800">{title}</div>
                 <div className="text-xs text-gray-400">{desc}</div>
@@ -227,7 +227,7 @@ function WABASection({ storeId, config, onRefresh }) {
   const testConnection = async () => {
     setTesting(true); setTestResult(null);
     try {
-      const res = await api.post(`/stores/${storeId}/market/waba/test`, {
+      const res = await api.post(`/api/tenants/${storeId}/market/waba/test`, {
         phone_number_id: form.phone_number_id,
         access_token: form.access_token || config?.access_token,
       });
@@ -241,7 +241,7 @@ function WABASection({ storeId, config, onRefresh }) {
     if (!validate()) return;
     setSaving(true);
     try {
-      await api.put(`/stores/${storeId}/market/config`, { mode: 'waba', ...form });
+      await api.put(`/api/tenants/${storeId}/market/config`, { mode: 'waba', ...form });
       setSaved(true); setTimeout(() => setSaved(false), 2000);
       onRefresh();
     } finally { setSaving(false); }
@@ -250,7 +250,7 @@ function WABASection({ storeId, config, onRefresh }) {
   const Field = ({ id, label, required, hint, children }) => (
     <div className="mb-4">
       <label className="text-xs text-gray-500 block mb-1">
-        {label} {required && <span className="text-xs bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded ml-1">required</span>}
+        {label} {required && <span className="text-xs bg-[#25D366]/10 text-[#006d2f] px-1.5 py-0.5 rounded ml-1">required</span>}
       </label>
       {children}
       {hint && <div className="text-xs text-gray-400 mt-1">{hint}</div>}
@@ -360,7 +360,7 @@ function WABASection({ storeId, config, onRefresh }) {
           Test connection
         </button>
         <button onClick={save} disabled={saving}
-          className="text-sm bg-blue-500 text-white rounded-xl px-5 py-2.5 hover:bg-blue-600 flex items-center gap-1.5 disabled:opacity-60">
+          className="text-sm bg-[#25D366] text-white rounded-xl px-5 py-2.5 hover:bg-[#1db954] flex items-center gap-1.5 disabled:opacity-60">
           {saving ? <i className="ti ti-loader animate-spin" /> : saved ? <i className="ti ti-check" /> : <i className="ti ti-device-floppy" />}
           {saved ? 'Saved' : 'Save WABA settings'}
         </button>
@@ -376,12 +376,76 @@ function SafetySection({ mode }) {
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
       <button onClick={() => setOpen(v => !v)} className="w-full flex items-center justify-between p-4 text-left">
         <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
-          <i className="ti ti-shield-check text-green-500" /> Safety and limits
+          <i className="ti ti-shield-check text-green-500" /> How it works — Safety and limits
         </div>
         <i className={`ti ${open ? 'ti-chevron-up' : 'ti-chevron-down'} text-gray-400`} />
       </button>
       {open && (
         <div className="border-t border-gray-100 p-4 space-y-3 text-sm">
+
+          {/* How it works — always shown */}
+          <div className="bg-[#25D366]/10 border border-[#bbcbb9] rounded-xl p-4 mb-2">
+            <div className="font-semibold text-[#005523] mb-3 flex items-center gap-2">
+              <i className="ti ti-bulb text-base" /> How the system works
+            </div>
+
+            {/* Compose in advance */}
+            <div className="mb-3">
+              <div className="text-xs font-semibold text-[#006d2f] uppercase tracking-wider mb-2">📅 Compose messages in advance</div>
+              <div className="bg-white rounded-lg p-3 text-xs text-gray-600 space-y-1 border border-[#bbcbb9]">
+                <div>You can save up to <strong>10 messages</strong> in advance (based on your plan):</div>
+                <div className="pl-2 space-y-0.5 text-gray-500">
+                  <div>• Message 1 — Diwali invite → 75 contacts → 20 Oct 10:00 AM</div>
+                  <div>• Message 2 — New arrival → 50 contacts → 25 Oct 9:00 AM</div>
+                  <div>• Message 3 — Sale offer → 75 contacts → 1 Nov 10:00 AM</div>
+                </div>
+                <div className="text-green-700 font-medium">All saved. Nothing sends until the scheduled time.</div>
+              </div>
+            </div>
+
+            {/* Auto sending */}
+            <div className="mb-3">
+              <div className="text-xs font-semibold text-[#006d2f] uppercase tracking-wider mb-2">🤖 Auto sending — you do nothing</div>
+              <div className="bg-white rounded-lg p-3 text-xs text-gray-600 space-y-1 border border-[#bbcbb9]">
+                <div><strong>20 Oct 10:00 AM</strong> — server sends Message 1 to 75 contacts automatically</div>
+                <div className="text-amber-600">→ 75 messages sent today. Daily limit reached.</div>
+                <div><strong>21 Oct midnight</strong> — limit resets to 0</div>
+                <div className="text-green-700">→ Message 2 will go out on its scheduled date ✅</div>
+              </div>
+            </div>
+
+            {/* Key rules table */}
+            <div>
+              <div className="text-xs font-semibold text-[#006d2f] uppercase tracking-wider mb-2">📋 Key rules</div>
+              <div className="bg-white rounded-lg border border-[#bbcbb9] overflow-hidden text-xs">
+                {[
+                  ['Max saved messages', '10 at once (upgradeable)', 'green'],
+                  ['Daily send limit', '75 messages per day', 'green'],
+                  ['Daily limit resets', 'Every midnight automatically', 'green'],
+                  ['Same message next day', '✅ Allowed', 'green'],
+                  ['Same contacts next day', '✅ Allowed', 'green'],
+                  ['Repeat weekly/monthly', '✅ Auto-reschedules after send', 'green'],
+                  ['If limit hit mid-send', 'Remaining rescheduled to next day', 'amber'],
+                ].map(([rule, value, color]) => (
+                  <div key={rule} className="flex justify-between px-3 py-2 border-b border-gray-50 last:border-0">
+                    <span className="text-gray-500">{rule}</span>
+                    <span className={`font-medium ${color === 'green' ? 'text-green-700' : 'text-amber-600'}`}>{value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Day example */}
+            <div className="mt-3 bg-amber-50 border border-amber-100 rounded-lg p-3 text-xs text-amber-800">
+              <div className="font-semibold mb-1">⚠️ Same-day example</div>
+              <div className="space-y-0.5">
+                <div>Message 1 → 50 contacts ✅ (50 of 75 used)</div>
+                <div>Message 2 → 25 contacts ✅ (75 of 75 — limit reached)</div>
+                <div>Message 3 → scheduled same day → ⏭️ auto-moved to next day</div>
+              </div>
+            </div>
+          </div>
+
           {mode === 'personal' ? (
             <>
               <div className="bg-gray-50 rounded-lg p-3 text-xs space-y-2">
@@ -410,7 +474,7 @@ function SafetySection({ mode }) {
               </div>
             </>
           ) : (
-            <div className="bg-blue-50 rounded-lg p-3 text-xs text-blue-800">
+            <div className="bg-[#25D366]/10 rounded-lg p-3 text-xs text-[#005523]">
               <i className="ti ti-info-circle mr-1" />
               WABA is Meta's official API — no daily limit, no ban risk. Ensure your template is approved before scheduling.
               Templates typically take 1–2 business days to get approved.

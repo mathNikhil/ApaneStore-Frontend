@@ -52,10 +52,10 @@ export default function Market() {
 
       {/* Content */}
       <div className="flex-1 p-4 pb-24">
-        {loading ? (
+        {loading || !storeId ? (
           <div className="text-center py-16 text-gray-400">
             <span className="material-symbols-outlined text-4xl block mb-2">hourglass_empty</span>
-            Loading...
+            {!storeId && !loading ? 'No store found. Please create a store first.' : 'Loading...'}
           </div>
         ) : (
           <>

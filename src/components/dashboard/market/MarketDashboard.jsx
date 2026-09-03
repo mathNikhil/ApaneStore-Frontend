@@ -21,7 +21,7 @@ export default function MarketDashboard({ storeId, subscription, config, onActiv
 
   useEffect(() => {
     if (!isActive) return;
-    api.get(`/stores/${storeId}/market/messages`).then(res => {
+    api.get(`/api/tenants/${storeId}/market/messages`).then(res => {
       const msgs = res.data;
       setStats({
         total:     msgs.length,
@@ -95,9 +95,9 @@ export default function MarketDashboard({ storeId, subscription, config, onActiv
       {/* Mode badge */}
       <div className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3">
         <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-          config?.mode === 'waba' ? 'bg-blue-50' : 'bg-green-50'
+          config?.mode === 'waba' ? 'bg-[#25D366]/10' : 'bg-green-50'
         }`}>
-          <i className={`ti text-xl ${config?.mode === 'waba' ? 'ti-building-store text-blue-500' : 'ti-device-mobile text-green-500'}`} />
+          <i className={`ti text-xl ${config?.mode === 'waba' ? 'ti-building-store text-[#006d2f]' : 'ti-device-mobile text-green-500'}`} />
         </div>
         <div className="flex-1">
           <div className="text-sm font-medium text-gray-900">
@@ -122,7 +122,7 @@ export default function MarketDashboard({ storeId, subscription, config, onActiv
       {stats && (
         <div className="grid grid-cols-2 gap-3">
           {[
-            { label: 'Scheduled',  value: stats.scheduled, color: 'text-blue-600',  bg: 'bg-blue-50',  icon: 'ti-clock' },
+            { label: 'Scheduled',  value: stats.scheduled, color: 'text-[#006d2f]',  bg: 'bg-[#25D366]/10',  icon: 'ti-clock' },
             { label: 'Sent',       value: stats.sent,      color: 'text-green-600', bg: 'bg-green-50', icon: 'ti-check' },
             { label: 'Failed',     value: stats.failed,    color: 'text-red-600',   bg: 'bg-red-50',   icon: 'ti-x' },
             { label: 'Total',      value: stats.total,     color: 'text-gray-600',  bg: 'bg-gray-100', icon: 'ti-messages' },
@@ -169,7 +169,7 @@ export default function MarketDashboard({ storeId, subscription, config, onActiv
 function PersonalLimitBar({ storeId }) {
   const [status, setStatus] = useState(null);
   useEffect(() => {
-    api.get(`/stores/${storeId}/market/connect/status`).then(r => setStatus(r.data));
+    api.get(`/api/tenants/${storeId}/market/connect/status`).then(r => setStatus(r.data));
   }, [storeId]);
   if (!status) return null;
   const pct = Math.min(Math.round((status.todayCount / status.dailyLimit) * 100), 100);
@@ -195,7 +195,7 @@ function ActivateButton({ storeId, onActivate }) {
   const activate = async () => {
     setLoading(true);
     try {
-      await api.post(`/stores/${storeId}/market/subscription/activate`);
+      await api.post(`/api/tenants/${storeId}/market/subscription/activate`);
       onActivate();
     } finally {
       setLoading(false);
