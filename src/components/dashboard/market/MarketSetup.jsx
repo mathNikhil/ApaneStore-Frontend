@@ -83,19 +83,16 @@ export default function MarketSetup({ storeId, subscription, config, onRefresh, 
 
       {/* Safety info — always shown */}
       <SafetySection mode={mode} />
-      {/* Deactivate section — below How it works */}
-      <div className="mt-4 px-1">
-        <p className="text-xs text-red-500 mb-3">
-          Deactivating will disconnect WhatsApp, move scheduled messages to drafts and stop all sends. You will need to pay again to reactivate.
-        </p>
-        <button
-          onClick={handleDeactivate}
-          disabled={deactivating}
-          className="w-full py-3 rounded-xl bg-red-600 text-white text-sm font-bold hover:bg-red-700 disabled:opacity-60 transition-all">
-          {deactivating ? 'Deactivating...' : '⚠ Deactivate Plan'}
-        </button>
-      </div>
 
+      {/* Deactivate Plan — below How it works */}
+      {isSubscribed && (
+        <div className="mt-4">
+          <p className="text-xs text-red-500 mb-3">
+            Deactivating will disconnect WhatsApp, move scheduled messages to drafts and stop all sends. You will need to pay again to reactivate.
+          </p>
+          <DeactivateButton storeId={storeId} onRefresh={onRefresh} />
+        </div>
+      )}
     </div>
   );
 }
@@ -148,25 +145,6 @@ function PersonalSection({ storeId, config, onRefresh }) {
     }, 3000);
     return () => clearInterval(poll);
   }, [qr]);
-
-  const [deactivating, setDeactivating] = useState(false);
-
-  const handleDeactivate = async () => {
-    if (!window.confirm('Your WhatsApp will disconnect and all scheduled messages will become drafts. Are you sure you want to deactivate?')) return;
-    setDeactivating(true);
-    try {
-      const token = localStorage.getItem('token');
-      const base = import.meta.env.VITE_API_URL || 'https://api.aapnaestore.com';
-      await fetch(`${base}/api/tenants/${storeId}/market/deactivate`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setConnected(false);
-      onRefresh(); // This will set isSubscribed=false → show paywall
-    } catch(e) {
-      alert('Failed to deactivate: ' + e.message);
-    } finally { setDeactivating(false); }
-  };
 
   const disconnect = async () => {
     await api.post(`/api/tenants/${storeId}/market/connect/disconnect`);
@@ -419,13 +397,42 @@ function WABASection({ storeId, config, onRefresh }) {
 }
 
 // ── Safety info section ───────────────────────────────────────────────────────
+function DeactivateButton({ storeId, onRefresh }) {
+  const [deactivating, setDeactivating] = useState(false);
+
+  const handleDeactivate = async () => {
+    if (!window.confirm('Your WhatsApp will disconnect and all scheduled messages will become drafts. Are you sure you want to deactivate your plan?')) return;
+    setDeactivating(true);
+    try {
+      const token = localStorage.getItem('token');
+      const base = import.meta.env.VITE_API_URL || 'https://api.aapnaestore.com';
+      await fetch(`${base}/api/tenants/${storeId}/market/deactivate`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      onRefresh();
+    } catch(e) {
+      alert('Failed to deactivate: ' + e.message);
+    } finally { setDeactivating(false); }
+  };
+
+  return (
+    <button
+      onClick={handleDeactivate}
+      disabled={deactivating}
+      className="w-full py-3 rounded-xl bg-red-600 text-white text-sm font-bold hover:bg-red-700 disabled:opacity-60 transition-all">
+      {deactivating ? 'Deactivating...' : '⚠ Deactivate Plan'}
+    </button>
+  );
+}
+
 function SafetySection({ mode }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
       <button onClick={() => setOpen(v => !v)} className="w-full flex items-center justify-between p-4 text-left">
         <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
-          <i className="ti ti-shield-check text-green-500" /> How it works — Safety and limits
+          <i className="ti ti-shield-check text-green-500" /> How Personal WhatsApp Service Works: Safety & Limits
         </div>
         <i className={`ti ${open ? 'ti-chevron-up' : 'ti-chevron-down'} text-gray-400`} />
       </button>
