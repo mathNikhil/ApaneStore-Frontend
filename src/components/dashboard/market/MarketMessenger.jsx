@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { marketApi, DAILY_LIMIT } from './marketApi';
 
-export default function MarketMessenger({ storeId, subscription, config, onGoSetup }) {
+export default function MarketMessenger({ storeId, subscription, config, onGoSetup, isSubscribed }) {
   const [tab, setTab]               = useState('compose');
   const [messages, setMessages]     = useState([]);
   const [groups, setGroups]         = useState([]);
@@ -79,7 +79,8 @@ export default function MarketMessenger({ storeId, subscription, config, onGoSet
         <ComposeTab storeId={storeId} mode={mode} groups={groups} contacts={contacts}
           todayCount={todayCount} isConnected={isConnected} config={config}
           editingMessage={editingMessage} onEditDone={() => setEditingMessage(null)}
-          onScheduled={() => { refreshAll(); setTab('scheduled'); }} />
+          onScheduled={() => { refreshAll(); setTab('scheduled'); }}
+          isSubscribed={isSubscribed} onGoSetup={onGoSetup} />
       )}
       {tab === 'scheduled' && (
         <ScheduledTab
@@ -99,7 +100,7 @@ export default function MarketMessenger({ storeId, subscription, config, onGoSet
 }
 
 // ── ComposeTab ────────────────────────────────────────────────────────────────
-function ComposeTab({ storeId, mode, groups, contacts, todayCount, isConnected, config, editingMessage, onEditDone, onScheduled }) {
+function ComposeTab({ storeId, mode, groups, contacts, todayCount, isConnected, config, editingMessage, onEditDone, onScheduled, isSubscribed, onGoSetup }) {
   const [selectedRecips, setSelectedRecips] = useState([]);
   const [photo, setPhoto]     = useState(null);
   const [caption, setCaption] = useState('');
@@ -438,11 +439,18 @@ function ComposeTab({ storeId, mode, groups, contacts, todayCount, isConnected, 
           className="text-sm border border-gray-300 rounded-xl px-4 py-2.5 hover:bg-gray-50 flex items-center gap-1.5 disabled:opacity-60">
           <i className="ti ti-device-floppy" /> {editingMessage ? 'Update draft' : 'Save draft'}
         </button>
-        <button onClick={()=>save(false)} disabled={saving||!isConnected}
-          className="text-sm bg-green-500 text-white rounded-xl px-5 py-2.5 hover:bg-green-600 flex items-center gap-1.5 disabled:opacity-60">
-          {saving ? <i className="ti ti-loader animate-spin" /> : <i className="ti ti-brand-whatsapp" />}
-          {editingMessage ? 'Update & schedule' : 'Schedule message'}
-        </button>
+        {isSubscribed ? (
+          <button onClick={()=>save(false)} disabled={saving||!isConnected}
+            className="text-sm bg-[#25D366] text-white rounded-xl px-5 py-2.5 hover:bg-[#1db954] flex items-center gap-1.5 disabled:opacity-60">
+            {saving ? <i className="ti ti-loader animate-spin" /> : <i className="ti ti-brand-whatsapp" />}
+            {editingMessage ? 'Update & schedule' : 'Schedule message'}
+          </button>
+        ) : (
+          <button onClick={() => { console.log('Activate clicked, onGoSetup:', typeof onGoSetup); if (onGoSetup) onGoSetup(); }}
+            className="text-sm bg-[#25D366] text-white rounded-xl px-5 py-2.5 hover:bg-[#1db954] flex items-center gap-1.5">
+            <i className="ti ti-lock" /> Activate to schedule
+          </button>
+        )}
       </div>
     </div>
   );

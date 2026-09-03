@@ -1,3 +1,4 @@
+import MarketPaywall from './MarketPaywall';
 // src/components/market/MarketSetup.jsx
 import { useState, useEffect, useRef } from 'react';
 
@@ -15,7 +16,7 @@ const api = {
 
 const DAILY_LIMIT = 75;
 
-export default function MarketSetup({ storeId, subscription, config, onRefresh }) {
+export default function MarketSetup({ storeId, subscription, config, onRefresh, isSubscribed }) {
   const [mode, setMode]       = useState(config?.mode || 'personal');
   const [saving, setSaving]   = useState(false);
   const [saved, setSaved]     = useState(false);
@@ -34,6 +35,10 @@ export default function MarketSetup({ storeId, subscription, config, onRefresh }
     await api.put(`/api/tenants/${storeId}/market/config`, { mode: newMode });
     onRefresh();
   };
+
+  if (!isSubscribed) {
+    return <MarketPaywall tenantId={storeId} onSubscribed={onRefresh} />;
+  }
 
   return (
     <div className="space-y-4">

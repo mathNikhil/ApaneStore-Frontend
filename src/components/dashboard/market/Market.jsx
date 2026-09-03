@@ -1,14 +1,51 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import TopAppBar from '../../Common/TopAppBar';
 import BottomNav from '../../Common/BottomNav';
 import MarketDashboard from './MarketDashboard';
 import MarketMessenger from './MarketMessenger';
 import MarketSetup     from './MarketSetup';
+import MarketPaywall   from './MarketPaywall';
 import useMarketStore  from './useMarketStore';
 
 export default function Market() {
   const [activeTab, setActiveTab] = useState('messenger');
   const { subscription, config, storeId, loading, refetch } = useMarketStore();
+
+  // Check payment status on return from Cashfree
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const orderId = params.get('order_id');
+    if (!orderId) return;
+    // Poll until storeId is available
+    const interval = setInterval(() => {
+      if (!storeId) return;
+      clearInterval(interval);
+      const token = localStorage.getItem('token');
+      const base = import.meta.env.VITE_API_URL || 'https://api.aapnaestore.com';
+      fetch(`${base}/api/tenants/${storeId}/market/subscription/status?order_id=${orderId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      }).then(r => r.json()).then(d => {
+        window.history.replaceState({}, '', '/market');
+        if (d.status === 'paid') {
+          refetch(); // refresh subscription
+        }
+      }).catch(() => {
+        window.history.replaceState({}, '', '/market');
+      });
+    }, 300);
+    return () => clearInterval(interval);
+  }, [storeId]);
+
+  // Test tenants — bypass payment
+  const TEST_PHONES = ['5555555555', '6666666666', '7777777777'];
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  useEffect(() => {
+    try {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const isTest = TEST_PHONES.includes(user.phone || user.mobile || '');
+      setIsSubscribed(isTest || subscription?.is_active === true);
+    } catch { setIsSubscribed(subscription?.is_active === true); }
+  }, [subscription]);
 
   const isActive = true; // TODO: restore → subscription?.is_active
 
@@ -59,12 +96,12 @@ export default function Market() {
           </div>
         ) : (
           <>
-
             {activeTab === 'messenger' && (
               <MarketMessenger
                 storeId={storeId}
                 subscription={subscription}
                 config={config}
+                isSubscribed={isSubscribed}
                 onGoSetup={() => setActiveTab('setup')}
               />
             )}
@@ -73,6 +110,7 @@ export default function Market() {
                 storeId={storeId}
                 subscription={subscription}
                 config={config}
+                isSubscribed={isSubscribed}
                 onRefresh={refetch}
               />
             )}
