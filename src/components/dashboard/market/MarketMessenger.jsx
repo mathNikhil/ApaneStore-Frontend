@@ -155,9 +155,11 @@ function ComposeTab({ storeId, mode, groups, contacts, todayCount, isConnected, 
   const addRecip = (opt) => {
     const newRecips = [...selectedRecips, opt];
     const total = countTotal(newRecips);
+    // Allow large groups — they will be auto-batched at schedule time
     if (total > DAILY_LIMIT) {
-      setErrors(e => ({ ...e, recips: `This would send to ${total} contacts — daily limit is ${DAILY_LIMIT}. Remove some recipients first.` }));
-      return;
+      const batches = Math.ceil(total / DAILY_LIMIT);
+      setErrors(e => ({ ...e, recips: null }));
+      // Show info but don't block
     }
     setSelectedRecips(newRecips);
     setRecipSearch(''); setShowDrop(false);
@@ -189,7 +191,7 @@ function ComposeTab({ storeId, mode, groups, contacts, todayCount, isConnected, 
       const now = new Date();
       if (scheduled <= now) e.date = `Pick a future time. Now: ${now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`;
     }
-    if (recipientCount > remaining) e.recips = `Only ${remaining} messages remaining today.`;
+    // Note: >75 contacts handled by auto-batch at schedule time
     setErrors(e);
     return !Object.keys(e).length;
   };
@@ -205,14 +207,44 @@ function ComposeTab({ storeId, mode, groups, contacts, todayCount, isConnected, 
         caption:    mode === 'waba' ? JSON.stringify(tplVars) : caption,
         scheduled_at: sendDate && sendTime ? new Date(`${sendDate}T${sendTime}`).toISOString() : null,
         repeat_type: repeat,
+        gap_seconds: config?.gap_seconds || 2,
       };
+
       if (editingMessage?.id) {
         await marketApi.updateMessage(storeId, editingMessage.id, payload);
         onEditDone && onEditDone();
       } else if (asDraft) {
         await marketApi.saveDraft(storeId, payload);
       } else {
-        await marketApi.createMessage(storeId, payload);
+        // Check if total contacts > 75 — auto-split into batches
+        const totalCount = selectedRecips.reduce((s, r) => s + (r.count || 1), 0);
+        if (totalCount > 75) {
+          const batches = Math.ceil(totalCount / 75);
+          const confirmed = window.confirm(
+            `This message has ${totalCount} contacts.
+
+` +
+            `We'll create ${batches} scheduled messages of up to 75 contacts each.
+` +
+            `This will use ${batches} quota.
+
+` +
+            `Confirm?`
+          );
+          if (!confirmed) { setSaving(false); return; }
+
+          const base = import.meta.env.VITE_API_URL || 'https://api.aapnaestore.com';
+          const token = localStorage.getItem('token');
+          const res = await fetch(`${base}/api/tenants/${storeId}/market/messages/batch`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          }).then(r => r.json());
+
+          if (!res.success) throw new Error(res.error || 'Batch failed');
+        } else {
+          await marketApi.createMessage(storeId, payload);
+        }
       }
       onScheduled();
     } catch (err) {
@@ -239,8 +271,11 @@ function ComposeTab({ storeId, mode, groups, contacts, todayCount, isConnected, 
           </div>
           <div className="text-xs text-gray-400">{remaining} remaining · each group member = 1 message · 2s gap between sends</div>
           {recipientCount > 0 && (
-            <div className={`text-xs mt-1.5 font-medium ${recipientCount > remaining ? 'text-red-500' : 'text-green-600'}`}>
-              This message sends to {recipientCount} contact{recipientCount!==1?'s':''} · {recipientCount > remaining ? `${recipientCount-remaining} over limit` : `${remaining-recipientCount} remaining after send`}
+            <div className={`text-xs mt-1.5 font-medium ${recipientCount > 75 ? 'text-blue-600' : 'text-green-600'}`}>
+              {recipientCount > 75
+                ? `${recipientCount} contacts → ${Math.ceil(recipientCount/75)} batches of 75 · Uses ${Math.ceil(recipientCount/75)} quota`
+                : `${recipientCount} contact${recipientCount!==1?'s':''} · ${remaining-recipientCount} daily remaining after send`
+              }
             </div>
           )}
         </div>
@@ -287,7 +322,7 @@ function ComposeTab({ storeId, mode, groups, contacts, todayCount, isConnected, 
                         {o.type==='group' ? 'group' : 'person'}
                       </span>
                       <span className={o.type==='group' ? 'font-medium text-[#005523]' : 'text-gray-700'}>{o.label}</span>
-                      {isLargeGroup && <span className="text-xs bg-amber-100 text-amber-600 px-1.5 py-0.5 rounded-full">Pick 75</span>}
+                      {isLargeGroup && <span className="text-xs bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-full">Auto-batch</span>}
                     </span>
                     <span className={`text-xs ${wouldExceed && !isLargeGroup ? 'text-red-500' : 'text-gray-400'}`}>
                       {o.count} contact{o.count!==1?'s':''}
@@ -536,6 +571,27 @@ function ContactsTab({ storeId, groups, contacts, setGroups, setContacts, onRefr
   const [editContact, setEditContact] = useState(null);
   const [editGroup, setEditGroup]     = useState(null);
   const [sortBy, setSortBy]           = useState('name');
+  const [selectedContacts, setSelectedContacts] = useState([]);
+
+  const toggleSelect = (id) => setSelectedContacts(prev =>
+    prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+  );
+  const toggleSelectAll = () => setSelectedContacts(prev =>
+    prev.length === contacts.length ? [] : contacts.map(c => c.id)
+  );
+  const bulkDelete = async () => {
+    if (!selectedContacts.length) return;
+    if (!window.confirm(`Delete ${selectedContacts.length} contact(s)?`)) return;
+    const token = localStorage.getItem('token');
+    const base = import.meta.env.VITE_API_URL || 'https://api.aapnaestore.com';
+    for (const id of selectedContacts) {
+      await fetch(`${base}/api/tenants/${storeId}/market/contacts/${id}`, {
+        method: 'DELETE', headers: { Authorization: `Bearer ${token}` }
+      }).catch(() => {});
+    }
+    setSelectedContacts([]);
+    await onRefresh();
+  };
 
   const saveContact = async () => {
     if (!newName || !newPhone) return;
@@ -616,38 +672,108 @@ function ContactsTab({ storeId, groups, contacts, setGroups, setContacts, onRefr
 
   return (
     <div className="space-y-4">
-      {/* Action buttons */}
-      <div className="flex gap-2 flex-wrap">
-        <button onClick={() => setShowAddContact(v => !v)}
-          className="text-xs border border-gray-300 rounded-lg px-3 py-1.5 hover:bg-gray-50 flex items-center gap-1">
-          <i className="ti ti-user-plus" /> Add contact
-        </button>
-        <label className={`text-xs rounded-lg px-3 py-1.5 flex items-center gap-1 cursor-pointer ${csvImporting?'bg-gray-300 text-gray-500':'bg-green-500 text-white hover:bg-green-600'}`}>
-          <i className="ti ti-file-upload" /> {csvImporting ? 'Importing...' : 'Import CSV'}
-          <input type="file" accept=".csv" className="hidden" disabled={csvImporting}
-            onChange={e => { if(e.target.files[0]) handleCSVImport(e.target.files[0]); e.target.value=''; }} />
-        </label>
-        <a href="data:text/csv;charset=utf-8,Name%2CPhone%0APriya%20Sharma%2C919876543210"
-          download="contacts_template.csv"
-          className="text-xs border border-gray-300 rounded-lg px-3 py-1.5 hover:bg-gray-50 flex items-center gap-1">
-          <i className="ti ti-download" /> Template
-        </a>
+
+      {/* ── STEP 1: Groups ── */}
+      <div className="bg-white rounded-xl border border-gray-200 p-3">
+        <div className="flex items-center justify-between mb-2">
+          <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            Step 1 — Create a group first
+          </div>
+          <button onClick={() => setShowAddGroup(v => !v)}
+            className="text-xs bg-[#25D366] text-white px-3 py-1.5 rounded-lg flex items-center gap-1 hover:bg-[#1db954]">
+            <i className="ti ti-plus" /> New group
+          </button>
+        </div>
+        {showAddGroup && (
+          <div className="flex gap-2 mb-2">
+            <input value={grpName} onChange={e=>setGrpName(e.target.value)}
+              placeholder="Group name" onKeyDown={e=>e.key==='Enter'&&saveGroup()}
+              className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 flex-1 outline-none" />
+            <button onClick={saveGroup} className="text-xs bg-[#25D366] text-white px-3 py-1.5 rounded-lg">Save</button>
+            <button onClick={()=>setShowAddGroup(false)} className="text-xs border border-gray-200 px-3 py-1.5 rounded-lg">Cancel</button>
+          </div>
+        )}
+        {groups.length === 0 ? (
+          <div className="text-xs text-gray-400 text-center py-3">No groups yet. Create one to organise your contacts.</div>
+        ) : (
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {groups.map(g => {
+              const count = contacts.filter(c => c.groups?.some(cg => cg.id === g.id)).length;
+              return (
+                <div key={g.id} className="flex-shrink-0 bg-[#25D366]/5 border border-[#bbcbb9] rounded-xl px-3 py-2 min-w-[80px]">
+                  {editGroup?.id === g.id ? (
+                    <div className="flex gap-1">
+                      <input value={editGroup.name} onChange={e=>setEditGroup(p=>({...p,name:e.target.value}))}
+                        className="text-xs border border-gray-300 rounded px-1 py-0.5 w-20 outline-none" />
+                      <button onClick={updateGroup} className="text-xs text-green-600">✓</button>
+                      <button onClick={() => setEditGroup(null)} className="text-xs text-gray-400">×</button>
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="text-xs font-semibold text-[#005523] truncate">{g.name}</div>
+                      <div className="text-xl font-bold text-[#006d2f] mt-0.5">{count}</div>
+                      <div className="text-xs text-gray-400">contacts</div>
+                      <div className="flex gap-1 mt-1.5">
+                        <button onClick={() => setEditGroup({id:g.id, name:g.name})}
+                          className="text-xs text-[#25D366] hover:text-[#006d2f] p-0.5">
+                          <i className="ti ti-edit text-xs" />
+                        </button>
+                        <button onClick={() => marketApi.deleteGroup(storeId, g.id).then(onRefresh)}
+                          className="text-xs text-red-400 hover:text-red-600 p-0.5 ml-auto">
+                          <i className="ti ti-trash text-xs" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {/* CSV group selector */}
-      <div className="bg-[#25D366]/10 border border-[#bbcbb9] rounded-lg px-3 py-2 flex items-center gap-2 flex-wrap">
-        <span className="text-xs text-[#006d2f] font-medium">CSV import group:</span>
-        <select value={csvGroupId} onChange={e => setCsvGroupId(e.target.value)}
-          className="text-xs border border-[#bbcbb9] rounded px-2 py-1 bg-white outline-none flex-1 min-w-32">
-          <option value="">— No group —</option>
-          {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
-        </select>
+      {/* ── STEP 2: Import CSV ── */}
+      <div className="bg-white rounded-xl border border-gray-200 p-3">
+        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+          Step 2 — Import contacts via CSV
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <select value={csvGroupId} onChange={e => setCsvGroupId(e.target.value)}
+            className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 outline-none flex-1 min-w-32 bg-white">
+            <option value="">— Select group * —</option>
+            {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+          </select>
+          <label className={`text-xs rounded-lg px-3 py-1.5 flex items-center gap-1 cursor-pointer whitespace-nowrap
+            ${csvImporting||!csvGroupId ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-[#25D366] text-white hover:bg-[#1db954]'}`}>
+            <i className="ti ti-file-upload" /> {csvImporting ? 'Importing...' : 'Import CSV'}
+            <input type="file" accept=".csv" className="hidden" disabled={csvImporting || !csvGroupId}
+              onChange={e => {
+                if (!csvGroupId) { alert('Please select a group first.'); return; }
+                if(e.target.files[0]) handleCSVImport(e.target.files[0]);
+                e.target.value='';
+              }} />
+          </label>
+          <a href="data:text/csv;charset=utf-8,Name%2CPhone%0APriya%20Sharma%2C919876543210"
+            download="contacts_template.csv"
+            className="text-xs border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50 flex items-center gap-1 whitespace-nowrap">
+            <i className="ti ti-download" /> Template
+          </a>
+        </div>
+        {!csvGroupId && groups.length > 0 && (
+          <p className="text-xs text-amber-600 mt-1.5">⚠ Select a group above to enable CSV import</p>
+        )}
+        {groups.length === 0 && (
+          <p className="text-xs text-red-500 mt-1.5">⚠ Create a group first before importing contacts</p>
+        )}
       </div>
 
-      {/* Add contact form */}
+
+
+      {/* All contacts table */}
+      {/* Add contact form — appears below button when clicked */}
       {showAddContact && (
-        <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
-          <div className="text-xs font-medium text-gray-400 uppercase tracking-wider">New contact</div>
+        <div className="bg-white rounded-xl border border-[#25D366] p-4 space-y-3">
+          <div className="text-xs font-semibold text-[#006d2f] uppercase tracking-wider">Add new contact</div>
           <div className="grid grid-cols-2 gap-3">
             <input value={newName} onChange={e=>setNewName(e.target.value)} placeholder="Full name"
               className="text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none" />
@@ -656,87 +782,37 @@ function ContactsTab({ storeId, groups, contacts, setGroups, setContacts, onRefr
           </div>
           <select value={newGrpId} onChange={e=>setNewGrpId(e.target.value)}
             className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none">
-            <option value="">— No group —</option>
+            <option value="">— Select group —</option>
             {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
           </select>
           <div className="flex gap-2 justify-end">
-            <button onClick={()=>setShowAddContact(false)} className="text-xs border border-gray-200 rounded-lg px-3 py-1.5">Cancel</button>
-            <button onClick={saveContact} className="text-xs bg-green-500 text-white rounded-lg px-3 py-1.5">Save contact</button>
+            <button onClick={()=>setShowAddContact(false)}
+              className="text-xs border border-gray-200 rounded-lg px-4 py-2">Cancel</button>
+            <button onClick={saveContact}
+              className="text-xs bg-[#25D366] text-white rounded-lg px-4 py-2 hover:bg-[#1db954]">
+              Save contact
+            </button>
           </div>
         </div>
       )}
 
-      {/* Add group form */}
-      {showAddGroup && (
-        <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
-          <div className="text-xs font-medium text-gray-400 uppercase tracking-wider">New group</div>
-          <input value={grpName} onChange={e=>setGrpName(e.target.value)} placeholder="Group name"
-            className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none" />
-          <div className="flex gap-2 justify-end">
-            <button onClick={()=>setShowAddGroup(false)} className="text-xs border border-gray-200 rounded-lg px-3 py-1.5">Cancel</button>
-            <button onClick={saveGroup} className="text-xs bg-[#25D366] text-white rounded-lg px-3 py-1.5">Save group</button>
-          </div>
-        </div>
-      )}
-
-      {/* Groups — horizontal scrollable chips */}
-      <div>
-        <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Groups ({groups.length})</div>
-        <div style={{display:'flex',gap:'8px',overflowX:'auto',paddingBottom:'4px'}}>
-          {groups.map(g => {
-            const count = contacts.filter(c => c.groups?.some(cg => cg.id === g.id)).length;
-            return (
-              <div key={g.id} style={{flexShrink:0,minWidth:'100px'}} className="bg-white border border-[#bbcbb9] rounded-xl px-3 py-2">
-                {editGroup?.id === g.id ? (
-                  <div className="flex flex-col gap-1">
-                    <input value={editGroup.name} onChange={e => setEditGroup(p => ({...p, name: e.target.value}))}
-                      className="text-xs border border-[#25D366] rounded px-1.5 py-1 outline-none w-full" />
-                    <div className="flex gap-1 mt-1">
-                      <button onClick={updateGroup} className="text-xs bg-[#25D366] text-white px-2 py-0.5 rounded flex-1">Save</button>
-                      <button onClick={() => setEditGroup(null)} className="text-xs text-gray-400 px-1">×</button>
-                    </div>
-                  </div>
-                ) : (
-                  <div>
-                    <div className="text-xs font-semibold text-[#005523] truncate">{g.name}</div>
-                    <div className="text-xl font-bold text-[#006d2f] mt-0.5">{count}</div>
-                    <div className="text-xs text-gray-400">contacts</div>
-                    <div className="flex gap-1 mt-1.5">
-                      <button onClick={() => setEditGroup({id:g.id, name:g.name})}
-                        className="text-xs text-[#25D366] hover:text-[#006d2f] p-0.5">
-                        <i className="ti ti-edit text-xs" />
-                      </button>
-                      <button onClick={() => marketApi.deleteGroup(storeId, g.id).then(onRefresh)}
-                        className="text-xs text-red-400 hover:text-red-600 p-0.5 ml-auto">
-                        <i className="ti ti-trash text-xs" />
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-          <button onClick={() => setShowAddGroup(v => !v)}
-            style={{flexShrink:0,minWidth:'80px'}}
-            className="bg-[#25D366]/10 border border-[#bbcbb9] border-dashed rounded-xl px-3 py-2 flex flex-col items-center justify-center gap-1 hover:bg-[#25D366]/20">
-            <i className="ti ti-plus text-[#25D366] text-lg" />
-            <span className="text-xs text-[#25D366]">New group</span>
-          </button>
-        </div>
-      </div>
-
-      {/* All contacts table */}
       <div>
         <div className="flex items-center justify-between mb-2">
           <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-            All contacts ({contacts.length})
+            Step 3 — All contacts ({contacts.length})
           </div>
-          <select value={sortBy} onChange={e => setSortBy(e.target.value)}
-            className="text-xs border border-gray-200 rounded px-2 py-1 outline-none bg-white">
-            <option value="name">Sort: Name A-Z</option>
-            <option value="group">Sort: Group</option>
-            <option value="phone">Sort: Phone</option>
-          </select>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setShowAddContact(v => !v)}
+              className="text-xs bg-[#25D366] text-white px-3 py-1.5 rounded-lg flex items-center gap-1 hover:bg-[#1db954]">
+              <i className="ti ti-user-plus" /> Add contact
+            </button>
+            <select value={sortBy} onChange={e => setSortBy(e.target.value)}
+              className="text-xs border border-gray-200 rounded px-2 py-1 outline-none bg-white">
+              <option value="name">Sort: Name A-Z</option>
+              <option value="group">Sort: Group</option>
+              <option value="phone">Sort: Phone</option>
+            </select>
+          </div>
         </div>
         {contacts.length === 0 ? (
           <div className="text-center py-8 text-gray-400 text-xs bg-white rounded-xl border border-gray-200">
@@ -744,8 +820,22 @@ function ContactsTab({ storeId, groups, contacts, setGroups, setContacts, onRefr
           </div>
         ) : (
           <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            {selectedContacts.length > 0 && (
+              <div className="flex items-center justify-between px-3 py-2 bg-red-50 border-b border-red-100">
+                <span className="text-xs text-red-600 font-medium">{selectedContacts.length} selected</span>
+                <button onClick={bulkDelete}
+                  className="text-xs bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600 flex items-center gap-1">
+                  <i className="ti ti-trash" /> Delete selected
+                </button>
+              </div>
+            )}
             <div className="grid grid-cols-12 gap-1 px-3 py-2 bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-              <div className="col-span-1"></div>
+              <div className="col-span-1">
+                <input type="checkbox"
+                  checked={selectedContacts.length === contacts.length && contacts.length > 0}
+                  onChange={toggleSelectAll}
+                  className="w-3.5 h-3.5 accent-[#25D366] cursor-pointer" />
+              </div>
               <div className="col-span-4">Name</div>
               <div className="col-span-3">Phone</div>
               <div className="col-span-2">Group</div>
@@ -780,9 +870,10 @@ function ContactsTab({ storeId, groups, contacts, setGroups, setContacts, onRefr
                   ) : (
                     <div className="grid grid-cols-12 gap-1 px-3 py-2.5 items-center hover:bg-gray-50">
                       <div className="col-span-1">
-                        <div className="w-6 h-6 rounded-full bg-[#25D366]/10 flex items-center justify-center text-xs font-semibold text-[#006d2f]">
-                          {c.name?.[0]?.toUpperCase()}
-                        </div>
+                        <input type="checkbox"
+                          checked={selectedContacts.includes(c.id)}
+                          onChange={() => toggleSelect(c.id)}
+                          className="w-3.5 h-3.5 accent-[#25D366] cursor-pointer" />
                       </div>
                       <div className="col-span-4 text-sm font-medium text-gray-800 truncate">{c.name}</div>
                       <div className="col-span-3 text-xs text-gray-400 truncate">{c.phone}</div>
