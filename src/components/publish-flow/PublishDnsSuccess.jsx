@@ -9,7 +9,7 @@ const PublishDnsSuccess = () => {
 
     return (
         <div className="min-h-screen bg-[#f7f9fc] pb-24">
-            <PublishFlowHeader title="DNS Setup" step={3} storeId={storeId} onBack={() => navigate(`/store-builder/publish/dns?storeId=${storeId}`)} />
+            <PublishFlowHeader title="DNS Setup" step={3} storeId={storeId} onBack={() => navigate(`/store-builder/publish/hosting-success?storeId=${storeId}`)} />
 
             <div className="max-w-lg mx-auto px-4 py-10 text-center">
                 <div className="w-20 h-20 rounded-full bg-[#25D366]/20 flex items-center justify-center mx-auto mb-5">
@@ -38,7 +38,7 @@ const PublishDnsSuccess = () => {
 
             <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e0e3e6] px-4 py-4 flex justify-between">
                 <button
-                    onClick={() => navigate(`/store-builder/publish/dns?storeId=${storeId}`)}
+                    onClick={() => navigate(`/store-builder/publish/hosting-success?storeId=${storeId}`)}
                     className="px-6 py-3 bg-[#eceef1] text-[#556067] font-semibold rounded-xl hover:bg-[#d9e4ec] transition-all flex items-center gap-2"
                 >
                     <span className="material-symbols-outlined text-base">arrow_back</span>
