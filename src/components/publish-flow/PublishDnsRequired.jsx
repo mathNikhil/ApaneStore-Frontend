@@ -14,7 +14,11 @@ const PublishDnsRequired = () => {
     const [error, setError] = useState('');
     const [submitted, setSubmitted] = useState(false);
     const [submittedAt, setSubmittedAt] = useState(null);
-    const [dnsResult, setDnsResult] = useState(null); // null | { verified, message, resolvedIps, expectedIp }
+    const [dnsResult, setDnsResult] = useState(null);
+    const [showGuide, setShowGuide] = useState(false);
+    const [registrar, setRegistrar] = useState('Hostinger');
+    const [serverIp, setServerIp] = useState('');
+    const [dnsRecords, setDnsRecords] = useState([]); // null | { verified, message, resolvedIps, expectedIp }
 
     useEffect(() => {
         const load = async () => {
@@ -95,8 +99,10 @@ const PublishDnsRequired = () => {
     };
 
     const handleCopyRecords = () => {
-        const text = `Type: A     Name: @      Value: 13.235.136.191\nType: CNAME Name: www    Value: ${customDomain}`;
-        navigator.clipboard.writeText(text);
+        const lines = dnsRecords.length > 0
+            ? dnsRecords.map(r => `Type: ${r.type}  Name: ${r.name}  Value: ${r.value}`).join('\n')
+            : `Type: A     Name: @      Value: ${serverIp}\nType: CNAME Name: www    Value: ${customDomain}`;
+        navigator.clipboard.writeText(lines);
         showSuccess('Records copied!');
     };
 
@@ -202,7 +208,7 @@ const PublishDnsRequired = () => {
                         <span className="material-symbols-outlined text-[#8e9eab]">dns</span>
                         <div>
                             <div className="text-xs text-[#8e9eab]">HOSTING</div>
-                            <div className="font-semibold text-[#191c1e]">Aapna eStore (13.235.136.191)</div>
+                            <div className="font-semibold text-[#191c1e]">Aapna eStore {serverIp ? `(${serverIp})` : ''}</div>
                         </div>
                     </div>
                 </div>
@@ -225,7 +231,7 @@ const PublishDnsRequired = () => {
                             <tr className="border-t border-[#f2f4f7]">
                                 <td className="px-5 py-3 font-mono">A</td>
                                 <td className="px-5 py-3 font-mono">@</td>
-                                <td className="px-5 py-3 font-mono">13.235.136.191</td>
+                                <td className="px-5 py-3 font-mono">{serverIp}</td>
                             </tr>
                             <tr className="border-t border-[#f2f4f7]">
                                 <td className="px-5 py-3 font-mono">CNAME</td>
@@ -243,6 +249,82 @@ const PublishDnsRequired = () => {
                             Copy All Records
                         </button>
                     </div>
+                </div>
+
+                {/* Quick reference guide */}
+                <div className="bg-white rounded-2xl border border-[#e0e3e6] overflow-hidden mb-4">
+                    <button
+                        onClick={() => setShowGuide(g => !g)}
+                        className="w-full flex items-center justify-between px-5 py-4"
+                    >
+                        <div className="flex items-center gap-2">
+                            <span className="material-symbols-outlined text-[#006d2f] text-base">menu_book</span>
+                            <span className="font-semibold text-[#191c1e] text-sm">How to add these records</span>
+                        </div>
+                        <span className="material-symbols-outlined text-[#8e9eab] text-base">
+                            {showGuide ? 'expand_less' : 'expand_more'}
+                        </span>
+                    </button>
+
+                    {showGuide && (
+                        <div className="px-5 pb-5 border-t border-[#f2f4f7]">
+                            {/* Registrar tabs */}
+                            <div className="flex gap-2 mt-4 mb-4">
+                                {['Hostinger', 'GoDaddy'].map(r => (
+                                    <button
+                                        key={r}
+                                        onClick={() => setRegistrar(r)}
+                                        className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+                                            registrar === r
+                                                ? 'bg-[#006d2f] text-white border-[#006d2f]'
+                                                : 'bg-white text-[#556067] border-[#e0e3e6]'
+                                        }`}
+                                    >{r}</button>
+                                ))}
+                            </div>
+
+                            {registrar === 'Hostinger' && (
+                                <ol className="text-xs text-[#556067] space-y-3 list-none">
+                                    <li className="flex gap-2"><span className="w-5 h-5 rounded-full bg-[#006d2f] text-white flex items-center justify-center text-[10px] flex-shrink-0 mt-0.5">1</span><span>Go to <strong>hpanel.hostinger.com</strong> → Domains → click your domain</span></li>
+                                    <li className="flex gap-2"><span className="w-5 h-5 rounded-full bg-[#006d2f] text-white flex items-center justify-center text-[10px] flex-shrink-0 mt-0.5">2</span><span>Click <strong>DNS / Nameservers</strong> in the left sidebar → open <strong>DNS Records</strong> tab</span></li>
+                                    <li className="flex gap-2"><span className="w-5 h-5 rounded-full bg-[#006d2f] text-white flex items-center justify-center text-[10px] flex-shrink-0 mt-0.5">3</span><span>Find the <strong>A record</strong> with Name <code className="bg-[#f2f4f7] px-1 rounded">@</code> → click pencil (edit) → change Content to <code className="bg-[#f2f4f7] px-1 rounded">{serverIp}</code> → Save</span></li>
+                                    <li className="flex gap-2"><span className="w-5 h-5 rounded-full bg-[#006d2f] text-white flex items-center justify-center text-[10px] flex-shrink-0 mt-0.5">4</span><span>Find the <strong>CNAME record</strong> with Name <code className="bg-[#f2f4f7] px-1 rounded">www</code> → edit Content to <code className="bg-[#f2f4f7] px-1 rounded">{customDomain}</code> → Save</span></li>
+                                    <li className="flex gap-2"><span className="w-5 h-5 rounded-full bg-[#006d2f] text-white flex items-center justify-center text-[10px] flex-shrink-0 mt-0.5">5</span><span>Wait 15–30 minutes then click <strong>Verify DNS</strong> below</span></li>
+                                </ol>
+                            )}
+
+                            {registrar === 'GoDaddy' && (
+                                <ol className="text-xs text-[#556067] space-y-3 list-none">
+                                    <li className="flex gap-2"><span className="w-5 h-5 rounded-full bg-[#006d2f] text-white flex items-center justify-center text-[10px] flex-shrink-0 mt-0.5">1</span><span>Go to <strong>dcc.godaddy.com</strong> → My Products → click <strong>DNS</strong> next to your domain</span></li>
+                                    <li className="flex gap-2"><span className="w-5 h-5 rounded-full bg-[#006d2f] text-white flex items-center justify-center text-[10px] flex-shrink-0 mt-0.5">2</span><span>Under DNS Records, find <strong>A record</strong> with Name <code className="bg-[#f2f4f7] px-1 rounded">@</code> → Edit → change Value to <code className="bg-[#f2f4f7] px-1 rounded">{serverIp}</code> → Save</span></li>
+                                    <li className="flex gap-2"><span className="w-5 h-5 rounded-full bg-[#006d2f] text-white flex items-center justify-center text-[10px] flex-shrink-0 mt-0.5">3</span><span>Find <strong>CNAME record</strong> with Name <code className="bg-[#f2f4f7] px-1 rounded">www</code> → Edit → change Value to <code className="bg-[#f2f4f7] px-1 rounded">{customDomain}</code> → Save</span></li>
+                                    <li className="flex gap-2"><span className="w-5 h-5 rounded-full bg-[#006d2f] text-white flex items-center justify-center text-[10px] flex-shrink-0 mt-0.5">4</span><span>Wait 15–30 minutes then click <strong>Verify DNS</strong> below</span></li>
+                                </ol>
+                            )}
+
+                            {/* Quick reference table — all values from API */}
+                            <div className="mt-4 bg-[#f7f9fc] rounded-xl p-3">
+                                <p className="text-[10px] font-bold text-[#8e9eab] mb-2 uppercase tracking-wide">Exact values to enter</p>
+                                <div className="space-y-2">
+                                    {(dnsRecords.length > 0 ? dnsRecords : [
+                                        { type: 'A', name: '@', value: serverIp },
+                                        { type: 'CNAME', name: 'www', value: customDomain },
+                                    ]).map((r, i) => (
+                                        <div key={i} className="bg-white rounded-lg p-2.5 border border-[#e0e3e6]">
+                                            <div className="grid grid-cols-4 gap-1">
+                                                {[['Type', r.type], ['Name', r.name], ['Value', r.value], ['TTL', '3600']].map(([label, val]) => (
+                                                    <div key={label}>
+                                                        <div className="text-[9px] text-[#8e9eab] font-semibold uppercase">{label}</div>
+                                                        <div className="text-[11px] font-mono text-[#191c1e] font-semibold truncate">{val}</div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Verify button */}

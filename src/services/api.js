@@ -64,6 +64,7 @@ export const storeAPI = {
     getPublishFlowState: (id) => apiRequest(`/api/stores/${id}/publish-flow`),
     saveDomainConfig: (id, data) => apiRequest(`/api/stores/${id}/domain-config`, 'PUT', data),
     verifyDns: (id) => apiRequest(`/api/stores/${id}/domain-config/verify-dns`, 'POST'),
+    getDnsConfig: (id) => apiRequest(`/api/stores/${id}/dns-config`, 'GET'),
     completePayment: (id, paymentMethod, billingCycle, termsAccepted) => apiRequest(`/api/stores/${id}/payment`, 'POST', { paymentMethod, billingCycle, termsAccepted }),
 };
 
