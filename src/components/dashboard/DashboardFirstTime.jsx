@@ -19,139 +19,94 @@ const DashboardFirstTime = () => {
         <div className="min-h-screen bg-[#f7f9fc] pb-24">
             <TopAppBar title="eStore Manager" />
 
-            <main className="max-w-7xl mx-auto px-4 py-6">
-                <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-[#191c1e]">Welcome, {user?.company_name || 'there'}</h1>
-                    <p className="text-[#3c4a3d] mt-1">Let's get your first eStore up and running.</p>
+            <main className="max-w-2xl mx-auto px-4 py-5">
+
+                {/* Welcome */}
+                <div className="mb-5">
+                    <h1 className="text-xl font-medium text-[#111]">Welcome, {user?.company_name || 'there'}</h1>
+                    <p className="text-xs text-[#9ca3af] mt-0.5">Let's get your first eStore up and running.</p>
                 </div>
 
-                <div className="grid grid-cols-3 gap-4 mb-8">
-                    <div className="bg-white p-4 rounded-xl border border-[#bbcbb9] shadow-sm hover:shadow-md transition-shadow text-center">
-                        <div className="flex items-center justify-between w-full mb-1">
-                            <span className="text-xs text-[#3c4a3d] font-semibold">Total</span>
-                            <span className="material-symbols-outlined text-[#556067] opacity-50 text-base">inventory_2</span>
+                {/* Stats */}
+                <div className="grid grid-cols-3 gap-2 mb-5">
+                    {[['Total','0','Start today'],['Published','0','Waiting'],['Draft','0','No drafts']].map(([lbl,num,hint]) => (
+                        <div key={lbl} className="bg-white border border-[#f0f0f0] rounded-xl p-2.5">
+                            <div className="text-[10px] text-[#c4c4c4] mb-1">{lbl}</div>
+                            <div className="text-xl font-medium text-[#d1d5db]">{num}</div>
+                            <div className="text-[9px] text-[#d1d5db] mt-0.5">{hint}</div>
                         </div>
-                        <div className="text-2xl font-bold text-[#191c1e]">0</div>
-                        <div className="text-[10px] text-[#3c4a3d] mt-1">Start today</div>
-                    </div>
-                    <div className="bg-white p-4 rounded-xl border border-[#bbcbb9] shadow-sm hover:shadow-md transition-shadow text-center">
-                        <div className="flex items-center justify-between w-full mb-1">
-                            <span className="text-xs text-[#3c4a3d] font-semibold">Published</span>
-                            <span className="material-symbols-outlined text-[#006d2f] opacity-50 text-base">bolt</span>
-                        </div>
-                        <div className="text-2xl font-bold text-[#191c1e]">0</div>
-                        <div className="text-[10px] text-[#3c4a3d] mt-1">Waiting</div>
-                    </div>
-                    <div className="bg-white p-4 rounded-xl border border-[#bbcbb9] shadow-sm hover:shadow-md transition-shadow text-center">
-                        <div className="flex items-center justify-between w-full mb-1">
-                            <span className="text-xs text-[#3c4a3d] font-semibold">Draft</span>
-                            <span className="material-symbols-outlined text-[#006b58] opacity-50 text-base">edit_note</span>
-                        </div>
-                        <div className="text-2xl font-bold text-[#191c1e]">0</div>
-                        <div className="text-[10px] text-[#3c4a3d] mt-1">No drafts</div>
-                    </div>
+                    ))}
                 </div>
 
-                <div className="bg-white rounded-2xl border border-[#bbcbb9] overflow-hidden shadow-sm px-6 py-5 flex items-center gap-5">
-                    <div className="w-14 h-14 bg-[#25D366]/20 rounded-full flex items-center justify-center flex-shrink-0">
-                        <span className="material-symbols-outlined text-[#006d2f] text-3xl filled">add_business</span>
+                {/* CTA block */}
+                <div className="bg-white border border-[#e5e7eb] rounded-2xl p-8 mb-4 text-center">
+                    <div className="w-14 h-14 rounded-full bg-[#e8f5e2] flex items-center justify-center mx-auto mb-4">
+                        <i className="ti ti-building-store text-[#2d7a22] text-2xl" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                        <h2 className="text-lg font-bold text-[#191c1e] mb-1">Welcome to Apna eStore!</h2>
-                        <p className="text-sm text-[#3c4a3d] leading-relaxed">
-                            Let's get your business online. Build your digital presence and reach customers across the globe with our intuitive store manager.
-                        </p>
-                    </div>
-                    <button 
-                        onClick={handleCreateStore} 
-                        className="flex-shrink-0 inline-flex items-center gap-2 px-5 py-3 bg-[#25D366] text-[#005523] font-bold text-sm rounded-xl hover:brightness-105 active:scale-[0.98] transition-all"
-                    >
-                        <span className="material-symbols-outlined text-base">add</span>
-                        Create Your First Store
+                    <div className="text-base font-medium text-[#111] mb-1.5">Your store is ready to be built</div>
+                    <div className="text-xs text-[#9ca3af] mb-6 leading-relaxed">Takes about 20 minutes.<br/>No coding. No tech knowledge needed.</div>
+                    <button onClick={handleCreateStore}
+                        className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-medium text-white"
+                        style={{backgroundColor:'#2d7a22'}}>
+                        <i className="ti ti-plus text-sm" style={{color:'#fff'}} />
+                        Create your first store
                     </button>
                 </div>
 
                 {/* Quick Start Guide */}
-                <section className="mt-6">
-                  <div className="bg-white border border-[#e5e7eb] rounded-xl overflow-hidden">
+                <div className="bg-white border border-[#f0f0f0] rounded-xl overflow-hidden">
 
                     {/* Guide header */}
-                    <div className="flex items-center gap-3 px-4 py-3 border-b border-[#f0f0f0]">
-                      <div className="w-8 h-8 rounded-lg bg-[#2d7a22] flex items-center justify-center flex-shrink-0">
-                        <i className="ti ti-rocket text-white text-sm" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="text-sm font-medium text-[#111]">Quick start guide</div>
-                        <div className="text-xs text-[#6b7280]">Follow these steps to go live</div>
-                      </div>
-                      <div className="text-xs text-[#2d7a22] font-medium bg-[#e8f5e2] rounded-full px-3 py-1 whitespace-nowrap flex items-center gap-1">
-                        <i className="ti ti-clock text-xs" /> ~20 min to live
-                      </div>
+                    <div className="flex items-center gap-2 px-4 py-3 border-b border-[#f7f7f7]">
+                        <div className="w-6 h-6 rounded-lg bg-[#e8f5e2] flex items-center justify-center flex-shrink-0">
+                            <i className="ti ti-list-check text-[#2d7a22] text-xs" />
+                        </div>
+                        <div className="text-xs font-medium text-[#6b7280] flex-1">Quick start guide</div>
+                        <div className="text-[10px] text-[#b3d9a4] font-medium flex items-center gap-1">
+                            <i className="ti ti-clock text-[10px]" /> ~20 min to live
+                        </div>
                     </div>
 
-                    {/* 4 horizontal steps */}
+                    {/* 4 steps horizontal */}
                     <div className="grid grid-cols-2 md:grid-cols-4">
-                      {[
-                        { num:1, time:'3 + 10–15 min', title:'Set up your store', desc:'Name, branding and your products.', sub:[['Name and branding','3 min'],['Upload product photos','10–15 min']] },
-                        { num:2, time:'3 min', title:'Set up payments', desc:'Connect UPI or bank. Customers pay by UPI, card, or COD. 0% commission — every rupee is yours.' },
-                        { num:3, time:'1 min', title:'Publish your store', desc:'Hit Publish. Copy your link and share on WhatsApp and Instagram bio. Live 24×7.' },
-                        { num:4, time:'1 min', title:'Share your link', desc:'Add store link to your Instagram bio, visiting card and WhatsApp status. Let people find you.', muted:true },
-                      ].map((step, idx) => (
-                        <div key={step.num} className={`p-3 relative ${idx < 3 ? 'border-r border-[#f0f0f0]' : ''} ${idx < 2 ? 'border-b border-[#f0f0f0] md:border-b-0' : ''}`}>
-                          <div className="flex items-center justify-between mb-2">
-                            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium border
-                              ${step.muted ? 'bg-white border-[#e5e7eb] text-[#6b7280]' : 'bg-[#e8f5e2] border-[#b3d9a4] text-[#2d7a22]'}`}>
-                              {step.num}
-                            </div>
-                            <span className="text-[9px] text-[#9ca3af] bg-[#f9fafb] border border-[#e5e7eb] rounded-full px-1.5 py-0.5">{step.time}</span>
-                          </div>
-                          <div className={`text-xs font-medium mb-1 leading-tight ${step.muted ? 'text-[#6b7280]' : 'text-[#111]'}`}>{step.title}</div>
-                          <div className="text-[10px] text-[#6b7280] leading-relaxed">{step.desc}</div>
-                          {step.sub && (
-                            <div className="mt-2 pt-2 border-t border-dashed border-[#e5e7eb] space-y-1.5">
-                              {step.sub.map(([name, t]) => (
-                                <div key={name} className="flex items-start gap-1.5">
-                                  <div className="w-1.5 h-1.5 rounded-full bg-[#b3d9a4] mt-1 flex-shrink-0" />
-                                  <div>
-                                    <div className="text-[10px] font-medium text-[#374151]">{name}</div>
-                                    <div className="text-[9px] text-[#9ca3af]">{t}</div>
-                                  </div>
+                        {[
+                            { num:1, time:'3+10–15 min', title:'Set up your store', sub:[['Name and branding','3 min'],['Upload products','10–15 min']] },
+                            { num:2, time:'3 min', title:'Set up payments', desc:'UPI or bank. 0% commission.' },
+                            { num:3, time:'1 min', title:'Publish your store', desc:'Go live. Share your link.' },
+                            { num:4, time:'1 min', title:'Share your link', desc:'Instagram bio, WhatsApp, visiting card.' },
+                        ].map((step, idx) => (
+                            <div key={step.num} className={`p-3 relative ${idx < 3 ? 'border-r border-[#f7f7f7]' : ''} ${idx < 2 ? 'border-b border-[#f7f7f7] md:border-b-0' : ''}`}>
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <div className="w-5 h-5 rounded-full bg-[#f3f4f6] flex items-center justify-center text-[10px] font-medium text-[#9ca3af]">{step.num}</div>
+                                    <span className="text-[9px] text-[#d1d5db]">{step.time}</span>
                                 </div>
-                              ))}
+                                <div className="text-[10px] font-medium text-[#9ca3af] mb-1 leading-tight">{step.title}</div>
+                                {step.desc && <div className="text-[9px] text-[#c4c4c4] leading-relaxed">{step.desc}</div>}
+                                {step.sub && (
+                                    <div className="mt-1.5 pt-1.5 border-t border-dashed border-[#f0f0f0] space-y-1">
+                                        {step.sub.map(([name,t]) => (
+                                            <div key={name} className="flex items-start gap-1">
+                                                <div className="w-1 h-1 rounded-full bg-[#d1d5db] mt-1.5 flex-shrink-0" />
+                                                <div>
+                                                    <div className="text-[9px] text-[#c4c4c4]">{name}</div>
+                                                    <div className="text-[8px] text-[#d1d5db]">{t}</div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
-                          )}
-                        </div>
-                      ))}
+                        ))}
                     </div>
 
-                    {/* WhatsApp marketing bonus row */}
-                    <div className="flex items-start gap-3 px-4 py-3 bg-[#f0faf0] border-t border-[#f0f0f0]">
-                      <div className="w-7 h-7 rounded-lg bg-[#2d7a22] flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <i className="ti ti-brand-whatsapp text-white text-sm" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap mb-1">
-                          <span className="text-xs font-medium text-[#1a4f12]">WhatsApp marketing</span>
-                          <span className="text-[9px] bg-white border border-[#b3d9a4] text-[#2d7a22] rounded-full px-2 py-0.5">~15 min setup</span>
-                          <span className="text-[9px] bg-[#d1eac9] text-[#2d7a22] rounded-full px-2 py-0.5">Standalone feature</span>
-                        </div>
-                        <div className="text-xs text-[#2d7a22] leading-relaxed">Send product photos and offers to your contacts in one tap. Schedule festival offers and new arrivals — all built in, no extra app.</div>
-                        <div className="text-[10px] text-[#6b9e6b] mt-1">Set this up after your store is live — go to the Market tab when ready.</div>
-                      </div>
+                    {/* WhatsApp row */}
+                    <div className="flex items-center gap-2 px-4 py-2.5 bg-[#fafafa] border-t border-[#f7f7f7]">
+                        <div className="w-1.5 h-1.5 rounded-full bg-[#b3d9a4] flex-shrink-0" />
+                        <div className="text-[10px] text-[#9ca3af] flex-1">WhatsApp marketing — set up after your store is live via the Market tab</div>
+                        <div className="text-[9px] text-[#b3d9a4] bg-[#f0faf0] rounded-full px-2 py-0.5 whitespace-nowrap">~15 min</div>
                     </div>
 
-                    {/* Stats strip */}
-                    <div className="grid grid-cols-3 border-t border-[#e5e7eb]">
-                      {[['~20 min','store to live'],['0%','commission'],['₹9.8','per day']].map(([val,label],i) => (
-                        <div key={label} className={`py-2.5 text-center ${i < 2 ? 'border-r border-[#e5e7eb]' : ''}`}>
-                          <div className="text-sm font-medium text-[#2d7a22]">{val}</div>
-                          <div className="text-[10px] text-[#9ca3af]">{label}</div>
-                        </div>
-                      ))}
-                    </div>
-
-                  </div>
-                </section>
+                </div>
             </main>
 
             <BottomNav />
