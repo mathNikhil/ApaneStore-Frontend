@@ -52,20 +52,21 @@ const DashboardFirstTime = () => {
                     </div>
                 </div>
 
-                <div className="bg-white rounded-2xl border border-[#bbcbb9] overflow-hidden shadow-sm p-8 md:p-16 text-center relative">
-                    <div className="w-24 h-24 bg-[#25D366]/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <span className="material-symbols-outlined text-[#006d2f] text-5xl filled">add_business</span>
+                <div className="bg-white rounded-2xl border border-[#bbcbb9] overflow-hidden shadow-sm px-6 py-5 flex items-center gap-5">
+                    <div className="w-14 h-14 bg-[#25D366]/20 rounded-full flex items-center justify-center flex-shrink-0">
+                        <span className="material-symbols-outlined text-[#006d2f] text-3xl filled">add_business</span>
                     </div>
-                    <h2 className="text-2xl font-bold text-[#191c1e] mb-4">Welcome to Apna eStore!</h2>
-                    <p className="text-[#3c4a3d] max-w-xl mx-auto mb-8 leading-relaxed">
-                        Let's get your business online. It's time to build your digital presence 
-                        and reach customers across the globe with our intuitive store manager.
-                    </p>
+                    <div className="flex-1 min-w-0">
+                        <h2 className="text-lg font-bold text-[#191c1e] mb-1">Welcome to Apna eStore!</h2>
+                        <p className="text-sm text-[#3c4a3d] leading-relaxed">
+                            Let's get your business online. Build your digital presence and reach customers across the globe with our intuitive store manager.
+                        </p>
+                    </div>
                     <button 
                         onClick={handleCreateStore} 
-                        className="inline-flex items-center gap-2 px-8 py-3.5 bg-[#25D366] text-[#005523] font-bold text-lg rounded-xl hover:brightness-105 active:scale-[0.98] transition-all"
+                        className="flex-shrink-0 inline-flex items-center gap-2 px-5 py-3 bg-[#25D366] text-[#005523] font-bold text-sm rounded-xl hover:brightness-105 active:scale-[0.98] transition-all"
                     >
-                        <span className="material-symbols-outlined text-xl">add</span>
+                        <span className="material-symbols-outlined text-base">add</span>
                         Create Your First Store
                     </button>
                 </div>
