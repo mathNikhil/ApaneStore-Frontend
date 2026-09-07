@@ -52,19 +52,23 @@ const DashboardFirstTime = () => {
                     </div>
                 </div>
 
-                <div className="bg-white rounded-2xl border border-[#bbcbb9] overflow-hidden shadow-sm px-6 py-5 flex items-center gap-5">
-                    <div className="w-14 h-14 bg-[#25D366]/20 rounded-full flex items-center justify-center flex-shrink-0">
-                        <span className="material-symbols-outlined text-[#006d2f] text-3xl filled">add_business</span>
+                <div className="bg-white rounded-2xl border border-[#bbcbb9] overflow-hidden shadow-sm px-5 py-5">
+                    {/* Icon + text row */}
+                    <div className="flex items-start gap-4 mb-4">
+                        <div className="w-12 h-12 bg-[#25D366]/20 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span className="material-symbols-outlined text-[#006d2f] text-2xl filled">add_business</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <h2 className="text-base font-bold text-[#191c1e] mb-1">Welcome to Apna eStore!</h2>
+                            <p className="text-sm text-[#3c4a3d] leading-relaxed">
+                                Let's get your business online. Build your digital presence and reach customers across the globe.
+                            </p>
+                        </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                        <h2 className="text-lg font-bold text-[#191c1e] mb-1">Welcome to Apna eStore!</h2>
-                        <p className="text-sm text-[#3c4a3d] leading-relaxed">
-                            Let's get your business online. Build your digital presence and reach customers across the globe with our intuitive store manager.
-                        </p>
-                    </div>
+                    {/* CTA full width below */}
                     <button 
                         onClick={handleCreateStore} 
-                        className="flex-shrink-0 inline-flex items-center gap-2 px-5 py-3 bg-[#25D366] text-[#005523] font-bold text-sm rounded-xl hover:brightness-105 active:scale-[0.98] transition-all"
+                        className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-[#25D366] text-[#005523] font-bold text-sm rounded-xl hover:brightness-105 active:scale-[0.98] transition-all"
                     >
                         <span className="material-symbols-outlined text-base">add</span>
                         Create Your First Store
