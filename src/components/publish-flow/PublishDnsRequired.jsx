@@ -12,6 +12,8 @@ const PublishDnsRequired = () => {
     const [customDomain, setCustomDomain] = useState('');
     const [verifying, setVerifying] = useState(false);
     const [error, setError] = useState('');
+    const [submitted, setSubmitted] = useState(false);
+    const [submittedAt, setSubmittedAt] = useState(null);
 
     useEffect(() => {
         const load = async () => {
@@ -29,31 +31,97 @@ const PublishDnsRequired = () => {
             }
         };
         load();
+        // Check if already submitted
+        const savedTime = localStorage.getItem(`dns_submitted_${storeId}`);
+        if (savedTime) {
+            setSubmitted(true);
+            setSubmittedAt(new Date(savedTime));
+        }
     }, [storeId]);
 
     const handleVerify = async () => {
         setVerifying(true);
-        showError('');
+        setError('');
         try {
-            // Simulated — no real DNS lookup yet, per the design discussion.
-            await new Promise((resolve) => setTimeout(resolve, 1200));
+            // Mark as submitted — backend will poll DNS automatically
             const result = await storeAPI.verifyDns(storeId);
             if (result.success) {
-                navigate(`/store-builder/publish/dns-success?storeId=${storeId}`);
+                setSubmitted(true);
+                setSubmittedAt(new Date());
+                localStorage.setItem(`dns_submitted_${storeId}`, new Date().toISOString());
             } else {
-                setError(result.error || 'Verification failed. Please try again.');
+                setError(result.error || 'Failed to save. Please try again.');
             }
         } catch (err) {
-            setError(err.message || 'Verification failed. Please try again.');
+            setError(err.message || 'Failed. Please try again.');
+        } finally {
+            setVerifying(false);
+        }
+    };
+
+    const handleCheckStatus = async () => {
+        setVerifying(true);
+        try {
+            const result = await storeAPI.getPublishFlowState(storeId);
+            if (result.data?.domainConfig?.dns_status === 'verified') {
+                navigate(`/store-builder/publish/dns-success?storeId=${storeId}`);
+            } else {
+                setError('DNS not verified yet. Please wait a bit longer and try again.');
+            }
+        } catch(err) {
+            setError('Failed to check status.');
         } finally {
             setVerifying(false);
         }
     };
 
     const handleCopyRecords = () => {
-        const text = `Type: A     Name: @      Value: 192.168.1.100\nType: CNAME Name: www    Value: ${customDomain}`;
+        const text = `Type: A     Name: @      Value: 13.235.136.191\nType: CNAME Name: www    Value: ${customDomain}`;
         navigator.clipboard.writeText(text);
     };
+
+    // Show submitted/waiting state
+    if (submitted) {
+        const minutesWaited = submittedAt ? Math.floor((new Date() - submittedAt) / 60000) : 0;
+        return (
+            <div className="min-h-screen bg-[#f7f9fc] pb-24">
+                <PublishFlowHeader title="DNS Setup" step={3} storeId={storeId} onBack={() => {}} />
+                <div className="max-w-lg mx-auto px-4 py-8 text-center">
+                    <div className="w-20 h-20 rounded-full bg-[#25D366]/10 flex items-center justify-center mx-auto mb-6">
+                        <span className="material-symbols-outlined text-4xl text-[#006d2f]">schedule</span>
+                    </div>
+                    <h1 className="text-xl font-bold text-[#191c1e] mb-3">DNS Update Submitted!</h1>
+                    <p className="text-[#556067] text-sm mb-6">
+                        We're automatically checking if your domain <strong>{customDomain}</strong> is pointing to our servers.
+                        This usually takes <strong>15–60 minutes</strong>.
+                    </p>
+                    <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6 text-left">
+                        <div className="flex items-center gap-2 mb-2">
+                            <span className="material-symbols-outlined text-amber-600 text-base">info</span>
+                            <span className="text-sm font-semibold text-amber-700">What to do next</span>
+                        </div>
+                        <p className="text-xs text-amber-700">
+                            Please come back after <strong>30 minutes</strong> and click "Check Status" below. 
+                            Once verified, we'll automatically secure your domain with HTTPS and take you to the payment page.
+                        </p>
+                    </div>
+                    {minutesWaited >= 15 && (
+                        <button onClick={handleCheckStatus} disabled={verifying}
+                            className="w-full py-3 bg-[#006d2f] text-white rounded-2xl font-semibold text-sm mb-3 disabled:opacity-60">
+                            {verifying ? 'Checking...' : '✓ Check Status Now'}
+                        </button>
+                    )}
+                    {minutesWaited < 15 && (
+                        <p className="text-xs text-[#8e9eab] mb-3">
+                            Check status available in {15 - minutesWaited} minutes
+                        </p>
+                    )}
+                    {error && <p className="text-red-500 text-xs mt-2">{error}</p>}
+                    <p className="text-xs text-[#8e9eab]">Submitted {submittedAt?.toLocaleTimeString()}</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-[#f7f9fc] pb-24">
@@ -77,7 +145,7 @@ const PublishDnsRequired = () => {
                         <span className="material-symbols-outlined text-[#8e9eab]">dns</span>
                         <div>
                             <div className="text-xs text-[#8e9eab]">HOSTING</div>
-                            <div className="font-semibold text-[#191c1e]">Aapna eStore (192.168.1.100)</div>
+                            <div className="font-semibold text-[#191c1e]">Aapna eStore (13.235.136.191)</div>
                         </div>
                     </div>
                 </div>
@@ -99,7 +167,7 @@ const PublishDnsRequired = () => {
                             <tr className="border-t border-[#f2f4f7]">
                                 <td className="px-5 py-3 font-mono">A</td>
                                 <td className="px-5 py-3 font-mono">@</td>
-                                <td className="px-5 py-3 font-mono">192.168.1.100</td>
+                                <td className="px-5 py-3 font-mono">13.235.136.191</td>
                             </tr>
                             <tr className="border-t border-[#f2f4f7]">
                                 <td className="px-5 py-3 font-mono">CNAME</td>
