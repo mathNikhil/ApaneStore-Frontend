@@ -70,61 +70,86 @@ const DashboardFirstTime = () => {
                     </button>
                 </div>
 
-                <section className="mt-12">
-                    <div className="flex items-center gap-3 mb-6">
-                        <div className="w-10 h-10 rounded-xl bg-[#006d2f] flex items-center justify-center">
-                            <i className="ti ti-device-mobile-share text-white text-xl" />
-                        </div>
-                        <div>
-                            <h2 className="text-xl font-bold text-[#191c1e]">Quick Start Guide</h2>
-                            <p className="text-sm text-[#556067]">Live in under 20 minutes</p>
-                        </div>
+                {/* Quick Start Guide */}
+                <section className="mt-6">
+                  <div className="bg-white border border-[#e5e7eb] rounded-xl overflow-hidden">
+
+                    {/* Guide header */}
+                    <div className="flex items-center gap-3 px-4 py-3 border-b border-[#f0f0f0]">
+                      <div className="w-8 h-8 rounded-lg bg-[#2d7a22] flex items-center justify-center flex-shrink-0">
+                        <i className="ti ti-rocket text-white text-sm" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-sm font-medium text-[#111]">Quick start guide</div>
+                        <div className="text-xs text-[#6b7280]">Follow these steps to go live</div>
+                      </div>
+                      <div className="text-xs text-[#2d7a22] font-medium bg-[#e8f5e2] rounded-full px-3 py-1 whitespace-nowrap flex items-center gap-1">
+                        <i className="ti ti-clock text-xs" /> ~20 min to live
+                      </div>
                     </div>
 
-                    {/* Horizontal scroll on mobile, grid on desktop */}
-                    <div className="flex gap-4 overflow-x-auto pb-3 md:grid md:grid-cols-5 md:overflow-visible">
-                        {[
-                            { num: 1, icon: 'ti-user-circle', title: 'Sign up & name your store', time: '2 min', desc: 'Register with your mobile, enter your store name and pick your brand color. Your store URL is ready instantly.' },
-                            { num: 2, icon: 'ti-package', title: 'Add your products', time: '5 min', desc: 'Upload a photo, add name, price and stock. Works like posting on Instagram — no technical knowledge needed.' },
-                            { num: 3, icon: 'ti-credit-card', title: 'Set up payments', time: '3 min', desc: 'Connect your UPI ID. Customers pay by UPI, card, or COD. Money goes directly to you — 0% commission.' },
-                            { num: 4, icon: 'ti-world-upload', title: 'Publish your store', time: '1 min', desc: 'Hit Publish. Share your store link on WhatsApp, Instagram or visiting card — customers order 24x7.' },
-                            { num: 5, icon: 'ti-brand-whatsapp', title: 'Promote on WhatsApp', time: 'Bonus', desc: 'Use the built-in WhatsApp marketing tool to send product photos to contacts. Schedule offers for festivals & sales.' },
-                        ].map((step) => (
-                            <div key={step.num}
-                                className={`flex-shrink-0 w-56 md:w-auto flex flex-col gap-3 p-4 rounded-2xl border transition-colors
-                                    ${step.num === 5
-                                        ? 'border-2 border-[#006d2f] bg-white'
-                                        : 'border border-[#bbcbb9] bg-[#f2f4f7] hover:border-[#006d2f]'}`}>
-                                <div className="flex items-center justify-between">
-                                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold
-                                        ${step.num === 5 ? 'bg-[#006d2f] text-white' : 'bg-[#e8f5e2] text-[#27500a]'}`}>
-                                        {step.num}
-                                    </div>
-                                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium
-                                        ${step.num === 5 ? 'bg-[#006d2f] text-white' : 'bg-[#e8f5e2] text-[#27500a]'}`}>
-                                        {step.time}
-                                    </span>
-                                </div>
-                                <div>
-                                    <div className="flex items-center gap-1.5 mb-1">
-                                        <i className={`ti ${step.icon} text-[#006d2f] text-base`} />
-                                        <span className="text-sm font-semibold text-[#191c1e]">{step.title}</span>
-                                    </div>
-                                    <p className="text-xs text-[#556067] leading-relaxed">{step.desc}</p>
-                                </div>
+                    {/* 4 horizontal steps */}
+                    <div className="grid grid-cols-2 md:grid-cols-4">
+                      {[
+                        { num:1, time:'3 + 10–15 min', title:'Set up your store', desc:'Name, branding and your products.', sub:[['Name and branding','3 min'],['Upload product photos','10–15 min']] },
+                        { num:2, time:'3 min', title:'Set up payments', desc:'Connect UPI or bank. Customers pay by UPI, card, or COD. 0% commission — every rupee is yours.' },
+                        { num:3, time:'1 min', title:'Publish your store', desc:'Hit Publish. Copy your link and share on WhatsApp and Instagram bio. Live 24×7.' },
+                        { num:4, time:'1 min', title:'Share your link', desc:'Add store link to your Instagram bio, visiting card and WhatsApp status. Let people find you.', muted:true },
+                      ].map((step, idx) => (
+                        <div key={step.num} className={`p-3 relative ${idx < 3 ? 'border-r border-[#f0f0f0]' : ''} ${idx < 2 ? 'border-b border-[#f0f0f0] md:border-b-0' : ''}`}>
+                          <div className="flex items-center justify-between mb-2">
+                            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium border
+                              ${step.muted ? 'bg-white border-[#e5e7eb] text-[#6b7280]' : 'bg-[#e8f5e2] border-[#b3d9a4] text-[#2d7a22]'}`}>
+                              {step.num}
                             </div>
-                        ))}
+                            <span className="text-[9px] text-[#9ca3af] bg-[#f9fafb] border border-[#e5e7eb] rounded-full px-1.5 py-0.5">{step.time}</span>
+                          </div>
+                          <div className={`text-xs font-medium mb-1 leading-tight ${step.muted ? 'text-[#6b7280]' : 'text-[#111]'}`}>{step.title}</div>
+                          <div className="text-[10px] text-[#6b7280] leading-relaxed">{step.desc}</div>
+                          {step.sub && (
+                            <div className="mt-2 pt-2 border-t border-dashed border-[#e5e7eb] space-y-1.5">
+                              {step.sub.map(([name, t]) => (
+                                <div key={name} className="flex items-start gap-1.5">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-[#b3d9a4] mt-1 flex-shrink-0" />
+                                  <div>
+                                    <div className="text-[10px] font-medium text-[#374151]">{name}</div>
+                                    <div className="text-[9px] text-[#9ca3af]">{t}</div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
                     </div>
 
-                    {/* Stats row */}
-                    <div className="grid grid-cols-3 gap-3 mt-4">
-                        {[['20 min','store to live'],['0%','commission on sales'],['₹9.8','per day']].map(([val,label]) => (
-                            <div key={label} className="bg-[#f2f4f7] rounded-xl p-3 text-center">
-                                <div className="text-xl font-bold text-[#191c1e]">{val}</div>
-                                <div className="text-xs text-[#556067] mt-0.5">{label}</div>
-                            </div>
-                        ))}
+                    {/* WhatsApp marketing bonus row */}
+                    <div className="flex items-start gap-3 px-4 py-3 bg-[#f0faf0] border-t border-[#f0f0f0]">
+                      <div className="w-7 h-7 rounded-lg bg-[#2d7a22] flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <i className="ti ti-brand-whatsapp text-white text-sm" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <span className="text-xs font-medium text-[#1a4f12]">WhatsApp marketing</span>
+                          <span className="text-[9px] bg-white border border-[#b3d9a4] text-[#2d7a22] rounded-full px-2 py-0.5">~15 min setup</span>
+                          <span className="text-[9px] bg-[#d1eac9] text-[#2d7a22] rounded-full px-2 py-0.5">Standalone feature</span>
+                        </div>
+                        <div className="text-xs text-[#2d7a22] leading-relaxed">Send product photos and offers to your contacts in one tap. Schedule festival offers and new arrivals — all built in, no extra app.</div>
+                        <div className="text-[10px] text-[#6b9e6b] mt-1">Set this up after your store is live — go to the Market tab when ready.</div>
+                      </div>
                     </div>
+
+                    {/* Stats strip */}
+                    <div className="grid grid-cols-3 border-t border-[#e5e7eb]">
+                      {[['~20 min','store to live'],['0%','commission'],['₹9.8','per day']].map(([val,label],i) => (
+                        <div key={label} className={`py-2.5 text-center ${i < 2 ? 'border-r border-[#e5e7eb]' : ''}`}>
+                          <div className="text-sm font-medium text-[#2d7a22]">{val}</div>
+                          <div className="text-[10px] text-[#9ca3af]">{label}</div>
+                        </div>
+                      ))}
+                    </div>
+
+                  </div>
                 </section>
             </main>
 
