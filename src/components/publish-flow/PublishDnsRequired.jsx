@@ -17,7 +17,7 @@ const PublishDnsRequired = () => {
     const [dnsResult, setDnsResult] = useState(null);
     const [showGuide, setShowGuide] = useState(false);
     const [registrar, setRegistrar] = useState('Hostinger');
-    const [serverIp, setServerIp] = useState('');
+    const [serverIp, setServerIp] = useState('13.235.136.191'); // default — overridden by API
     const [dnsRecords, setDnsRecords] = useState([]); // null | { verified, message, resolvedIps, expectedIp }
 
     useEffect(() => {
