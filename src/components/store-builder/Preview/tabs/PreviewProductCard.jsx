@@ -15,7 +15,10 @@ const PreviewProductCard = ({
     product.variations?.[0]?.sizes?.[0] || null
   );
 
-  const images = product.images || [];
+  // Normalize images to URL strings
+  const images = (product.images || []).map(img =>
+    typeof img === 'string' ? img : (img?.url || img?.preview || '')
+  ).filter(Boolean);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [quickViewOpen, setQuickViewOpen] = useState(false);
   const deviceFrameNode = useDeviceFrame();
@@ -98,7 +101,7 @@ const PreviewProductCard = ({
               {images.map((img, idx) => (
                 <img
                   key={img.id || idx}
-                  src={img.url}
+                  src={typeof img === "string" ? img : img?.url}
                   alt={product.name}
                   className="absolute inset-0 w-full h-full object-contain transition-opacity duration-500"
                   style={{ opacity: idx === activeImageIndex ? 1 : 0 }}
@@ -176,14 +179,30 @@ const PreviewProductCard = ({
                 {product.variations.map((v) => (
                   <button
                     key={v.id}
-                    onClick={() => { setSelectedVariation(v); setSelectedSize(v.sizes?.[0] || null); }}
+                    onClick={() => {
+                      setSelectedVariation(v);
+                      setSelectedSize(v.sizes?.[0] || null);
+                      if (v.imageIndex !== undefined && v.imageIndex !== null && v.imageIndex < images.length) {
+                        setActiveImageIndex(v.imageIndex);
+                      } else if (v.image?.url) {
+                        const idx = images.findIndex(img => img === v.image.url || img?.url === v.image.url);
+                        setActiveImageIndex(idx !== -1 ? idx : 0);
+                      } else {
+                        setActiveImageIndex(0);
+                      }
+                    }}
                     className="flex items-center gap-1 pl-1 pr-2 py-1 text-xs rounded-full transition-colors"
                     style={selectedVariation?.id === v.id
                       ? { backgroundColor: primaryColor, color: buttonLabelColor }
                       : { backgroundColor: secondaryColor, color: fontBodyColor, fontFamily: bodyFont }
                     }
                   >
-                    {v.image && <img src={v.image.url} alt={v.name} className="w-4 h-4 rounded-full object-cover flex-shrink-0" />}
+                    {(() => {
+                      const swatchImg = (v.imageIndex !== undefined && v.imageIndex !== null)
+                        ? images[v.imageIndex]
+                        : v.image?.url;
+                      return swatchImg ? <img src={swatchImg} alt={v.name} className="w-6 h-6 rounded-full object-cover flex-shrink-0" /> : null;
+                    })()}
                     {v.name}
                   </button>
                 ))}
@@ -238,7 +257,7 @@ const PreviewProductCard = ({
             {images.map((img, idx) => (
               <img
                 key={img.id || idx}
-                src={img.url}
+                src={typeof img === "string" ? img : img?.url}
                 alt={product.name}
                 className="absolute inset-0 w-full h-full object-cover transition-opacity duration-700"
                 style={{ opacity: idx === activeImageIndex ? 1 : 0 }}
