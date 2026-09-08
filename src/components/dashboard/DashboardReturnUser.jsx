@@ -10,6 +10,7 @@ import { storeAPI } from '../../services/api';
 
 const DashboardReturnUser = ({ stores = [], subscriptions = {}, onStoreUpdate }) => {
     const navigate = useNavigate();
+    const [editDropdown, setEditDropdown] = React.useState(null); // storeId of open dropdown
     const [updating, setUpdating] = useState(null);
     const [error, setError] = useState(null);
     const [deleting, setDeleting] = useState(null);
@@ -459,13 +460,38 @@ const DashboardReturnUser = ({ stores = [], subscriptions = {}, onStoreUpdate })
                                     
                                     {/* Row 1: Edit, Preview, Publish/Unpublish */}
                                     <div className="flex flex-wrap gap-3 mt-4 pt-4 border-t border-[#eceef1]">
-                                        <button 
-                                            onClick={() => navigate(`/store-builder/step/1?storeId=${store.id}`)}
-                                            className="px-4 py-2 bg-[#eceef1] text-[#006d2f] font-semibold text-sm rounded-xl hover:bg-[#d9e4ec] active:scale-[0.98] transition-all flex items-center gap-2"
-                                        >
-                                            <span className="material-symbols-outlined text-base">edit</span>
-                                            Edit Store
-                                        </button>
+                                        <div className="relative">
+                                            <button
+                                                onClick={() => setEditDropdown(editDropdown === store.id ? null : store.id)}
+                                                className="px-4 py-2 bg-[#eceef1] text-[#006d2f] font-semibold text-sm rounded-xl hover:bg-[#d9e4ec] active:scale-[0.98] transition-all flex items-center gap-2"
+                                            >
+                                                <span className="material-symbols-outlined text-base">edit</span>
+                                                Edit Store
+                                                <span className="material-symbols-outlined text-sm">{editDropdown === store.id ? 'expand_less' : 'expand_more'}</span>
+                                            </button>
+                                            {editDropdown === store.id && (
+                                                <div className="absolute left-0 top-full mt-1 bg-white border border-[#e0e3e6] rounded-xl shadow-lg z-50 min-w-[220px] overflow-hidden">
+                                                    {[
+                                                        { step: 1, label: 'Brand Setup', icon: 'palette' },
+                                                        { step: 2, label: 'Products', icon: 'inventory_2' },
+                                                        { step: 3, label: 'Cart Settings', icon: 'shopping_cart' },
+                                                        { step: 4, label: 'Payment', icon: 'payments' },
+                                                        { step: 5, label: 'Address & Delivery', icon: 'local_shipping' },
+                                                        { step: 6, label: 'Order Tracking', icon: 'track_changes' },
+                                                        { step: 7, label: 'Store Profile', icon: 'store' },
+                                                        { step: 8, label: 'Return Policy', icon: 'assignment_return' },
+                                                    ].map(({ step, label, icon }) => (
+                                                        <button key={step}
+                                                            onClick={() => { setEditDropdown(null); navigate(`/store-builder/step/${step}?storeId=${store.id}`); }}
+                                                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[#191c1e] hover:bg-[#f2f4f7] transition-colors text-left">
+                                                            <span className="material-symbols-outlined text-base text-[#006d2f]">{icon}</span>
+                                                            <span className="font-medium">Step {step}</span>
+                                                            <span className="text-[#8e9eab]">— {label}</span>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
                                         
                                         <button 
                                             onClick={() => store.status === 'published' ? window.open(`https://${store.subdomain}.aapnaestore.com`, '_blank') : navigate(`/store-builder/preview?storeId=${store.id}`)}
