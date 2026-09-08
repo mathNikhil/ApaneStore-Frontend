@@ -1445,43 +1445,54 @@ const Step2_ProductConfig = () => {
 
                                 {isVariationExpanded && (
                                 <>
-                                {/* Variation Image */}
-                                <div className="mt-2 flex items-center gap-2">
-                                  {variation.image ? (
-                                    <div className="relative w-10 h-10 rounded bg-[#f2f4f7] border border-[#bbcbb9] overflow-hidden group">
-                                      <img src={variation.image.url} alt="Variation" className="w-full h-full object-cover" />
+                                {/* Variation Image — pick from product images */}
+                                <div className="mt-2">
+                                  <p className="text-xs text-[#556067] mb-1.5 font-medium">Link variant to a product image</p>
+                                  {product.images && product.images.length > 0 ? (
+                                    <div className="flex flex-wrap gap-2">
+                                      {/* No image option */}
                                       <button
-                                        onClick={() => removeVariationImage(category.id, product.id, variation.id)}
-                                        className="absolute top-0 right-0 bg-black/50 text-white p-0.5 rounded-bl hover:bg-black/70 transition-colors"
-                                      >
-                                        <span className="material-symbols-outlined text-[10px]">close</span>
+                                        onClick={() => {
+                                          const updated = categories.map(cat => cat.id === category.id ? {
+                                            ...cat, products: cat.products.map(p => p.id === product.id ? {
+                                              ...p, variations: p.variations.map(v => v.id === variation.id ? { ...v, imageIndex: null, image: null } : v)
+                                            } : p)
+                                          } : cat);
+                                          setCategories(updated);
+                                        }}
+                                        className={`w-10 h-10 rounded border-2 flex items-center justify-center text-xs transition-colors
+                                          ${variation.imageIndex === null || variation.imageIndex === undefined
+                                            ? 'border-[#006d2f] bg-[#e8f5e2] text-[#006d2f]'
+                                            : 'border-dashed border-[#bbcbb9] text-[#8e9eab] hover:border-[#006d2f]'}`}>
+                                        <span className="material-symbols-outlined text-sm">hide_image</span>
                                       </button>
+                                      {/* Product images */}
+                                      {product.images.map((img, imgIdx) => {
+                                        const imgUrl = typeof img === 'string' ? img : img?.url || img?.preview;
+                                        if (!imgUrl) return null;
+                                        const isSelected = variation.imageIndex === imgIdx;
+                                        return (
+                                          <button key={imgIdx}
+                                            onClick={() => {
+                                              const updated = categories.map(cat => cat.id === category.id ? {
+                                                ...cat, products: cat.products.map(p => p.id === product.id ? {
+                                                  ...p, variations: p.variations.map(v => v.id === variation.id ? { ...v, imageIndex: imgIdx } : v)
+                                                } : p)
+                                              } : cat);
+                                              setCategories(updated);
+                                            }}
+                                            className={`w-10 h-10 rounded overflow-hidden border-2 transition-colors flex-shrink-0
+                                              ${isSelected ? 'border-[#006d2f] ring-1 ring-[#006d2f]' : 'border-[#bbcbb9] hover:border-[#006d2f]'}`}>
+                                            <img src={imgUrl} alt={`img ${imgIdx+1}`} className="w-full h-full object-cover" />
+                                          </button>
+                                        );
+                                      })}
                                     </div>
                                   ) : (
-                                    <div
-                                      className="w-10 h-10 rounded bg-[#f2f4f7] border-2 border-dashed border-[#bbcbb9] flex items-center justify-center text-[#556067] hover:text-[#006d2f] hover:border-[#006d2f] cursor-pointer transition-colors relative"
-                                      onClick={() => {
-                                        const input = document.getElementById(`variation-image-${variation.id}`);
-                                        if (input) input.click();
-                                      }}
-                                    >
-                                      {isVariantUploading ? (
-                                        <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>
-                                      ) : (
-                                        <span className="material-symbols-outlined text-sm">add_a_photo</span>
-                                      )}
-                                    </div>
+                                    <p className="text-[10px] text-[#8e9eab]">Add product images above first, then link them to variants here.</p>
                                   )}
-                                  <input
-                                    id={`variation-image-${variation.id}`}
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={(e) => handleVariationImageUpload(category.id, product.id, variation.id, e)}
-                                    className="hidden"
-                                  />
                                   <div>
-                                    <p className="text-xs text-gray-500">Variant Image</p>
-                                    <p className="text-[10px] text-gray-400">100×100px • 30KB • 1:1</p>
+                                    <p className="text-[10px] text-[#8e9eab] mt-1">Selected image will show when customer picks this variant</p>
                                     {variantError && (
                                       <div className="mt-1 text-xs text-red-600 bg-red-50 px-2 py-0.5 rounded border border-red-200 flex items-start gap-0.5">
                                         <span className="material-symbols-outlined text-sm">error</span>
