@@ -470,7 +470,7 @@ const DashboardReturnUser = ({ stores = [], subscriptions = {}, onStoreUpdate })
                                                 <span className="material-symbols-outlined text-sm">{editDropdown === store.id ? 'expand_less' : 'expand_more'}</span>
                                             </button>
                                             {editDropdown === store.id && (
-                                                <div className="absolute left-0 top-full mt-1 bg-white border border-[#e0e3e6] rounded-xl shadow-lg z-50 min-w-[220px] overflow-hidden">
+                                                <div className="absolute left-0 top-full mt-1 bg-white border border-[#e0e3e6] rounded-xl shadow-lg z-[999] min-w-[280px] overflow-hidden">
                                                     {[
                                                         { step: 1, label: 'Brand Setup', icon: 'palette' },
                                                         { step: 2, label: 'Products', icon: 'inventory_2' },
