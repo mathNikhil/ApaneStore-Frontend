@@ -491,7 +491,7 @@ const DashboardReturnUser = ({ stores = [], subscriptions = {}, onStoreUpdate })
                                                                 <div className="w-9 h-9 rounded-lg bg-[#e8f5e2] flex items-center justify-center">
                                                                     <span className="material-symbols-outlined text-base text-[#006d2f]">{icon}</span>
                                                                 </div>
-                                                                <span className="text-[10px] font-medium text-[#191c1e] text-center leading-tight">{label}</span>
+                                                                <span className="text-[10px] font-medium text-[#191c1e] text-center leading-tight w-full truncate px-1">{label}</span>
                                                                 <span className="text-[9px] text-[#8e9eab]">Step {step}</span>
                                                             </button>
                                                         ))}
