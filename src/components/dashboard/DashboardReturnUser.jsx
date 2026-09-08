@@ -470,25 +470,32 @@ const DashboardReturnUser = ({ stores = [], subscriptions = {}, onStoreUpdate })
                                                 <span className="material-symbols-outlined text-sm">{editDropdown === store.id ? 'expand_less' : 'expand_more'}</span>
                                             </button>
                                             {editDropdown === store.id && (
-                                                <div className="absolute left-0 top-full mt-1 bg-white border border-[#e0e3e6] rounded-xl shadow-lg z-[999] min-w-[280px] overflow-hidden">
-                                                    {[
-                                                        { step: 1, label: 'Brand Setup', icon: 'palette' },
-                                                        { step: 2, label: 'Products', icon: 'inventory_2' },
-                                                        { step: 3, label: 'Cart Settings', icon: 'shopping_cart' },
-                                                        { step: 4, label: 'Payment', icon: 'payments' },
-                                                        { step: 5, label: 'Address & Delivery', icon: 'local_shipping' },
-                                                        { step: 6, label: 'Order Tracking', icon: 'track_changes' },
-                                                        { step: 7, label: 'Store Profile', icon: 'store' },
-                                                        { step: 8, label: 'Return Policy', icon: 'assignment_return' },
-                                                    ].map(({ step, label, icon }) => (
-                                                        <button key={step}
-                                                            onClick={() => { setEditDropdown(null); navigate(`/store-builder/step/${step}?storeId=${store.id}`); }}
-                                                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[#191c1e] hover:bg-[#f2f4f7] transition-colors text-left">
-                                                            <span className="material-symbols-outlined text-base text-[#006d2f]">{icon}</span>
-                                                            <span className="font-medium">Step {step}</span>
-                                                            <span className="text-[#8e9eab]">— {label}</span>
-                                                        </button>
-                                                    ))}
+                                                <div className="absolute left-0 top-full mt-1 bg-white border border-[#e0e3e6] rounded-xl shadow-lg z-[999] overflow-hidden" style={{width:'calc(100vw - 32px)', maxWidth:'600px'}}>
+                                                    <div className="px-3 py-2 border-b border-[#f0f0f0]">
+                                                        <span className="text-xs text-[#8e9eab] font-medium">Select step to edit</span>
+                                                    </div>
+                                                    <div className="flex overflow-x-auto gap-2 p-3 scrollbar-hide">
+                                                        {[
+                                                            { step: 1, label: 'Brand', icon: 'palette' },
+                                                            { step: 2, label: 'Products', icon: 'inventory_2' },
+                                                            { step: 3, label: 'Cart', icon: 'shopping_cart' },
+                                                            { step: 4, label: 'Payment', icon: 'payments' },
+                                                            { step: 5, label: 'Delivery', icon: 'local_shipping' },
+                                                            { step: 6, label: 'Tracking', icon: 'track_changes' },
+                                                            { step: 7, label: 'Profile', icon: 'store' },
+                                                            { step: 8, label: 'Returns', icon: 'assignment_return' },
+                                                        ].map(({ step, label, icon }) => (
+                                                            <button key={step}
+                                                                onClick={() => { setEditDropdown(null); navigate(`/store-builder/step/${step}?storeId=${store.id}`); }}
+                                                                className="flex flex-col items-center gap-1.5 px-3 py-2.5 rounded-xl hover:bg-[#f2f4f7] transition-colors flex-shrink-0 min-w-[64px]">
+                                                                <div className="w-9 h-9 rounded-lg bg-[#e8f5e2] flex items-center justify-center">
+                                                                    <span className="material-symbols-outlined text-base text-[#006d2f]">{icon}</span>
+                                                                </div>
+                                                                <span className="text-[10px] font-medium text-[#191c1e] text-center leading-tight">{label}</span>
+                                                                <span className="text-[9px] text-[#8e9eab]">Step {step}</span>
+                                                            </button>
+                                                        ))}
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>
