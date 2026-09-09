@@ -105,11 +105,11 @@ const LoginPage = () => {
           <div className="mt-6 pt-6 border-t border-[#bbcbb9] text-center">
             <p className="text-xs text-[#3c4a3d]">
               By continuing, you agree to our{' '}
-              <a className="text-[#006d2f] font-semibold hover:underline" href="#">
+              <a className="text-[#006d2f] font-semibold hover:underline" href="https://aapnaestore.com/profile/terms" target="_blank" rel="noopener noreferrer">
                 Terms of Service
               </a>{' '}
               &amp;{' '}
-              <a className="text-[#006d2f] font-semibold hover:underline" href="#">
+              <a className="text-[#006d2f] font-semibold hover:underline" href="https://aapnaestore.com/profile/privacy" target="_blank" rel="noopener noreferrer">
                 Privacy Policy
               </a>
             </p>
