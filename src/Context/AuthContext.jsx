@@ -5,7 +5,22 @@ const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
-    const [token, setToken] = useState(localStorage.getItem('token'));
+    // Check token expiry (7 days)
+    const getValidToken = () => {
+        const token = localStorage.getItem('token');
+        const loginTime = localStorage.getItem('loginTime');
+        if (!token || !loginTime) return null;
+        const sevenDays = 7 * 24 * 60 * 60 * 1000;
+        if (Date.now() - parseInt(loginTime) > sevenDays) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('loginTime');
+            localStorage.removeItem('user');
+            localStorage.removeItem('loginTime');
+            return null;
+        }
+        return token;
+    };
+    const [token, setToken] = useState(getValidToken());
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -27,6 +42,7 @@ export const AuthProvider = ({ children }) => {
                 setToken(result.data.token);
                 localStorage.setItem('token', result.data.token);
                 localStorage.setItem('user', JSON.stringify(result.data.tenant));
+                localStorage.setItem('loginTime', Date.now().toString());
                 return { success: true };
             }
             return { success: false, error: result.error };
