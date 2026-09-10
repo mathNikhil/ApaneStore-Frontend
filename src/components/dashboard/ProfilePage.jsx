@@ -42,7 +42,7 @@ const ContactSupportLink = () => {
   const [href, setHref] = React.useState('mailto:aapnaestore@gmail.com?subject=Support Request - AapnaEstore');
 
   React.useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     if (!token) return;
     const API = import.meta.env.VITE_API_URL || 'https://api.aapnaestore.com';
     fetch(`${API}/api/tenants/profile`, { headers: { Authorization: `Bearer ${token}` } })
