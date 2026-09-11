@@ -186,6 +186,8 @@ export const StoreBuilderProvider = ({ children }) => {
 
     // ✅ Store ID for saving
     const [currentStoreId, setCurrentStoreId] = useState(null);
+    const [currentSubdomain, setCurrentSubdomain] = useState(null);
+    const [storeStatus, setStoreStatus] = useState(null);
     
     // ✅ NEW: Tenant ID for image uploads
     const [tenantId, setTenantId] = useState(null);
@@ -514,6 +516,10 @@ export const StoreBuilderProvider = ({ children }) => {
                 
                 // ✅ Set store ID
                 setCurrentStoreId(storeId);
+                setCurrentSubdomain(store.subdomain || null);
+                setStoreStatus(store.status || null);
+                setCurrentSubdomain(store.subdomain || null);
+                setStoreStatus(store.status || null);
                 
                 // ✅ FIXED: Check for both tenant_id and tenantId
                 if (store.tenant_id || store.tenantId) {
@@ -659,6 +665,8 @@ export const StoreBuilderProvider = ({ children }) => {
         returnData,
         uploadedImages,
         currentStoreId,
+        currentSubdomain,
+        storeStatus,
         tenantId,          // ✅ NEW: Expose tenantId
         currentStep,
         ready,

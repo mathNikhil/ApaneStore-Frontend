@@ -48,7 +48,7 @@ const ImageError = ({ error }) => {
 const Step2_ProductConfig = () => {
   const navigate = useNavigate();
   // ✅ FIX: Destructure `currentStoreId` instead of `storeId`!
-  const { productData, setProductData, currentStoreId, tenantId, brandData } = useStoreBuilder();
+  const { productData, setProductData, currentStoreId, currentSubdomain, storeStatus, tenantId, brandData } = useStoreBuilder();
   
   // ✅ Track upload status per product/variation
   const [uploadingStates, setUploadingStates] = useState({});
@@ -1289,6 +1289,71 @@ const Step2_ProductConfig = () => {
                             <span className="flex-1 font-medium text-[#191c1e] text-sm">{product.name || 'Untitled Product'}</span>
                           )}
 
+                          {/* Share link with info — only when collapsed and store is published */}
+                          {!isProductExpanded && currentSubdomain && storeStatus === 'published' && (
+                            <>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const link = `https://${currentSubdomain}.aapnaestore.com/product/${product.id}`;
+                                  navigator.clipboard.writeText(link).then(() => {
+                                    const btn = e.currentTarget;
+                                    const orig = btn.innerHTML;
+                                    btn.innerHTML = '<span class="material-symbols-outlined text-sm">check</span><span>Copied!</span>';
+                                    setTimeout(() => { btn.innerHTML = orig; }, 2000);
+                                  });
+                                }}
+                                className="flex items-center gap-1 px-2 py-1 rounded-lg border border-[#25D366] text-[#006d2f] hover:bg-[#25D366]/10 transition-colors text-xs font-medium whitespace-nowrap"
+                              >
+                                <span className="material-symbols-outlined text-sm">link</span>
+                                <span>Copy Link</span>
+                              </button>
+                              <div className="relative">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const key = `info-${product.id}`;
+                                    const el = document.getElementById(key);
+                                    if (el) el.classList.toggle('hidden');
+                                  }}
+                                  className="p-1 rounded-full text-[#556067] hover:text-[#006d2f] hover:bg-[#25D366]/10 transition-colors"
+                                  title="How to use this link"
+                                >
+                                  <span className="material-symbols-outlined text-base">info</span>
+                                </button>
+                                <div
+                                  id={`info-${product.id}`}
+                                  className="hidden absolute right-0 top-8 z-50 w-72 bg-white border border-[#bbcbb9] rounded-xl shadow-lg p-4 text-left"
+                                >
+                                  <div className="flex items-center gap-2 mb-3">
+                                    <span className="material-symbols-outlined text-[#006d2f]">share</span>
+                                    <p className="font-semibold text-sm text-[#191c1e]">How to share this product</p>
+                                  </div>
+                                  <ol className="space-y-2 text-xs text-[#556067]">
+                                    <li className="flex gap-2">
+                                      <span className="font-bold text-[#006d2f] flex-shrink-0">1.</span>
+                                      <span>Click <strong>Copy Link</strong> to copy this product's URL</span>
+                                    </li>
+                                    <li className="flex gap-2">
+                                      <span className="font-bold text-[#006d2f] flex-shrink-0">2.</span>
+                                      <span><strong>WhatsApp Business:</strong> Go to Catalog → select product → Edit → paste in <em>Website URL</em> field</span>
+                                    </li>
+                                    <li className="flex gap-2">
+                                      <span className="font-bold text-[#006d2f] flex-shrink-0">3.</span>
+                                      <span><strong>Instagram Shop:</strong> Go to Shop → Edit product → paste in <em>Product Link</em> field</span>
+                                    </li>
+                                    <li className="flex gap-2">
+                                      <span className="font-bold text-[#006d2f] flex-shrink-0">4.</span>
+                                      <span>When customer taps the link → they land directly on <strong>{product.name}</strong> and can select variant & checkout on your store</span>
+                                    </li>
+                                  </ol>
+                                  <div className="mt-3 pt-3 border-t border-[#e0e3e6]">
+                                    <p className="text-[10px] text-[#8e9eab]">⚠️ Make sure you paste this link on the correct product in WhatsApp/Instagram</p>
+                                  </div>
+                                </div>
+                              </div>
+                            </>
+                          )}
                           <button
                             onClick={() => deleteProduct(category.id, product.id)}
                             className="text-[#ba1a1a] hover:bg-[#ffdad6]/50 p-1 rounded-lg transition-colors"
