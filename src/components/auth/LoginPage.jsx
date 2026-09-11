@@ -7,16 +7,32 @@ import Input from '../Common/Input';
 import { useAuth } from '../../Context/AuthContext';
 import logo from '../../assets/images/Apnaestore-Logo.png';
 
+const getDeviceFingerprint = () => {
+  const raw = [
+    navigator.userAgent,
+    screen.width + 'x' + screen.height,
+    Intl.DateTimeFormat().resolvedOptions().timeZone,
+    navigator.language,
+  ].join('|');
+  let hash = 0;
+  for (let i = 0; i < raw.length; i++) {
+    hash = ((hash << 5) - hash) + raw.charCodeAt(i);
+    hash |= 0;
+  }
+  return String(Math.abs(hash));
+};
+
 const LoginPage = () => {
   const navigate = useNavigate();
-  const { sendOTP } = useAuth();
+  const { sendOTP, markSessionVerified } = useAuth();
+
   const [mobile, setMobile] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (mobile.length !== 10) {
       showError('Please enter a valid 10-digit mobile number');
       return;
@@ -25,6 +41,34 @@ const LoginPage = () => {
     setLoading(true);
 
     try {
+      // Check if same device + same mobile + within 12 hours → skip OTP
+      const savedToken = localStorage.getItem('token');
+      // Save mobile immediately so it persists for future checks
+      localStorage.setItem('savedMobile', mobile);
+      const savedMobile = mobile; // use current mobile as reference
+      const loginTime = localStorage.getItem('loginTime');
+      const savedFingerprint = localStorage.getItem('deviceFingerprint');
+      const currentFingerprint = getDeviceFingerprint();
+      const twelveHours = 12 * 60 * 60 * 1000;
+
+      if (
+        savedToken &&
+        savedFingerprint === currentFingerprint &&
+        loginTime &&
+        Date.now() - parseInt(loginTime) < twelveHours &&
+        (savedMobile === mobile || savedMobile === null)
+      ) {
+        // Same device, within 12 hours, correct mobile — skip OTP
+        // Save mobile for future checks
+        localStorage.setItem('savedMobile', mobile);
+        markSessionVerified();
+        showSuccess('Welcome back! Logging you in...');
+        navigate('/dashboard', { replace: true });
+        setLoading(false);
+        return;
+      }
+
+      // Different device/mobile or expired — send OTP
       const result = await sendOTP(mobile, 'login');
       if (!result.success) {
         setError(result.error || 'Failed to send OTP');
@@ -105,11 +149,11 @@ const LoginPage = () => {
           <div className="mt-6 pt-6 border-t border-[#bbcbb9] text-center">
             <p className="text-xs text-[#3c4a3d]">
               By continuing, you agree to our{' '}
-              <a className="text-[#006d2f] font-semibold hover:underline" href="https://aapnaestore.com/profile/terms" target="_blank" rel="noopener noreferrer">
+              <a className="text-[#006d2f] font-semibold hover:underline" href="/profile/terms">
                 Terms of Service
               </a>{' '}
               &amp;{' '}
-              <a className="text-[#006d2f] font-semibold hover:underline" href="https://aapnaestore.com/profile/privacy" target="_blank" rel="noopener noreferrer">
+              <a className="text-[#006d2f] font-semibold hover:underline" href="/profile/privacy">
                 Privacy Policy
               </a>
             </p>

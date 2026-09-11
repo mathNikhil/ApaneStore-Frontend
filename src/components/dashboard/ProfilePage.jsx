@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../Context/AuthContext';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import TopAppBar from '../Common/TopAppBar';
 import BottomNav from '../Common/BottomNav';
 import ProfileSection from './profile-sections/ProfileSection';
@@ -88,8 +88,8 @@ const ContactSupportLink = () => {
 
 const ProfilePage = () => {
   const { section } = useParams();
-  const { token } = useAuth();
-  const isLoggedIn = !!token;
+  const { token, sessionVerified } = useAuth();
+  const isLoggedIn = !!token && !!sessionVerified;
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -104,6 +104,16 @@ const ProfilePage = () => {
   };
 
   const activeItem = NAV_ITEMS.find(i => i.key === activeKey) || NAV_ITEMS[0];
+
+  // Protected sections — redirect to login if not authenticated
+  const PROTECTED_SECTIONS = ['profile', 'invoices', 'refer'];
+  if (!isLoggedIn && PROTECTED_SECTIONS.includes(activeKey)) {
+    return <Navigate to="/" replace />;
+  }
+
+  // Public sections — visible to all, protected sections need login
+  const PUBLIC_SECTIONS = ['about', 'privacy', 'refund', 'terms', 'platform', 'pricing'];
+  const PROTECTED_SECTIONS_NAV = ['profile', 'invoices', 'refer'];
 
   return (
     <div className="min-h-screen bg-[#f7f9fc]">

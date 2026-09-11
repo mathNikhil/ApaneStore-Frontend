@@ -2,6 +2,86 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { storeAPI } from '../../services/api';
 
+
+const EmbedCodeCard = ({ storeUrl }) => {
+    const [open, setOpen] = React.useState(false);
+    const [copied, setCopied] = React.useState(false);
+
+    const embedCode = `<iframe
+  src="https://${storeUrl}"
+  style="width:100%;height:100vh;border:none;"
+  title="My Store">
+</iframe>`;
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(embedCode);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+
+    return (
+        <div className="bg-white rounded-2xl border border-[#e0e3e6] p-5 text-left mb-6">
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[#006d2f]">code</span>
+                    <div>
+                        <p className="font-semibold text-sm text-[#191c1e]">Embed on your website</p>
+                        <p className="text-xs text-[#556067]">Add your store to any existing website</p>
+                    </div>
+                </div>
+                <button
+                    onClick={() => setOpen(!open)}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[#006d2f] text-[#006d2f] text-xs font-semibold hover:bg-[#006d2f]/10 transition-colors"
+                >
+                    <span className="material-symbols-outlined text-sm">{open ? 'expand_less' : 'expand_more'}</span>
+                    {open ? 'Hide' : 'Get Code'}
+                </button>
+            </div>
+
+            {open && (
+                <div className="mt-4">
+                    <p className="text-xs text-[#556067] mb-3">
+                        Paste this code into your website's catalog or shop page. Works on WordPress, Wix, Shopify, Webflow, and any custom HTML site.
+                    </p>
+
+                    {/* Step by step */}
+                    <div className="space-y-2 mb-4">
+                        {[
+                            { n: '1', text: 'Copy the embed code below' },
+                            { n: '2', text: 'Open your website editor (WordPress, Wix, etc.)' },
+                            { n: '3', text: 'Create a new page called "Shop" or "Catalog"' },
+                            { n: '4', text: 'Add a Custom HTML block and paste the code' },
+                            { n: '5', text: 'Publish — your store is now live on your website!' },
+                        ].map(s => (
+                            <div key={s.n} className="flex items-start gap-2">
+                                <span className="w-5 h-5 rounded-full bg-[#006d2f] text-white text-xs flex items-center justify-center flex-shrink-0 font-bold">{s.n}</span>
+                                <p className="text-xs text-[#556067]">{s.text}</p>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Code block */}
+                    <div className="bg-[#191c1e] rounded-xl p-4 relative">
+                        <pre className="text-xs text-[#25D366] overflow-x-auto whitespace-pre-wrap break-all">{embedCode}</pre>
+                        <button
+                            onClick={handleCopy}
+                            className="absolute top-3 right-3 flex items-center gap-1 px-2 py-1 rounded-lg bg-white/10 text-white text-xs hover:bg-white/20 transition-colors"
+                        >
+                            <span className="material-symbols-outlined text-sm">{copied ? 'check' : 'content_copy'}</span>
+                            {copied ? 'Copied!' : 'Copy'}
+                        </button>
+                    </div>
+
+                    <p className="text-[10px] text-[#8e9eab] mt-2">
+                        ✅ Works on: WordPress · Wix · Shopify · Webflow · Custom HTML<br/>
+                        ⚠️ Some free Squarespace plans may block iFrame embedding
+                    </p>
+                </div>
+            )}
+        </div>
+    );
+};
+
 const PublishCongratulations = () => {
     const [searchParams] = useSearchParams();
     const storeId = searchParams.get('storeId');
@@ -81,6 +161,9 @@ const PublishCongratulations = () => {
                         </div>
                     </div>
                 </div>
+
+                {/* Embed Code Section */}
+                <EmbedCodeCard storeUrl={storeUrl} />
 
                 <div className="space-y-3 mb-6 text-left">
                     {[

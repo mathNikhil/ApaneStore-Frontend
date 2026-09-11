@@ -7,7 +7,7 @@ import { useAuth } from '../../Context/AuthContext';
 // from localStorage) before deciding, so a real logged-in tenant doesn't get
 // bounced on a hard refresh.
 const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, sessionVerified } = useAuth();
 
   if (loading) {
     return (
@@ -17,7 +17,8 @@ const ProtectedRoute = ({ children }) => {
     );
   }
 
-  if (!isAuthenticated) {
+  // Must have valid token AND have entered mobile number in this session
+  if (!isAuthenticated || !sessionVerified) {
     return <Navigate to="/" replace />;
   }
 

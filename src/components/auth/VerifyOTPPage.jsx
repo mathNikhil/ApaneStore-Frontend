@@ -9,7 +9,7 @@ import { useAuth } from '../../Context/AuthContext';
 const VerifyOTPPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { loginWithOTP, sendOTP } = useAuth();
+  const { loginWithOTP, sendOTP, markSessionVerified } = useAuth();
   const mobile = location.state?.mobile || '9876543210';
   // Backend has no real SMS gateway wired up yet — it returns the OTP directly
   // in dev mode so testing isn't blocked. Shown as a visible hint only then.

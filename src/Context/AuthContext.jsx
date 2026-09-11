@@ -26,9 +26,18 @@ export const AuthProvider = ({ children }) => {
     // Check token expiry — 12 hours on same device, 7 days max
     const getValidToken = () => {
         const token = localStorage.getItem('token');
-        const loginTime = localStorage.getItem('loginTime');
+        let loginTime = localStorage.getItem('loginTime');
         const savedFingerprint = localStorage.getItem('deviceFingerprint');
-        if (!token || !loginTime) return null;
+        if (!token) return null;
+        // If loginTime missing (old session before fix) — set it now so session continues
+        if (!loginTime) {
+            loginTime = Date.now().toString();
+            localStorage.setItem('loginTime', loginTime);
+        }
+        // If fingerprint missing (old session) — set it now
+        if (!savedFingerprint) {
+            localStorage.setItem('deviceFingerprint', getDeviceFingerprint());
+        }
 
         // Check 7-day hard expiry
         const sevenDays = 7 * 24 * 60 * 60 * 1000;
@@ -66,6 +75,11 @@ export const AuthProvider = ({ children }) => {
     };
     const [token, setToken] = useState(getValidToken());
     const [loading, setLoading] = useState(true);
+    // sessionVerified: true only after tenant enters mobile in current session
+    // Uses sessionStorage so it clears when browser/tab closes
+    const [sessionVerified, setSessionVerified] = useState(
+        !!sessionStorage.getItem('sessionVerified')
+    );
 
     useEffect(() => {
         const storedUser = localStorage.getItem('user');
@@ -186,6 +200,11 @@ export const AuthProvider = ({ children }) => {
         register,
         logout,
         isAuthenticated: !!token && (!!user || !!localStorage.getItem('user')),
+        sessionVerified,
+        markSessionVerified: () => {
+            sessionStorage.setItem('sessionVerified', '1');
+            setSessionVerified(true);
+        },
     };
 
     return (
