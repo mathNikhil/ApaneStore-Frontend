@@ -146,6 +146,15 @@ const Step2_ProductConfig = () => {
   const [newCategoryName, setNewCategoryName] = useState('');
   const [showQuickPreview, setShowQuickPreview] = useState(false);
 
+  // Close info panels when clicking anywhere outside
+  React.useEffect(() => {
+    const closeInfoPanels = () => {
+      document.querySelectorAll('[id^="info-"]').forEach(p => p.classList.add('hidden'));
+    };
+    document.addEventListener('click', closeInfoPanels);
+    return () => document.removeEventListener('click', closeInfoPanels);
+  }, []);
+
   // ✅ Collapse/expand state — categories/products/variations default
   // collapsed so a tenant with a large, already-configured store can
   // navigate without scrolling through everything at once. Newly-added
@@ -1314,7 +1323,12 @@ const Step2_ProductConfig = () => {
                                     e.stopPropagation();
                                     const key = `info-${product.id}`;
                                     const el = document.getElementById(key);
-                                    if (el) el.classList.toggle('hidden');
+                                    if (el) {
+                                      const isHidden = el.classList.contains('hidden');
+                                      // Close all other open panels first
+                                      document.querySelectorAll('[id^="info-"]').forEach(p => p.classList.add('hidden'));
+                                      if (isHidden) el.classList.remove('hidden');
+                                    }
                                   }}
                                   className="p-1 rounded-full text-[#556067] hover:text-[#006d2f] hover:bg-[#25D366]/10 transition-colors"
                                   title="How to use this link"
@@ -1324,6 +1338,7 @@ const Step2_ProductConfig = () => {
                                 <div
                                   id={`info-${product.id}`}
                                   className="hidden absolute right-0 top-8 z-50 w-72 bg-white border border-[#bbcbb9] rounded-xl shadow-lg p-4 text-left"
+                                  onClick={(e) => e.stopPropagation()}
                                 >
                                   <div className="flex items-center gap-2 mb-3">
                                     <span className="material-symbols-outlined text-[#006d2f]">share</span>

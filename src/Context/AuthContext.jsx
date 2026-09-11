@@ -3,21 +3,65 @@ import { authAPI } from '../services/api';
 
 const AuthContext = createContext(null);
 
+// Generate a stable device fingerprint from browser characteristics
+const getDeviceFingerprint = () => {
+    const raw = [
+        navigator.userAgent,
+        screen.width + 'x' + screen.height,
+        Intl.DateTimeFormat().resolvedOptions().timeZone,
+        navigator.language,
+    ].join('|');
+    // Simple hash
+    let hash = 0;
+    for (let i = 0; i < raw.length; i++) {
+        hash = ((hash << 5) - hash) + raw.charCodeAt(i);
+        hash |= 0;
+    }
+    return String(Math.abs(hash));
+};
+
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
-    // Check token expiry (7 days)
+
+    // Check token expiry — 12 hours on same device, 7 days max
     const getValidToken = () => {
         const token = localStorage.getItem('token');
         const loginTime = localStorage.getItem('loginTime');
+        const savedFingerprint = localStorage.getItem('deviceFingerprint');
         if (!token || !loginTime) return null;
+
+        // Check 7-day hard expiry
         const sevenDays = 7 * 24 * 60 * 60 * 1000;
         if (Date.now() - parseInt(loginTime) > sevenDays) {
             localStorage.removeItem('token');
             localStorage.removeItem('loginTime');
             localStorage.removeItem('user');
-            localStorage.removeItem('loginTime');
+            localStorage.removeItem('deviceFingerprint');
             return null;
         }
+
+        // Check 12-hour session on same device
+        const twelveHours = 12 * 60 * 60 * 1000;
+        const currentFingerprint = getDeviceFingerprint();
+        if (savedFingerprint && savedFingerprint !== currentFingerprint) {
+            // Different device — clear session, force new OTP
+            localStorage.removeItem('token');
+            localStorage.removeItem('loginTime');
+            localStorage.removeItem('user');
+            localStorage.removeItem('deviceFingerprint');
+            console.log('🔐 Device changed — session cleared');
+            return null;
+        }
+        if (Date.now() - parseInt(loginTime) > twelveHours) {
+            // Same device but 12 hours passed — clear session
+            localStorage.removeItem('token');
+            localStorage.removeItem('loginTime');
+            localStorage.removeItem('user');
+            localStorage.removeItem('deviceFingerprint');
+            console.log('🔐 12-hour session expired');
+            return null;
+        }
+
         return token;
     };
     const [token, setToken] = useState(getValidToken());
@@ -114,6 +158,8 @@ export const AuthProvider = ({ children }) => {
             setToken(null);
             localStorage.removeItem('token');
             localStorage.removeItem('user');
+            localStorage.removeItem('loginTime');
+            localStorage.removeItem('deviceFingerprint');
             localStorage.removeItem('aapnaestore_store_id');
             ['brandData', 'productData', 'cartData', 'paymentData', 'addressData', 'orderData', 'profileData']
                 .forEach(key => localStorage.removeItem(`aapnaestore_builder_${key}`));
