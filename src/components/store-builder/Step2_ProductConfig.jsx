@@ -1394,18 +1394,47 @@ const Step2_ProductConfig = () => {
                                   </div>
                                 ))}
                                 {product.images && product.images.length < 20 && (
-                                  <div
-                                    className="aspect-square rounded bg-[#f2f4f7] border-2 border-dashed border-[#bbcbb9] flex items-center justify-center text-[#556067] hover:text-[#006d2f] hover:border-[#006d2f] cursor-pointer transition-colors relative"
-                                    onClick={() => {
-                                      const input = document.getElementById(`image-upload-${product.id}`);
-                                      if (input) input.click();
-                                    }}
-                                  >
-                                    {isUploading ? (
-                                      <span className="material-symbols-outlined text-base animate-spin">progress_activity</span>
-                                    ) : (
-                                      <span className="material-symbols-outlined text-base">add_a_photo</span>
-                                    )}
+                                  <div className="relative aspect-square">
+                                    <div
+                                      className="w-full h-full rounded bg-[#f2f4f7] border-2 border-dashed border-[#bbcbb9] flex items-center justify-center text-[#556067] hover:text-[#006d2f] hover:border-[#006d2f] cursor-pointer transition-colors"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const menu = document.getElementById(`upload-menu-${product.id}`);
+                                        if (menu) menu.classList.toggle('hidden');
+                                      }}
+                                    >
+                                      {isUploading ? (
+                                        <span className="material-symbols-outlined text-base animate-spin">progress_activity</span>
+                                      ) : (
+                                        <span className="material-symbols-outlined text-base">add_a_photo</span>
+                                      )}
+                                    </div>
+                                    <div
+                                      id={`upload-menu-${product.id}`}
+                                      className="hidden absolute bottom-full left-0 mb-1 z-50 bg-white rounded-lg shadow-lg border border-[#e0e3e6] overflow-hidden w-32"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <button
+                                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-[#191c1e] hover:bg-[#f2f4f7] transition-colors"
+                                        onClick={() => {
+                                          document.getElementById(`image-upload-${product.id}`)?.click();
+                                          document.getElementById(`upload-menu-${product.id}`)?.classList.add('hidden');
+                                        }}
+                                      >
+                                        <span className="material-symbols-outlined text-sm">folder_open</span>
+                                        Browse Files
+                                      </button>
+                                      <button
+                                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-[#191c1e] hover:bg-[#f2f4f7] transition-colors border-t border-[#e0e3e6]"
+                                        onClick={() => {
+                                          document.getElementById(`camera-upload-${product.id}`)?.click();
+                                          document.getElementById(`upload-menu-${product.id}`)?.classList.add('hidden');
+                                        }}
+                                      >
+                                        <span className="material-symbols-outlined text-sm">photo_camera</span>
+                                        Take Photo
+                                      </button>
+                                    </div>
                                   </div>
                                 )}
                                 <input
@@ -1416,6 +1445,15 @@ const Step2_ProductConfig = () => {
                                   onChange={(e) => handleImageUpload(category.id, product.id, e)}
                                   className="hidden"
                                 />
+                                <input
+                                  id={`camera-upload-${product.id}`}
+                                  type="file"
+                                  accept="image/*"
+                                  capture="environment"
+                                  onChange={(e) => handleImageUpload(category.id, product.id, e)}
+                                  className="hidden"
+                                />
+
                               </div>
                               <div className="mt-1">
                                 <p className="text-[10px] text-gray-400">
