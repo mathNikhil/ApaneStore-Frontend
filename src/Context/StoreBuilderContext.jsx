@@ -95,6 +95,7 @@ export const StoreBuilderProvider = ({ children }) => {
         taxLabel: 'GST',
         showGSTBreakdownCart: true,
         showGSTBreakdownCheckout: true,
+        gstNumber: '',
     });
 
     // Step 4: Payment Data

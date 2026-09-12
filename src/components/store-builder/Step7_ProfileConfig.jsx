@@ -22,6 +22,8 @@ const Step7_ProfileConfig = () => {
 
   var [profile, setProfile] = useState({
     officeNumber: profileData.officeNumber || '',
+    storeAddress: profileData.storeAddress || '',
+    storeAddress: profileData.storeAddress || '',
     supportTime: profileData.supportTime || '9:00 AM - 6:00 PM',
     supportEmail: profileData.supportEmail || '',
     aboutUs: profileData.aboutUs || '',
@@ -36,6 +38,8 @@ const Step7_ProfileConfig = () => {
   useEffect(function() {
     setProfileData({
       officeNumber: profile.officeNumber,
+      storeAddress: profile.storeAddress,
+      storeAddress: profile.storeAddress,
       supportTime: profile.supportTime,
       supportEmail: profile.supportEmail,
       aboutUs: profile.aboutUs,
@@ -136,6 +140,30 @@ const Step7_ProfileConfig = () => {
             onChange={function(e) { handleChange('supportEmail', e.target.value); }} 
             placeholder="support@domain.com" 
           />
+        </div>
+
+        <div className="space-y-1 mb-4">
+          <label className="block text-label-md font-label-md text-[#3c4a3d] uppercase tracking-wider text-xs">Store Address</label>
+          <textarea
+            value={profile.storeAddress}
+            onChange={function(e) { handleChange('storeAddress', e.target.value); }}
+            className="w-full bg-[#f2f4f7] border border-[#bbcbb9] rounded-lg px-4 py-3 focus:ring-2 focus:ring-[#25D366] focus:border-[#006d2f] outline-none transition-all resize-none"
+            rows="2"
+            placeholder="Shop No. 5, MG Road, Mumbai - 400001"
+          />
+          <p className="text-xs text-[#556067]">Shown on invoice/bill for customer reference</p>
+        </div>
+
+        <div className="space-y-1 mb-4">
+          <label className="block text-label-md font-label-md text-[#3c4a3d] uppercase tracking-wider text-xs">Store Address</label>
+          <textarea
+            value={profile.storeAddress}
+            onChange={function(e) { handleChange('storeAddress', e.target.value); }}
+            className="w-full bg-[#f2f4f7] border border-[#bbcbb9] rounded-lg px-4 py-3 focus:ring-2 focus:ring-[#25D366] focus:border-[#006d2f] outline-none transition-all resize-none"
+            rows="2"
+            placeholder="Shop No. 5, MG Road, Mumbai - 400001"
+          />
+          <p className="text-xs text-[#556067]">Shown on invoice/bill for customer reference</p>
         </div>
 
         <div className="space-y-1">

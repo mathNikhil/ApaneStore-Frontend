@@ -20,6 +20,7 @@ const Step3_CartConfig = () => {
     taxLabel: cartData.taxLabel || 'GST',
     showGSTBreakdownCart: cartData.showGSTBreakdownCart !== undefined ? cartData.showGSTBreakdownCart : true,
     showGSTBreakdownCheckout: cartData.showGSTBreakdownCheckout !== undefined ? cartData.showGSTBreakdownCheckout : true,
+    gstNumber: cartData.gstNumber || '',
   });
 
   // Save to context on every change
@@ -74,6 +75,17 @@ const Step3_CartConfig = () => {
           <Input type="text" value={settings.taxLabel} onChange={(e) => setSettings(prev => ({ ...prev, taxLabel: e.target.value }))} />
         </div>
 
+        <div className="space-y-1 mb-4">
+          <label className="font-label-md text-[#3c4a3d] ml-1 text-xs uppercase tracking-wider">GSTIN / GST Number</label>
+          <Input
+            type="text"
+            placeholder="e.g. 22AAAAA0000A1Z5"
+            value={settings.gstNumber}
+            onChange={(e) => setSettings(prev => ({ ...prev, gstNumber: e.target.value.toUpperCase() }))}
+            maxLength={15}
+          />
+          <p className="text-xs text-[#556067] ml-1">Shown on cart and order pages to build customer trust</p>
+        </div>
         <Toggle label="Show GST Breakdown on Cart Page" checked={settings.showGSTBreakdownCart} onChange={() => handleToggle('showGSTBreakdownCart')} className="mb-3" />
         <Toggle label="Show GST Breakdown on Checkout Page" checked={settings.showGSTBreakdownCheckout} onChange={() => handleToggle('showGSTBreakdownCheckout')} />
       </Card>
