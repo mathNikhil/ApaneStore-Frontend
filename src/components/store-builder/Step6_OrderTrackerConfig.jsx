@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useStoreBuilder } from '../../Context/StoreBuilderContext';
 import StoreBuilderLayout from './StoreBuilderLayout';
+import Input from '../Common/Input';
 import Card from '../Common/Card';
 import Toggle from '../Common/Toggle';
 import Slider from '../Common/Slider';
@@ -16,6 +17,7 @@ const Step6_OrderTrackerConfig = () => {
     sendCancelEmail: orderData.sendCancelEmail !== undefined ? orderData.sendCancelEmail : true,
     showStatusTimeline: orderData.showStatusTimeline !== undefined ? orderData.showStatusTimeline : true,
     showEstimatedDelivery: orderData.showEstimatedDelivery !== undefined ? orderData.showEstimatedDelivery : true,
+    ordersTabName: orderData.ordersTabName || 'Orders',
   });
 
   // Save to context on every change
@@ -41,6 +43,23 @@ const Step6_OrderTrackerConfig = () => {
 
   return (
     <StoreBuilderLayout currentStep={6} totalSteps={8} title="Order Configuration" subtitle="Step 6 of 8">
+      <Card>
+        <div className="flex items-center gap-2 mb-4">
+          <span className="material-symbols-outlined text-[#006d2f] filled">tab</span>
+          <h2 className="font-label-md text-label-md text-[#556067] uppercase tracking-wider text-xs">Orders Tab Name</h2>
+        </div>
+        <div className="space-y-1 mb-2">
+          <Input
+            type="text"
+            placeholder="e.g. Orders, Bookings, Appointments, History"
+            value={settings.ordersTabName}
+            onChange={(e) => setSettings(prev => ({ ...prev, ordersTabName: e.target.value }))}
+            maxLength={20}
+          />
+          <p className="text-xs text-[#556067] ml-1">This label shows on the bottom navigation Orders tab. Default is "Orders".</p>
+        </div>
+      </Card>
+
       {/* Order Status Flow - always on top */}
       <Card className="mb-6">
         <div className="flex items-center gap-2 mb-4">

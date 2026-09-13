@@ -128,6 +128,8 @@ export const usePreviewData = (builderData, storeId, customerToken) => {
       showDeliveryMessage: true,
       enableGST: true,
       gstRate: 5,
+      tabName: 'Cart',
+      ordersTabName: 'Orders',
       taxLabel: 'GST',
       showGSTBreakdownCart: true,
       showGSTBreakdownCheckout: true,
@@ -271,6 +273,8 @@ export const usePreviewData = (builderData, storeId, customerToken) => {
           taxLabel: builderData.taxLabel || prev.cart.taxLabel,
           showGSTBreakdownCart: builderData.showGSTBreakdownCart ?? prev.cart.showGSTBreakdownCart,
           showGSTBreakdownCheckout: builderData.showGSTBreakdownCheckout ?? prev.cart.showGSTBreakdownCheckout,
+          tabName: builderData.tabName || prev.cart.tabName,
+          ordersTabName: builderData.ordersTabName || prev.cart.ordersTabName,
         },
         // ============================================
         // STEP 7: PROFILE DATA (About Us / Support Details)

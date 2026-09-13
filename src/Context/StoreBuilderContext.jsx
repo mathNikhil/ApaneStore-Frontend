@@ -92,6 +92,7 @@ export const StoreBuilderProvider = ({ children }) => {
         showDeliveryMessage: true,
         enableGST: true,
         gstRate: 0,
+        tabName: 'Cart',
         taxLabel: 'GST',
         showGSTBreakdownCart: true,
         showGSTBreakdownCheckout: true,

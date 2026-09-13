@@ -21,6 +21,7 @@ const Step3_CartConfig = () => {
     showGSTBreakdownCart: cartData.showGSTBreakdownCart !== undefined ? cartData.showGSTBreakdownCart : true,
     showGSTBreakdownCheckout: cartData.showGSTBreakdownCheckout !== undefined ? cartData.showGSTBreakdownCheckout : true,
     gstNumber: cartData.gstNumber || '',
+    tabName: cartData.tabName || 'Cart',
   });
 
   // Save to context on every change
@@ -39,6 +40,23 @@ const Step3_CartConfig = () => {
 
   return (
     <StoreBuilderLayout currentStep={3} totalSteps={8} title="Cart Configuration" subtitle="Step 3 of 8">
+      <Card>
+        <div className="flex items-center gap-2 mb-4">
+          <span className="material-symbols-outlined text-[#006d2f] filled">tab</span>
+          <h2 className="font-label-md text-label-md text-[#556067] uppercase tracking-wider text-xs">Cart Tab Name</h2>
+        </div>
+        <div className="space-y-1 mb-2">
+          <Input
+            type="text"
+            placeholder="e.g. Cart, Booking, Reserve, Order"
+            value={settings.tabName}
+            onChange={(e) => setSettings(prev => ({ ...prev, tabName: e.target.value }))}
+            maxLength={20}
+          />
+          <p className="text-xs text-[#556067] ml-1">This label shows on the bottom navigation tab. Default is "Cart".</p>
+        </div>
+      </Card>
+
       <Card className="mb-6">
         <div className="flex items-center gap-2 mb-4">
           <span className="material-symbols-outlined text-[#006d2f] filled">local_shipping</span>

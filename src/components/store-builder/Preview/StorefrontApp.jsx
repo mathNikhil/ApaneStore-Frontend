@@ -143,6 +143,8 @@ const StorefrontApp = ({ builderData, storeId, device = 'desktop', className = '
     taxLabel: builderData.cart.taxLabel,
     showGSTBreakdownCart: builderData.cart.showGSTBreakdownCart,
     showGSTBreakdownCheckout: builderData.cart.showGSTBreakdownCheckout,
+    tabName: builderData.cart.tabName || 'Cart',
+    ordersTabName: builderData.order.ordersTabName || 'Orders',
 
     codEnabled: builderData.payment.codEnabled,
     upiEnabled: builderData.payment.upiEnabled,
@@ -292,6 +294,9 @@ const StorefrontApp = ({ builderData, storeId, device = 'desktop', className = '
             onChange={setActiveTab}
             brandColors={storeData.brand?.colors || {}}
             brandFonts={storeData.brand?.fonts || { heading: 'Inter', body: 'Inter' }}
+            cartTabName={storeData.cart?.tabName || 'Cart'}
+            ordersTabName={storeData.cart?.ordersTabName || 'Orders'}
+            device={device}
           />
         </div>
       </DeviceFrameContext.Provider>

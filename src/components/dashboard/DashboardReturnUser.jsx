@@ -484,7 +484,7 @@ const DashboardReturnUser = ({ stores = [], subscriptions = {}, onStoreUpdate })
                                                                 { step: 3, label: 'Cart', icon: 'shopping_cart' },
                                                                 { step: 4, label: 'Payment', icon: 'payments' },
                                                                 { step: 5, label: 'Delivery', icon: 'local_shipping' },
-                                                                { step: 6, label: 'Customers', icon: 'people' },
+                                                                { step: 6, label: 'Orders', icon: 'receipt_long' },
                                                                 { step: 7, label: 'Profile', icon: 'store' },
                                                                 { step: 8, label: 'Returns', icon: 'assignment_return' },
                                                             ].map(({ step, label, icon }) => (
