@@ -41,26 +41,26 @@ const ImageGuidelineBadge = ({ size, format, maxSize, ratio }) => (
 
 const BRAND_THEMES = [
   { name: 'Custom', emoji: '🎨' },
-  { name: 'Forest', emoji: '🌿', colors: { primary: '#25D366', secondary: '#E0E3E6', background: '#FFFFFF', button: '#25D366', buttonLabel: '#005523', fontHeader: '#191C1E', fontBody: '#556067' } },
-  { name: 'Ocean', emoji: '🌊', colors: { primary: '#0077B6', secondary: '#CAF0F8', background: '#F0F8FF', button: '#0077B6', buttonLabel: '#FFFFFF', fontHeader: '#03045E', fontBody: '#0096C7' } },
-  { name: 'Sunset', emoji: '🌅', colors: { primary: '#FF6B35', secondary: '#FFE8DF', background: '#FFF8F5', button: '#FF6B35', buttonLabel: '#FFFFFF', fontHeader: '#2D1A0E', fontBody: '#7A3B1E' } },
+  { name: 'Forest', emoji: '🌿', colors: { primary: '#25D366', secondary: '#A8ADB3', background: '#FFFFFF', button: '#25D366', buttonLabel: '#005523', fontHeader: '#191C1E', fontBody: '#556067' } },
+  { name: 'Ocean', emoji: '🌊', colors: { primary: '#0077B6', secondary: '#6DD5EA', background: '#F0F8FF', button: '#0077B6', buttonLabel: '#FFFFFF', fontHeader: '#03045E', fontBody: '#0096C7' } },
+  { name: 'Sunset', emoji: '🌅', colors: { primary: '#FF6B35', secondary: '#FFB899', background: '#FFF8F5', button: '#FF6B35', buttonLabel: '#FFFFFF', fontHeader: '#2D1A0E', fontBody: '#7A3B1E' } },
   { name: 'Midnight', emoji: '🌙', colors: { primary: '#6C63FF', secondary: '#2D2B55', background: '#0F0F1A', button: '#6C63FF', buttonLabel: '#FFFFFF', fontHeader: '#FFFFFF', fontBody: '#B0AAFF' } },
-  { name: 'Rose', emoji: '🌸', colors: { primary: '#E91E8C', secondary: '#FCE4F3', background: '#FFF5F9', button: '#E91E8C', buttonLabel: '#FFFFFF', fontHeader: '#4A0028', fontBody: '#9C2666' } },
-  { name: 'Earth', emoji: '🪵', colors: { primary: '#8B4513', secondary: '#E8D5C4', background: '#FAF7F2', button: '#8B4513', buttonLabel: '#FFFFFF', fontHeader: '#2C1A0E', fontBody: '#6B4226' } },
-  { name: 'Royal', emoji: '👑', colors: { primary: '#7B2FBE', secondary: '#EDE0FF', background: '#FAF7FF', button: '#7B2FBE', buttonLabel: '#FFFFFF', fontHeader: '#2D0063', fontBody: '#6B21A8' } },
-  { name: 'Mint', emoji: '🍃', colors: { primary: '#00B894', secondary: '#D4F5EE', background: '#F5FFFD', button: '#00B894', buttonLabel: '#003D30', fontHeader: '#003D30', fontBody: '#2D7A6A' } },
-  { name: 'Candy', emoji: '🍬', colors: { primary: '#FF4D8D', secondary: '#FFD6E7', background: '#FFF0F6', button: '#FF4D8D', buttonLabel: '#FFFFFF', fontHeader: '#3D0020', fontBody: '#A3004E' } },
-  { name: 'Slate', emoji: '🩶', colors: { primary: '#475569', secondary: '#E2E8F0', background: '#F8FAFC', button: '#475569', buttonLabel: '#FFFFFF', fontHeader: '#0F172A', fontBody: '#64748B' } },
-  { name: 'Saffron', emoji: '🟡', colors: { primary: '#F59E0B', secondary: '#FEF3C7', background: '#FFFBEB', button: '#F59E0B', buttonLabel: '#451A03', fontHeader: '#1C1400', fontBody: '#92400E' } },
-  { name: 'Arctic', emoji: '❄️', colors: { primary: '#38BDF8', secondary: '#E0F2FE', background: '#F0F9FF', button: '#38BDF8', buttonLabel: '#0C2A40', fontHeader: '#0C2A40', fontBody: '#0369A1' } },
-  { name: 'Olive', emoji: '🫒', colors: { primary: '#65A30D', secondary: '#ECFCCB', background: '#F7FEE7', button: '#65A30D', buttonLabel: '#1A2E05', fontHeader: '#1A2E05', fontBody: '#3F6212' } },
-  { name: 'Crimson', emoji: '🔴', colors: { primary: '#DC143C', secondary: '#FFE4E8', background: '#FFF8F9', button: '#DC143C', buttonLabel: '#FFFFFF', fontHeader: '#3D0010', fontBody: '#9B0E2A' } },
-  { name: 'Dusk', emoji: '🌆', colors: { primary: '#C084FC', secondary: '#F3E8FF', background: '#FAF5FF', button: '#A855F7', buttonLabel: '#FFFFFF', fontHeader: '#3B0764', fontBody: '#7C3AED' } },
+  { name: 'Rose', emoji: '🌸', colors: { primary: '#E91E8C', secondary: '#F5A8D8', background: '#FFF5F9', button: '#E91E8C', buttonLabel: '#FFFFFF', fontHeader: '#4A0028', fontBody: '#9C2666' } },
+  { name: 'Earth', emoji: '🪵', colors: { primary: '#8B4513', secondary: '#C9A882', background: '#FAF7F2', button: '#8B4513', buttonLabel: '#FFFFFF', fontHeader: '#2C1A0E', fontBody: '#6B4226' } },
+  { name: 'Royal', emoji: '👑', colors: { primary: '#7B2FBE', secondary: '#C9A8FF', background: '#FAF7FF', button: '#7B2FBE', buttonLabel: '#FFFFFF', fontHeader: '#2D0063', fontBody: '#6B21A8' } },
+  { name: 'Mint', emoji: '🍃', colors: { primary: '#00B894', secondary: '#7ADEC8', background: '#F5FFFD', button: '#00B894', buttonLabel: '#003D30', fontHeader: '#003D30', fontBody: '#2D7A6A' } },
+  { name: 'Candy', emoji: '🍬', colors: { primary: '#FF4D8D', secondary: '#FF8BBB', background: '#FFF0F6', button: '#FF4D8D', buttonLabel: '#FFFFFF', fontHeader: '#3D0020', fontBody: '#A3004E' } },
+  { name: 'Slate', emoji: '🩶', colors: { primary: '#475569', secondary: '#9AAFC4', background: '#F8FAFC', button: '#475569', buttonLabel: '#FFFFFF', fontHeader: '#0F172A', fontBody: '#64748B' } },
+  { name: 'Saffron', emoji: '🟡', colors: { primary: '#F59E0B', secondary: '#FDD87A', background: '#FFFBEB', button: '#F59E0B', buttonLabel: '#451A03', fontHeader: '#1C1400', fontBody: '#92400E' } },
+  { name: 'Arctic', emoji: '❄️', colors: { primary: '#38BDF8', secondary: '#7DD3FC', background: '#F0F9FF', button: '#38BDF8', buttonLabel: '#0C2A40', fontHeader: '#0C2A40', fontBody: '#0369A1' } },
+  { name: 'Olive', emoji: '🫒', colors: { primary: '#65A30D', secondary: '#BEF264', background: '#F7FEE7', button: '#65A30D', buttonLabel: '#1A2E05', fontHeader: '#1A2E05', fontBody: '#3F6212' } },
+  { name: 'Crimson', emoji: '🔴', colors: { primary: '#DC143C', secondary: '#FF9AA8', background: '#FFF8F9', button: '#DC143C', buttonLabel: '#FFFFFF', fontHeader: '#3D0010', fontBody: '#9B0E2A' } },
+  { name: 'Dusk', emoji: '🌆', colors: { primary: '#C084FC', secondary: '#D4AAFF', background: '#FAF5FF', button: '#A855F7', buttonLabel: '#FFFFFF', fontHeader: '#3B0764', fontBody: '#7C3AED' } },
 ];
 
 const DEFAULT_BRAND_COLORS = {
   primary: '#25D366',
-  secondary: '#E0E3E6',
+  secondary: '#A8ADB3',
   background: '#FFFFFF',
   button: '#25D366',
   buttonLabel: '#005523',
@@ -170,7 +170,7 @@ const Step1_BrandSetup = () => {
       // Only save server URL, not base64 preview
       logoUrl: logoPreview?.startsWith('data:') ? (brandData.logoUrl || null) : (logoPreview || null),
       brandColors: formData.colors,
-      headingFont: formData.typography.headingFont,
+      headingFont: formData.typography.bodyFont,
       bodyFont: formData.typography.bodyFont,
       baseFontSize: formData.typography.baseFontSize,
     }));
@@ -278,6 +278,17 @@ const Step1_BrandSetup = () => {
   ];
 
   const [customFonts, setCustomFonts] = useState([]);
+
+  // Load Google Fonts for preview in dropdown
+  React.useEffect(() => {
+    const fontQuery = freeFonts
+      .map(f => f.replace(/ /g, '+'))
+      .join('&family=');
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = `https://fonts.googleapis.com/css2?family=${fontQuery}&display=swap`;
+    document.head.appendChild(link);
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -389,7 +400,7 @@ const Step1_BrandSetup = () => {
     { key: 'background', label: 'Background', hint: 'Default background of every element' },
     { key: 'button', label: 'Button', hint: 'Call-to-action button fill' },
     { key: 'buttonLabel', label: 'Button Label', hint: 'Text on top of buttons' },
-    { key: 'fontHeader', label: 'Font Header', hint: 'All heading/title text' },
+    { key: 'fontHeader', label: 'Header Color', hint: 'All heading/title text' },
     { key: 'fontBody', label: 'Font Body', hint: 'All body/paragraph text' },
   ];
 

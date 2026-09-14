@@ -91,7 +91,7 @@ const StorefrontApp = ({ builderData, storeId, device = 'desktop', className = '
 
   // Load Google Fonts for heading and body fonts
   useEffect(() => {
-    const heading = builderData?.brand?.fonts?.heading || builderData?.headingFont || 'Inter';
+    const heading = builderData?.brand?.fonts?.body || builderData?.brand?.fonts?.heading || builderData?.bodyFont || 'Inter';
     const body = builderData?.brand?.fonts?.body || builderData?.bodyFont || 'Inter';
     console.log('🔤 Loading fonts:', heading, body);
     const fonts = [...new Set([heading, body])].map(f => f.replace(/ /g, '+') + ':wght@400;500;600;700').join('&family=');
@@ -111,7 +111,7 @@ const StorefrontApp = ({ builderData, storeId, device = 'desktop', className = '
     tagline: builderData.brand.tagline,
     logo: builderData.brand.logo,
     brandColors: builderData.brand.colors,
-    headingFont: builderData.brand.fonts.heading,
+    headingFont: builderData.brand.fonts.body || builderData.brand.fonts.heading,
     bodyFont: builderData.brand.fonts.body,
     baseFontSize: builderData.brand.baseFontSize,
 

@@ -394,7 +394,7 @@ export const StoreBuilderProvider = ({ children }) => {
                     fontBody: '#556067',
                 },
                 fonts: {
-                    heading: brandData.headingFont || 'Inter',
+                    heading: brandData.bodyFont || brandData.headingFont || 'Inter',
                     body: brandData.bodyFont || 'Inter',
                 },
                 baseFontSize: brandData.baseFontSize || '16px',
@@ -570,7 +570,7 @@ export const StoreBuilderProvider = ({ children }) => {
                             ...savedColors,
                             fontHeader: savedColors.fontHeader || savedColors.font || defaultColors.fontHeader,
                         },
-                        headingFont: config.brand.fonts?.heading || 'Inter',
+                        headingFont: config.brand.fonts?.body || config.brand.fonts?.heading || 'Inter',
                         bodyFont: config.brand.fonts?.body || 'Inter',
                         baseFontSize: config.brand.baseFontSize || '16px',
                     });

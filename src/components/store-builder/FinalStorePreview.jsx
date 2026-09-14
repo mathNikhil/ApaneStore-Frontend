@@ -49,7 +49,7 @@ const FinalStorePreview = () => {
                     font: '#191C1E',
                 },
                 fonts: {
-                    heading: brandData.headingFont || 'Inter',
+                    heading: brandData.bodyFont || brandData.headingFont || 'Inter',
                     body: brandData.bodyFont || 'Inter',
                 },
                 baseFontSize: brandData.baseFontSize || '16px',
