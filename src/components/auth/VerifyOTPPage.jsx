@@ -84,6 +84,7 @@ const VerifyOTPPage = () => {
       const tenantUser = result.data?.tenant;
       const name = tenantUser?.company_name || tenantUser?.business_name || '';
       const isFakeName = !name || /^User \d+$/.test(name);
+      markSessionVerified();
       if (isFakeName) {
         navigate('/onboarding');
       } else {

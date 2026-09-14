@@ -48,7 +48,26 @@ const ImageError = ({ error }) => {
 const Step2_ProductConfig = () => {
   const navigate = useNavigate();
   // ✅ FIX: Destructure `currentStoreId` instead of `storeId`!
-  const { productData, setProductData, currentStoreId, currentSubdomain, storeStatus, tenantId, brandData } = useStoreBuilder();
+  const { productData, setProductData, currentStoreId, currentSubdomain, storeStatus, tenantId, brandData, storeType } = useStoreBuilder();
+  const effectiveStoreType = storeType || 'product';
+
+  const [bookingSettings, setBookingSettings] = React.useState({
+    serviceType: productData.bookingSettings?.serviceType || 'inshop',
+    workingDays: productData.bookingSettings?.workingDays || ['Mon','Tue','Wed','Thu','Fri','Sat'],
+    workStart: productData.bookingSettings?.workStart || '10:00',
+    workEnd: productData.bookingSettings?.workEnd || '19:00',
+    breakStart: productData.bookingSettings?.breakStart || '',
+    breakEnd: productData.bookingSettings?.breakEnd || '',
+    gapBetween: productData.bookingSettings?.gapBetween || 15,
+    staffCount: productData.bookingSettings?.staffCount || 2,
+    advanceDays: productData.bookingSettings?.advanceDays || 7,
+  });
+
+  React.useEffect(() => {
+    if (effectiveStoreType === 'service') {
+      setProductData(prev => ({ ...prev, bookingSettings }));
+    }
+  }, [bookingSettings, effectiveStoreType]);
   
   // ✅ Track upload status per product/variation
   const [uploadingStates, setUploadingStates] = useState({});
@@ -831,7 +850,7 @@ const Step2_ProductConfig = () => {
     <StoreBuilderLayout 
       currentStep={2} 
       totalSteps={8} 
-      title="Product Listing" 
+      title={effectiveStoreType === "service" ? "Service Listing" : "Product Listing"} 
       subtitle="Step 2 of 8"
     >
       {/* Quick Preview Button */}
@@ -1012,6 +1031,81 @@ const Step2_ProductConfig = () => {
       })()}
 
       {/* Store-wide Settings - Two column layout */}
+
+      {/* ── Booking Settings — service stores only ── */}
+      {effectiveStoreType === 'service' && (
+        <Card className="mb-6">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="material-symbols-outlined text-[#006d2f]">calendar_month</span>
+            <h2 className="font-label-md text-label-md text-[#556067] uppercase tracking-wider text-xs">Booking Settings</h2>
+          </div>
+          <div className="mb-4">
+            <label className="font-label-md text-[#3c4a3d] text-xs uppercase tracking-wider mb-2 block">Service Type</label>
+            <div className="flex gap-3">
+              {['inshop','homevisit'].map(type => (
+                <button key={type} type="button"
+                  onClick={() => setBookingSettings(prev => ({...prev, serviceType: type}))}
+                  className={`flex-1 py-2 px-3 rounded-lg border-2 text-sm font-medium transition-all ${bookingSettings.serviceType === type ? 'border-[#006d2f] bg-[#f0faf4] text-[#006d2f]' : 'border-[#e0e3e6] text-[#556067]'}`}>
+                  {type === 'inshop' ? '🏪 In-shop' : '🚗 Home visit'}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="mb-4">
+            <label className="font-label-md text-[#3c4a3d] text-xs uppercase tracking-wider mb-2 block">Working Days</label>
+            <div className="flex gap-2 flex-wrap">
+              {['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(day => (
+                <button key={day} type="button"
+                  onClick={() => setBookingSettings(prev => ({...prev, workingDays: prev.workingDays.includes(day) ? prev.workingDays.filter(d => d !== day) : [...prev.workingDays, day]}))}
+                  className={`px-3 py-1.5 rounded-lg border-2 text-xs font-semibold transition-all ${bookingSettings.workingDays.includes(day) ? 'border-[#006d2f] bg-[#006d2f] text-white' : 'border-[#e0e3e6] text-[#556067]'}`}>
+                  {day}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="mb-4">
+            <label className="font-label-md text-[#3c4a3d] text-xs uppercase tracking-wider mb-2 block">Working Hours</label>
+            <div className="flex items-center gap-3">
+              <input type="time" value={bookingSettings.workStart} onChange={e => setBookingSettings(prev => ({...prev, workStart: e.target.value}))} className="border border-[#bbcbb9] rounded-lg px-3 py-2 text-sm flex-1" />
+              <span className="text-[#556067] text-sm">to</span>
+              <input type="time" value={bookingSettings.workEnd} onChange={e => setBookingSettings(prev => ({...prev, workEnd: e.target.value}))} className="border border-[#bbcbb9] rounded-lg px-3 py-2 text-sm flex-1" />
+            </div>
+          </div>
+          <div className="mb-4">
+            <label className="font-label-md text-[#3c4a3d] text-xs uppercase tracking-wider mb-2 block">Break Time (optional)</label>
+            <div className="flex items-center gap-3">
+              <input type="time" value={bookingSettings.breakStart} onChange={e => setBookingSettings(prev => ({...prev, breakStart: e.target.value}))} className="border border-[#bbcbb9] rounded-lg px-3 py-2 text-sm flex-1" />
+              <span className="text-[#556067] text-sm">to</span>
+              <input type="time" value={bookingSettings.breakEnd} onChange={e => setBookingSettings(prev => ({...prev, breakEnd: e.target.value}))} className="border border-[#bbcbb9] rounded-lg px-3 py-2 text-sm flex-1" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <div>
+              <label className="font-label-md text-[#3c4a3d] text-xs uppercase tracking-wider mb-1 block">Gap Between</label>
+              <div className="flex items-center gap-1">
+                <input type="number" min="0" max="60" value={bookingSettings.gapBetween} onChange={e => setBookingSettings(prev => ({...prev, gapBetween: Number(e.target.value)}))} className="border border-[#bbcbb9] rounded-lg px-2 py-2 text-sm w-full" />
+                <span className="text-xs text-[#556067]">min</span>
+              </div>
+            </div>
+            <div>
+              <label className="font-label-md text-[#3c4a3d] text-xs uppercase tracking-wider mb-1 block">Staff Count</label>
+              <input type="number" min="1" max="20" value={bookingSettings.staffCount} onChange={e => setBookingSettings(prev => ({...prev, staffCount: Number(e.target.value)}))} className="border border-[#bbcbb9] rounded-lg px-2 py-2 text-sm w-full" />
+            </div>
+          </div>
+          <div className="mb-2">
+            <label className="font-label-md text-[#3c4a3d] text-xs uppercase tracking-wider mb-1 block">Advance Booking</label>
+            <div className="flex items-center gap-2">
+              <input type="number" min="1" max="90" value={bookingSettings.advanceDays} onChange={e => setBookingSettings(prev => ({...prev, advanceDays: Number(e.target.value)}))} className="border border-[#bbcbb9] rounded-lg px-3 py-2 text-sm w-24" />
+              <span className="text-sm text-[#556067]">days in advance</span>
+            </div>
+          </div>
+          <div className="bg-[#f2f4f7] rounded-lg p-3 text-xs text-[#556067] mt-3">
+            <p className="font-semibold text-[#191c1e] mb-1">📅 Slot Preview</p>
+            <p>Working: {bookingSettings.workStart} – {bookingSettings.workEnd} • Gap: {bookingSettings.gapBetween}min • Staff: {bookingSettings.staffCount}</p>
+            {bookingSettings.breakStart && <p>Break: {bookingSettings.breakStart} – {bookingSettings.breakEnd}</p>}
+          </div>
+        </Card>
+      )}
       <Card className="mb-6">
         <div className="flex gap-4">
 
@@ -1291,11 +1385,11 @@ const Step2_ProductConfig = () => {
                             <Input
                               value={product.name}
                               onChange={(e) => setCategories(categories.map(cat => cat.id === category.id ? { ...cat, products: cat.products.map(p => p.id === product.id ? { ...p, name: e.target.value } : p) } : cat))}
-                              placeholder="Product Name"
+                              placeholder={effectiveStoreType === "service" ? "Service Name" : "Product Name"}
                               className="flex-1"
                             />
                           ) : (
-                            <span className="flex-1 font-medium text-[#191c1e] text-sm">{product.name || 'Untitled Product'}</span>
+                            <span className="flex-1 font-medium text-[#191c1e] text-sm">{product.name || (effectiveStoreType === 'service' ? 'Untitled Service' : 'Untitled Product')}</span>
                           )}
 
                           {/* Share link with info — only when collapsed and store is published */}
@@ -1471,7 +1565,7 @@ const Step2_ProductConfig = () => {
                             {/* Product Details */}
                             <div className="flex-1 space-y-2">
                               <div>
-                                <label className="font-label-md text-label-md text-[#3c4a3d] block uppercase tracking-wider text-xs">Product Description</label>
+                                <label className="font-label-md text-label-md text-[#3c4a3d] block uppercase tracking-wider text-xs">{effectiveStoreType === "service" ? "Service Description" : "Product Description"}</label>
                                 <textarea
                                   value={product.description}
                                   onChange={(e) => setCategories(categories.map(cat => cat.id === category.id ? { ...cat, products: cat.products.map(p => p.id === product.id ? { ...p, description: e.target.value } : p) } : cat))}
@@ -1499,7 +1593,7 @@ const Step2_ProductConfig = () => {
                               onClick={() => addVariation(category.id, product.id)}
                               className="text-[#006d2f] flex items-center gap-1 hover:bg-[#25D366]/10 px-2 py-1 rounded text-sm font-semibold"
                             >
-                              <span className="material-symbols-outlined text-base">add_circle</span> Add Variation/Color/Design
+                              <span className="material-symbols-outlined text-base">add_circle</span> {effectiveStoreType === "service" ? "Add Option" : "Add Variation/Color/Design"}
                             </button>
                           </div>
 
@@ -1623,8 +1717,8 @@ const Step2_ProductConfig = () => {
                                 {/* Sizes */}
                                 <div className="mt-2 pl-4">
                                   <div className="grid grid-cols-12 gap-2 items-center text-xs text-[#556067] uppercase font-semibold mb-1">
-                                    <div className="col-span-3">Size</div>
-                                    <div className="col-span-3">Unit</div>
+                                    <div className="col-span-3">{effectiveStoreType === "service" ? "Duration" : "Size"}</div>
+                                    <div className="col-span-3">{effectiveStoreType === "service" ? "Unit" : "Unit"}</div>
                                     <div className="col-span-5">Price</div>
                                     <div className="col-span-1"></div>
                                   </div>
@@ -1639,7 +1733,7 @@ const Step2_ProductConfig = () => {
                                         <Input
                                           className="col-span-3"
                                           value={size.size}
-                                          placeholder="e.g. 5"
+                                          placeholder={effectiveStoreType === "service" ? "e.g. 30" : "e.g. 5"}
                                           onChange={(e) => setCategories(categories.map(cat => {
                                             if (cat.id === category.id) {
                                               return {
@@ -1674,7 +1768,7 @@ const Step2_ProductConfig = () => {
                                         <Input
                                           className="col-span-3"
                                           value={size.unit}
-                                          placeholder="kg"
+                                          placeholder={effectiveStoreType === "service" ? "mins" : "kg"}
                                           onChange={(e) => setCategories(categories.map(cat => {
                                             if (cat.id === category.id) {
                                               return {
@@ -1735,7 +1829,7 @@ const Step2_ProductConfig = () => {
                                     onClick={() => addSize(category.id, product.id, variation.id)}
                                     className="flex items-center gap-1 text-[#006d2f] hover:bg-[#25D366]/10 px-3 py-1 rounded-lg mt-1 text-sm font-semibold"
                                   >
-                                    <span className="material-symbols-outlined text-base">add</span> Add Size
+                                    <span className="material-symbols-outlined text-base">add</span> {effectiveStoreType === "service" ? "Add Duration" : "Add Size"}
                                   </button>
                                 </div>
                                 </>
@@ -1752,7 +1846,7 @@ const Step2_ProductConfig = () => {
                     onClick={() => addProduct(category.id)}
                     className="w-full py-2 border-2 border-dashed border-[#bbcbb9] rounded-lg text-[#556067] hover:text-[#006d2f] hover:border-[#006d2f] transition-colors flex items-center justify-center gap-1"
                   >
-                    <span className="material-symbols-outlined text-base">add_circle</span> Add Product
+                    <span className="material-symbols-outlined text-base">add_circle</span> {effectiveStoreType === "service" ? "Add Service" : "Add Product"}
                   </button>
                 </div>
               </>

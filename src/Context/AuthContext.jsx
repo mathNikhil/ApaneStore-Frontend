@@ -77,9 +77,22 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     // sessionVerified: true only after tenant enters mobile in current session
     // Uses sessionStorage so it clears when browser/tab closes
-    const [sessionVerified, setSessionVerified] = useState(
-        !!sessionStorage.getItem('sessionVerified')
-    );
+    // Auto-verify session if valid 12-hour token exists on same device
+    const checkAutoVerify = () => {
+        if (sessionStorage.getItem('sessionVerified')) return true;
+        const token = localStorage.getItem('token');
+        const loginTime = localStorage.getItem('loginTime');
+        const fingerprint = localStorage.getItem('deviceFingerprint');
+        if (!token || !loginTime || !fingerprint) return false;
+        const twelveHours = 12 * 60 * 60 * 1000;
+        const currentFingerprint = getDeviceFingerprint();
+        if (fingerprint === currentFingerprint && Date.now() - parseInt(loginTime) < twelveHours) {
+            sessionStorage.setItem('sessionVerified', '1');
+            return true;
+        }
+        return false;
+    };
+    const [sessionVerified, setSessionVerified] = useState(checkAutoVerify);
 
     useEffect(() => {
         const storedUser = localStorage.getItem('user');
