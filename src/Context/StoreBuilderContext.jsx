@@ -52,6 +52,7 @@ export const StoreBuilderProvider = ({ children }) => {
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002';
 
     // Step 1: Brand Data
+    const [storeType, setStoreType] = useState(null);
     const [brandData, setBrandData] = useState({
         brandName: '',
         tagline: '',
@@ -399,6 +400,7 @@ export const StoreBuilderProvider = ({ children }) => {
                 baseFontSize: brandData.baseFontSize || '16px',
                 categories: productData.categories || [],
                 productBanner: productData.banner || {},
+                bookingSettings: productData.bookingSettings || {},
                 enableImageZoom: productData.enableImageZoom,
                 categoryImageShape: productData.categoryImageShape || 'circle',
                 categoryImageSize: productData.categoryImageSize || 'S',
@@ -412,6 +414,7 @@ export const StoreBuilderProvider = ({ children }) => {
                 returnSettings: returnData,
                 images: uploadedImages || {},
                 lastBuilderStep: currentStep,
+                storeType: storeType,
                 ...extraFields,
             };
 
@@ -518,6 +521,7 @@ export const StoreBuilderProvider = ({ children }) => {
                 
                 // ✅ Set store ID
                 setCurrentStoreId(storeId);
+                if (store.store_type) setStoreType(store.store_type);
                 setCurrentSubdomain(store.subdomain || null);
                 setStoreStatus(store.status || null);
                 setCurrentSubdomain(store.subdomain || null);
@@ -657,6 +661,8 @@ export const StoreBuilderProvider = ({ children }) => {
     // ✅ Value object
     const value = {
         // State
+        storeType,
+        setStoreType,
         brandData,
         productData,
         cartData,

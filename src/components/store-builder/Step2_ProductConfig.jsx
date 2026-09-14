@@ -64,10 +64,8 @@ const Step2_ProductConfig = () => {
   });
 
   React.useEffect(() => {
-    if (effectiveStoreType === 'service') {
-      setProductData(prev => ({ ...prev, bookingSettings }));
-    }
-  }, [bookingSettings, effectiveStoreType]);
+    setProductData(prev => ({ ...prev, bookingSettings }));
+  }, [bookingSettings]);
   
   // ✅ Track upload status per product/variation
   const [uploadingStates, setUploadingStates] = useState({});
@@ -1717,8 +1715,8 @@ const Step2_ProductConfig = () => {
                                 {/* Sizes */}
                                 <div className="mt-2 pl-4">
                                   <div className="grid grid-cols-12 gap-2 items-center text-xs text-[#556067] uppercase font-semibold mb-1">
-                                    <div className="col-span-3">{effectiveStoreType === "service" ? "Duration" : "Size"}</div>
-                                    <div className="col-span-3">{effectiveStoreType === "service" ? "Unit" : "Unit"}</div>
+                                    <div className="col-span-3">{effectiveStoreType === "service" ? "Name" : "Size"}</div>
+                                    <div className="col-span-3">{effectiveStoreType === "service" ? "Duration" : "Unit"}</div>
                                     <div className="col-span-5">Price</div>
                                     <div className="col-span-1"></div>
                                   </div>

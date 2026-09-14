@@ -85,7 +85,7 @@ const normalizeBrandColors = (saved) => {
 const Step1_BrandSetup = () => {
   const navigate = useNavigate();
   // ✅ FIX: Use `currentStoreId` and `tenantId` from context
-  const { brandData, setBrandData, currentStoreId, tenantId, saveStore } = useStoreBuilder();
+  const { brandData, setBrandData, currentStoreId, tenantId, saveStore, storeType, setStoreType } = useStoreBuilder();
   const [validationError, setValidationError] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
@@ -407,6 +407,8 @@ const Step1_BrandSetup = () => {
       onClose={handleClose}
       isUploading={isUploading}
     >
+
+
       {/* Brand Name */}
       <div className="space-y-4 mb-6">
         <label className="font-label-md text-label-md text-[#3c4a3d] uppercase tracking-wider text-xs">
