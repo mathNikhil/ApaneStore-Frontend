@@ -25,8 +25,12 @@ const getDeviceFingerprint = () => {
 const LoginPage = () => {
   const navigate = useNavigate();
   const { sendOTP, markSessionVerified } = useAuth();
+  const TEST_MOBILES = (import.meta.env.VITE_TEST_MOBILES || '').split(',').map(m => m.trim());
+  const TEST_PASSWORD = import.meta.env.VITE_TEST_PASSWORD || '';
 
   const [mobile, setMobile] = useState('');
+  const [testPassword, setTestPassword] = useState('');
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -41,6 +45,17 @@ const LoginPage = () => {
     setLoading(true);
 
     try {
+      // Test mobile — validate password then send OTP and auto-fill
+      if (TEST_MOBILES.includes(mobile)) {
+        if (!testPassword) { showError('Please enter your password'); setLoading(false); return; }
+        if (testPassword !== TEST_PASSWORD) { showError('Invalid password'); setLoading(false); return; }
+        // Send OTP then navigate with auto-fill
+        await sendOTP(mobile, 'login');
+        navigate('/verify-otp', { state: { mobile, devOtp: '201807' } });
+        setLoading(false);
+        return;
+      }
+
       // Check if same device + same mobile + within 12 hours → skip OTP
       const savedToken = localStorage.getItem('token');
       // Save mobile immediately so it persists for future checks
@@ -128,6 +143,19 @@ const LoginPage = () => {
               error={error}
               required
             />
+
+            {mobile.length === 10 && TEST_MOBILES.includes(mobile) && (
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-[#3c4a3d] uppercase tracking-wider">Password</label>
+                <input
+                  type="password"
+                  value={testPassword}
+                  onChange={e => setTestPassword(e.target.value)}
+                  placeholder="Enter password"
+                  className="w-full border border-[#bbcbb9] rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#006d2f]"
+                />
+              </div>
+            )}
 
             <button 
   type="submit" 

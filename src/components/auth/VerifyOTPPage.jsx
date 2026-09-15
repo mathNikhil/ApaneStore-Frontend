@@ -14,6 +14,7 @@ const VerifyOTPPage = () => {
   // Backend has no real SMS gateway wired up yet — it returns the OTP directly
   // in dev mode so testing isn't blocked. Shown as a visible hint only then.
   const [devOtp, setDevOtp] = useState(location.state?.devOtp || null);
+
   
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);

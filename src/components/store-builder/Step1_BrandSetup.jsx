@@ -310,6 +310,15 @@ const Step1_BrandSetup = () => {
   };
 
   const [selectedTheme, setSelectedTheme] = useState('Custom');
+  const [activeColorKey, setActiveColorKey] = useState(null);
+
+  const PRESET_SWATCHES = [
+    '#000000','#FFFFFF','#F44336','#E91E63','#9C27B0','#673AB7',
+    '#3F51B5','#2196F3','#03A9F4','#00BCD4','#009688','#4CAF50',
+    '#8BC34A','#CDDC39','#FFEB3B','#FFC107','#FF9800','#FF5722',
+    '#795548','#607D8B','#25D366','#005523','#191C1E','#556067',
+    '#F0F8FF','#FFF8F5','#FAF7F2','#F5FFFD','#FFF5F9','#FAF7FF',
+  ];
   const [themeDropdownOpen, setThemeDropdownOpen] = useState(false);
   const [headingFontOpen, setHeadingFontOpen] = useState(false);
   const [bodyFontOpen, setBodyFontOpen] = useState(false);
@@ -580,38 +589,53 @@ const Step1_BrandSetup = () => {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {colorOptions.map((color) => (
               <div key={color.key} className="flex flex-col items-center gap-1">
-                <div className="relative">
-                  <input
-                    type="color"
-                    value={formData.colors[color.key]}
-                    onChange={(e) => handleColorChange(color.key, e.target.value)}
-                    className="w-12 h-12 rounded-full border-2 border-white shadow-sm cursor-pointer hover:scale-105 transition-transform p-0"
-                    style={{ 
-                      backgroundColor: formData.colors[color.key],
-                      WebkitAppearance: 'none',
-                      border: 'none',
-                      outline: 'none',
-                    }}
-                    title={color.hint}
-                  />
-                  <style>{`
-                    input[type="color"]::-webkit-color-swatch-wrapper {
-                      padding: 0;
-                    }
-                    input[type="color"]::-webkit-color-swatch {
-                      border: 2px solid white;
-                      border-radius: 50%;
-                      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                    }
-                    input[type="color"]::-moz-color-swatch {
-                      border: 2px solid white;
-                      border-radius: 50%;
-                      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                    }
-                  `}</style>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveColorKey(activeColorKey === color.key ? null : color.key)}
+                  className="w-12 h-12 rounded-full border-2 border-white shadow-md hover:scale-105 transition-transform"
+                  style={{ backgroundColor: formData.colors[color.key], outline: activeColorKey === color.key ? '3px solid #25D366' : 'none', outlineOffset: '2px' }}
+                  title={color.hint}
+                />
                 <span className="font-caption text-caption text-[#556067] text-xs">{color.label}</span>
                 <span className="text-[10px] font-mono text-[#bbcbb9]">{formData.colors[color.key]}</span>
+                {activeColorKey === color.key && (
+                  <div className="fixed inset-0 z-50 flex items-end justify-center" onClick={() => setActiveColorKey(null)}>
+                    <div className="bg-white rounded-t-2xl p-5 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
+                      <div className="flex items-center justify-between mb-4">
+                        <span className="font-semibold text-[#191c1e]">{color.label}</span>
+                        <button onClick={() => setActiveColorKey(null)} className="text-[#556067] text-sm">✕ Close</button>
+                      </div>
+                      {/* Preset swatches */}
+                      <div className="grid grid-cols-6 gap-2 mb-4">
+                        {PRESET_SWATCHES.map(swatch => (
+                          <button
+                            key={swatch}
+                            type="button"
+                            onClick={() => { handleColorChange(color.key, swatch); setActiveColorKey(null); }}
+                            className="w-10 h-10 rounded-lg border-2 transition-transform hover:scale-110"
+                            style={{ backgroundColor: swatch, borderColor: formData.colors[color.key] === swatch ? '#25D366' : '#e0e3e6' }}
+                          />
+                        ))}
+                      </div>
+                      {/* Hex input */}
+                      <div className="flex items-center gap-3 mt-2">
+                        <div className="w-10 h-10 rounded-lg border border-[#e0e3e6]" style={{ backgroundColor: formData.colors[color.key] }} />
+                        <input
+                          type="text"
+                          value={formData.colors[color.key]}
+                          onChange={e => { if (/^#[0-9A-Fa-f]{0,6}$/.test(e.target.value)) handleColorChange(color.key, e.target.value); }}
+                          className="flex-1 border border-[#bbcbb9] rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:border-[#006d2f]"
+                          placeholder="#000000"
+                          maxLength={7}
+                        />
+                        <button
+                          onClick={() => setActiveColorKey(null)}
+                          className="bg-[#25D366] text-white px-4 py-2 rounded-lg text-sm font-semibold"
+                        >Set</button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>

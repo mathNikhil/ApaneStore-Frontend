@@ -15,8 +15,15 @@ const PricingSection = () => {
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [maxDiscount, setMaxDiscount] = useState(40);
+  const [discountInfo, setDiscountInfo] = useState({});
 
   useEffect(() => {
+    fetch(`${API_URL}/api/public/discount-info`)
+      .then(r => r.json())
+      .then(d => { if (d.success) { setMaxDiscount(d.data.maxDiscount); setDiscountInfo(d.data.discounts || {}); } })
+      .catch(() => {});
+
     fetch(`${API_URL}/api/public/pricing-plans`)
       .then(r => r.json())
       .then(data => {
@@ -77,6 +84,13 @@ const PricingSection = () => {
 
       {!loading && !error && (
         <div className="space-y-6">
+          {/* First store discount banner */}
+          <div className="p-4 rounded-xl bg-gradient-to-r from-[#006d2f] to-[#25D366] flex items-center gap-3 mb-2">
+            <span className="text-2xl">🎉</span>
+            <p className="text-white font-semibold text-sm">
+              Launch your first store and save up to {maxDiscount}% — <span className="underline">limited time offer</span>
+            </p>
+          </div>
           {Object.entries(grouped).map(([planKey, cycles]) => {
             const meta = PLAN_LABELS[planKey] || { name: planKey, icon: 'storefront', desc: '' };
             return (
