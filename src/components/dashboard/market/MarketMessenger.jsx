@@ -814,12 +814,7 @@ function ContactsTab({ storeId, groups, contacts, setGroups, setContacts, onRefr
               className="text-xs bg-[#25D366] text-white px-3 py-1.5 rounded-lg flex items-center gap-1 hover:bg-[#1db954]">
               <i className="ti ti-user-plus" /> Add contact
             </button>
-            <select value={sortBy} onChange={e => setSortBy(e.target.value)}
-              className="text-xs border border-gray-200 rounded px-2 py-1 outline-none bg-white">
-              <option value="name">Sort: Name A-Z</option>
-              <option value="group">Sort: Group</option>
-              <option value="phone">Sort: Phone</option>
-            </select>
+            
           </div>
         </div>
         {contacts.length === 0 ? (
