@@ -570,7 +570,8 @@ function ContactsTab({ storeId, groups, contacts, setGroups, setContacts, onRefr
   const [csvImporting, setCsvImporting] = useState(false);
   const [editContact, setEditContact] = useState(null);
   const [editGroup, setEditGroup]     = useState(null);
-  const [sortBy, setSortBy]           = useState('name');
+  const [sortBy, setSortBy] = useState('name');
+  const [sortDir, setSortDir] = useState('asc');
   const [selectedContacts, setSelectedContacts] = useState([]);
 
   const toggleSelect = (id) => setSelectedContacts(prev =>
