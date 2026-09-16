@@ -572,6 +572,13 @@ function ContactsTab({ storeId, groups, contacts, setGroups, setContacts, onRefr
   const [editGroup, setEditGroup]     = useState(null);
   const [sortBy, setSortBy] = useState('name');
   const [sortDir, setSortDir] = useState('asc');
+  const handleSort = (col) => {
+    if (sortBy === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortBy(col); setSortDir('asc'); }
+  };
+  const SortIcon = ({ col }) => sortBy === col
+    ? <span className="ml-1 text-[#006d2f]">{sortDir === 'asc' ? '↑' : '↓'}</span>
+    : <span className="ml-1 text-gray-300">↕</span>;
   const [selectedContacts, setSelectedContacts] = useState([]);
 
   const toggleSelect = (id) => setSelectedContacts(prev =>
