@@ -836,9 +836,10 @@ function ContactsTab({ storeId, groups, contacts, setGroups, setContacts, onRefr
                   onChange={toggleSelectAll}
                   className="w-3.5 h-3.5 accent-[#25D366] cursor-pointer" />
               </div>
-              <div className="col-span-4">Name</div>
+              <div className="col-span-2">Name</div>
               <div className="col-span-3">Phone</div>
               <div className="col-span-2">Group</div>
+              <div className="col-span-2">Store Name</div>
               <div className="col-span-2 text-right">Actions</div>
             </div>
             <div className="divide-y divide-gray-50">
