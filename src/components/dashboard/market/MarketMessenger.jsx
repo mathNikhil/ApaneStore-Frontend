@@ -880,7 +880,7 @@ function ContactsTab({ storeId, groups, contacts, setGroups, setContacts, onRefr
                       <div className="col-span-3 text-xs text-gray-400 truncate">{c.phone}</div>
                       <div className="col-span-2">
                         {c.groups?.length > 0 ? (
-                          <span className="text-xs bg-[#25D366]/10 text-[#006d2f] px-1.5 py-0.5 rounded-full truncate block">
+                          <span className="text-xs bg-[#25D366]/10 text-[#006d2f] px-1.5 py-0.5 rounded-full truncate block text-center">
                             {c.groups[0].name}
                           </span>
                         ) : <span className="text-xs text-gray-300">—</span>}
