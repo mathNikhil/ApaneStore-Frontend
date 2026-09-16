@@ -844,10 +844,12 @@ function ContactsTab({ storeId, groups, contacts, setGroups, setContacts, onRefr
             </div>
             <div className="divide-y divide-gray-50">
               {[...contacts].sort((a,b) => {
-                if (sortBy==='name') return (a.name||'').localeCompare(b.name||'');
-                if (sortBy==='phone') return (a.phone||'').localeCompare(b.phone||'');
-                if (sortBy==='group') return ((a.groups?.[0]?.name||'zzz').localeCompare(b.groups?.[0]?.name||'zzz'));
-                return 0;
+                let cmp = 0;
+                if (sortBy==='name') cmp = (a.name||'').localeCompare(b.name||'');
+                else if (sortBy==='phone') cmp = (a.phone||'').localeCompare(b.phone||'');
+                else if (sortBy==='group') cmp = ((a.groups?.[0]?.name||'zzz').localeCompare(b.groups?.[0]?.name||'zzz'));
+                else if (sortBy==='store') cmp = ((a.store_name||'zzz').localeCompare(b.store_name||'zzz'));
+                return sortDir === 'asc' ? cmp : -cmp;
               }).map(c => (
                 <div key={c.id}>
                   {editContact?.id === c.id ? (
