@@ -875,12 +875,19 @@ function ContactsTab({ storeId, groups, contacts, setGroups, setContacts, onRefr
                           onChange={() => toggleSelect(c.id)}
                           className="w-3.5 h-3.5 accent-[#25D366] cursor-pointer" />
                       </div>
-                      <div className="col-span-4 text-sm font-medium text-gray-800 truncate">{c.name}</div>
+                      <div className="col-span-3 text-sm font-medium text-gray-800 truncate">{c.name}</div>
                       <div className="col-span-3 text-xs text-gray-400 truncate">{c.phone}</div>
                       <div className="col-span-2">
                         {c.groups?.length > 0 ? (
                           <span className="text-xs bg-[#25D366]/10 text-[#006d2f] px-1.5 py-0.5 rounded-full truncate block">
                             {c.groups[0].name}
+                          </span>
+                        ) : <span className="text-xs text-gray-300">—</span>}
+                      </div>
+                      <div className="col-span-2">
+                        {c.store_name ? (
+                          <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded-full truncate block">
+                            {c.store_name}
                           </span>
                         ) : <span className="text-xs text-gray-300">—</span>}
                       </div>
