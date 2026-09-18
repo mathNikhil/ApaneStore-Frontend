@@ -144,6 +144,8 @@ const StorefrontApp = ({ builderData, storeId, device = 'desktop', className = '
     showGSTBreakdownCart: builderData.cart.showGSTBreakdownCart,
     showGSTBreakdownCheckout: builderData.cart.showGSTBreakdownCheckout,
     tabName: builderData.cart.tabName || 'Cart',
+    enableDineIn: builderData.cart.enableDineIn || false,
+    dineInLabel: builderData.cart.dineInLabel || 'Dine In',
     ordersTabName: builderData.order.ordersTabName || 'Orders',
 
     codEnabled: builderData.payment.codEnabled,

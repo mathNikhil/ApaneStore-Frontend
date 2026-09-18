@@ -23,7 +23,8 @@ const PreviewCartTab = ({ data, updateQuantity, removeFromCart, placeOrder, onGo
   const [upiIdConfirmed, setUpiIdConfirmed] = useState(false);
   const [cashfreeLoading, setCashfreeLoading] = useState(false);
 
-  const { items, freeDelivery, freeDeliveryThreshold, deliveryCharge, showProgressBar, enableGST, gstRate, taxLabel, showGSTBreakdownCart, showGSTBreakdownCheckout } = cart;
+  const { items, freeDelivery, freeDeliveryThreshold, deliveryCharge, showProgressBar, enableGST, gstRate, taxLabel, showGSTBreakdownCart, showGSTBreakdownCheckout, gstNumber, enableDineIn, dineInLabel } = cart;
+  const [orderType, setOrderType] = useState('delivery');
 
   const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const gst = enableGST ? subtotal * (gstRate / 100) : 0;
@@ -63,7 +64,7 @@ const PreviewCartTab = ({ data, updateQuantity, removeFromCart, placeOrder, onGo
       onRequireAuth?.();
       return;
     }
-    if (!currentAddress) {
+    if (orderType !== 'dine_in' && !currentAddress) {
       alert('Please add a delivery address from the Profile tab before checking out');
       return;
     }
@@ -117,7 +118,7 @@ const PreviewCartTab = ({ data, updateQuantity, removeFromCart, placeOrder, onGo
   };
 
   const handlePlaceOrder = async () => {
-    if (!currentAddress) {
+    if (orderType !== 'dine_in' && !currentAddress) {
       alert('Please select a delivery address');
       return;
     }
@@ -144,10 +145,11 @@ const PreviewCartTab = ({ data, updateQuantity, removeFromCart, placeOrder, onGo
 
     setPlacingOrder(true);
     const result = await placeOrder({
-      address: currentAddress,
+      address: orderType === 'dine_in' ? {} : currentAddress,
       paymentMethodId: selectedPayment,
       paymentMethodLabel: methodLabel,
       customerUpiId: selectedPayment === 'upi' ? customerUpiId.trim() : undefined,
+      orderType: orderType,
     });
     setPlacingOrder(false);
 
@@ -218,8 +220,43 @@ const PreviewCartTab = ({ data, updateQuantity, removeFromCart, placeOrder, onGo
           </div>
         </div>
 
+        {/* Dine-In / Delivery selector */}
+        {enableDineIn && (
+          <div className="rounded-lg border p-4 mb-4" style={{ backgroundColor: brand.colors.background || '#FFFFFF' }}>
+            <p className="text-sm font-semibold mb-3" style={{ color: brand.colors.fontHeader, fontFamily: brand.fonts?.body || 'Inter' }}>
+              How would you like your order?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setOrderType('dine_in')}
+                className="flex-1 py-2 px-4 rounded-lg border-2 text-sm font-semibold transition-colors"
+                style={{
+                  borderColor: orderType === 'dine_in' ? brand.colors.primary : brand.colors.secondary,
+                  background: orderType === 'dine_in' ? brand.colors.primary : 'transparent',
+                  color: orderType === 'dine_in' ? '#fff' : brand.colors.fontBody,
+                  fontFamily: brand.fonts?.body || 'Inter'
+                }}
+              >
+                🍽️ {dineInLabel || 'Dine In'}
+              </button>
+              <button
+                onClick={() => setOrderType('delivery')}
+                className="flex-1 py-2 px-4 rounded-lg border-2 text-sm font-semibold transition-colors"
+                style={{
+                  borderColor: orderType === 'delivery' ? brand.colors.primary : brand.colors.secondary,
+                  background: orderType === 'delivery' ? brand.colors.primary : 'transparent',
+                  color: orderType === 'delivery' ? '#fff' : brand.colors.fontBody,
+                  fontFamily: brand.fonts?.body || 'Inter'
+                }}
+              >
+                🚚 Delivery
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Delivery Address */}
-        <div className="rounded-lg border p-4 mb-4" style={{ backgroundColor: brand.colors.background || '#FFFFFF' }}>
+        {orderType !== 'dine_in' && <div className="rounded-lg border p-4 mb-4" style={{ backgroundColor: brand.colors.background || '#FFFFFF' }}>
           <h3 className="font-semibold text-sm mb-2" style={{ color: brand.colors.fontHeader, fontFamily: brand.fonts?.heading || 'Inter' }}>Deliver To</h3>
           {currentAddress ? (
             <p className="text-sm" style={{ color: brand.colors.fontBody, fontFamily: brand.fonts?.body || 'Inter' }}>
@@ -231,7 +268,7 @@ const PreviewCartTab = ({ data, updateQuantity, removeFromCart, placeOrder, onGo
           ) : (
             <p className="text-sm text-[#ba1a1a]">No address selected</p>
           )}
-        </div>
+        </div>}
 
         {/* Payment Methods - From Step 4 */}
         <div className="rounded-lg border p-4 mb-4" style={{ backgroundColor: brand.colors.background || '#FFFFFF' }}>
@@ -434,8 +471,33 @@ const PreviewCartTab = ({ data, updateQuantity, removeFromCart, placeOrder, onGo
             })}
           </div>
 
+          {/* Dine-In / Delivery selector */}
+          {enableDineIn && (
+            <div className="rounded-lg border p-4 mb-4" style={{ backgroundColor: brand.colors.background || '#FFFFFF' }}>
+              <p className="text-sm font-semibold mb-3" style={{ color: brand.colors.fontHeader, fontFamily: brand.fonts?.body || 'Inter' }}>
+                How would you like your order?
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setOrderType('dine_in')}
+                  className="flex-1 py-2 px-4 rounded-lg border-2 text-sm font-semibold transition-colors"
+                  style={{ borderColor: orderType === 'dine_in' ? brand.colors.primary : brand.colors.secondary, background: orderType === 'dine_in' ? brand.colors.primary : 'transparent', color: orderType === 'dine_in' ? '#fff' : brand.colors.fontBody, fontFamily: brand.fonts?.body || 'Inter' }}
+                >
+                  🍽️ {dineInLabel || 'Dine In'}
+                </button>
+                <button
+                  onClick={() => setOrderType('delivery')}
+                  className="flex-1 py-2 px-4 rounded-lg border-2 text-sm font-semibold transition-colors"
+                  style={{ borderColor: orderType === 'delivery' ? brand.colors.primary : brand.colors.secondary, background: orderType === 'delivery' ? brand.colors.primary : 'transparent', color: orderType === 'delivery' ? '#fff' : brand.colors.fontBody, fontFamily: brand.fonts?.body || 'Inter' }}
+                >
+                  🚚 Delivery
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Delivery Address - From the shared address book (Step 5 config) */}
-          <div className="rounded-lg border p-4 mb-4" style={{ backgroundColor: brand.colors.background || '#FFFFFF' }}>
+          {orderType !== 'dine_in' && <div className="rounded-lg border p-4 mb-4" style={{ backgroundColor: brand.colors.background || '#FFFFFF' }}>
             <div className="flex items-center justify-between mb-2">
               <p className="text-sm font-semibold" style={{ color: brand.colors.fontHeader, fontFamily: brand.fonts?.heading || 'Inter' }}>
                 Deliver to {currentAddress?.label || 'Address'}
@@ -515,7 +577,7 @@ const PreviewCartTab = ({ data, updateQuantity, removeFromCart, placeOrder, onGo
                 + Add Delivery Address
               </button>
             )}
-          </div>
+          </div>}
 
           {/* Bill Details */}
           <div className="rounded-lg border p-4" style={{ backgroundColor: brand.colors.background || '#FFFFFF' }}>
