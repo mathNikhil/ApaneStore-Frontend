@@ -86,6 +86,8 @@ export const StoreBuilderProvider = ({ children }) => {
 
     // Step 3: Cart Data
     const [cartData, setCartData] = useState({
+        enableDineIn: false,
+        dineInLabel: 'Dine In',
         freeDelivery: false,
         freeDeliveryThreshold: 0,
         deliveryCharge: 0,

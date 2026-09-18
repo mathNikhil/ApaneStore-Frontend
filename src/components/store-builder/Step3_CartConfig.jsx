@@ -10,6 +10,8 @@ const Step3_CartConfig = () => {
   const { cartData, setCartData } = useStoreBuilder();
 
   const [settings, setSettings] = useState({
+    enableDineIn: cartData.enableDineIn || false,
+    dineInLabel: cartData.dineInLabel || 'Dine In',
     freeDelivery: cartData.freeDelivery !== undefined ? cartData.freeDelivery : true,
     freeDeliveryThreshold: cartData.freeDeliveryThreshold || 500,
     deliveryCharge: cartData.deliveryCharge || 40,
@@ -29,6 +31,11 @@ const Step3_CartConfig = () => {
     console.log('Saving Step 3 data:', settings); // Debug log
     setCartData(settings);
   }, [settings]);
+
+  const handleChange = (key, value) => {
+    setSettings(prev => ({ ...prev, [key]: value }));
+    setCartData(prev => ({ ...prev, [key]: value }));
+  };
 
   const handleToggle = (key) => {
     setSettings(prev => ({ ...prev, [key]: !prev[key] }));
@@ -63,6 +70,21 @@ const Step3_CartConfig = () => {
           <h2 className="font-label-md text-label-md text-[#556067] uppercase tracking-wider text-xs">Delivery Settings</h2>
         </div>
 
+        <Toggle label="Enable Dine-In Option" description="Allow customers to choose between Dine In or Delivery at checkout (ideal for restaurants)" checked={settings.enableDineIn} onChange={() => handleToggle('enableDineIn')} className="mb-4" />
+        {settings.enableDineIn && (
+          <div className="mb-4 ml-1">
+            <label className="block text-xs font-semibold text-[#3c4a3d] uppercase tracking-wider mb-1">Dine-In Button Label</label>
+            <input
+              type="text"
+              value={settings.dineInLabel ?? ''}
+              onChange={(e) => handleChange('dineInLabel', e.target.value)}
+              placeholder="e.g. Dine In, Eat Here, Table Order"
+              className="w-full border border-[#bbcbb9] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#006d2f]"
+              maxLength={20}
+            />
+            <p className="text-xs text-[#556067] mt-1">This label appears on the order type selector in your storefront</p>
+          </div>
+        )}
         <Toggle label="Enable Free Delivery" checked={settings.freeDelivery} onChange={() => handleToggle('freeDelivery')} className="mb-4" />
         <Slider label="Free Delivery Threshold" value={settings.freeDeliveryThreshold} onChange={(e) => handleSliderChange('freeDeliveryThreshold', e.target.value)} valueLabel={`₹${settings.freeDeliveryThreshold}`} min={0} max={2000} unit="₹" className="mb-4" />
         <Toggle label="Show Progress Bar on Cart Page" description="Encourages customers to add more items for free delivery" checked={settings.showProgressBar} onChange={() => handleToggle('showProgressBar')} className="mb-3" />
