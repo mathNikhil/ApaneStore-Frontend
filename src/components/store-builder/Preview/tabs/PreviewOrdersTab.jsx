@@ -300,6 +300,11 @@ const PreviewOrdersTab = ({ data, cancelOrder, addToCart, onGoToCart, storeId, c
                       {order.id}
                     </p>
                   </div>
+                  {order.order_type === 'dine_in' && (
+                    <span className="px-2 py-1 rounded-full text-xs font-medium" style={{ background: '#f59e0b', color: '#fff' }}>
+                      🍽️ {dineInLabel}
+                    </span>
+                  )}
                   <span className={'px-2 py-1 rounded-full text-xs font-medium ' + statusColor}>
                     <span className="material-symbols-outlined text-xs align-middle mr-1">
                       {statusIcon}
@@ -429,7 +434,7 @@ const PreviewOrdersTab = ({ data, cancelOrder, addToCart, onGoToCart, storeId, c
                       <p className="text-xs font-semibold mb-1" style={{ color: getFontHeaderColor() }}>{order.order_type === 'dine_in' ? '🍽️ Order Type' : '📍 Delivery Address'}</p>
                       {order.order_type === 'dine_in' ? (
                         <div className="text-sm p-3 rounded-lg bg-[#fff8e1]" style={{ color: getFontBodyColor() }}>
-                          <p className="font-medium">🍽️ Dine In</p>
+                          <p className="font-medium">🍽️ {dineInLabel}</p>
                         </div>
                       ) : order.deliveryAddress ? (
                         <div className="text-sm p-3 rounded-lg bg-[#f7f9fc]" style={{ color: getFontBodyColor() }}>
