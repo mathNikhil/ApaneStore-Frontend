@@ -529,15 +529,32 @@ const DashboardReturnUser = ({ stores = [], subscriptions = {}, onStoreUpdate })
                                     </div>
 
                                     {/* Row 2: Store Admin Panel */}
-                                    <div className="mt-3">
-                                        <button 
-                                            onClick={() => goToStoreAdmin(store.subdomain)}
-                                            className="w-full px-4 py-2 bg-[#006d2f] text-white font-semibold text-sm rounded-xl hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
-                                        >
-                                            <span className="material-symbols-outlined text-base">dashboard</span>
-                                            Store Admin Panel
-                                        </button>
-                                    </div>
+                                    {(() => {
+                                        const isPublished = store.status === 'active' || store.status === 'published';
+                                        const daysSince = Math.floor((Date.now() - new Date(store.created_at).getTime()) / (1000 * 60 * 60 * 24));
+                                        const trialDaysLeft = 7 - daysSince;
+                                        return (
+                                            <div className="mt-3">
+                                                {!isPublished && trialDaysLeft > 0 && (
+                                                    <div className="mb-2 px-3 py-2 bg-[#fff8e1] border border-[#ffd54f] rounded-lg text-xs text-[#856404]">
+                                                        ⚠️ Store Admin trial expires in <strong>{trialDaysLeft} day{trialDaysLeft !== 1 ? 's' : ''}</strong> — publish your store to keep access
+                                                    </div>
+                                                )}
+                                                {!isPublished && trialDaysLeft <= 0 && (
+                                                    <div className="mb-2 px-3 py-2 bg-[#fef2f2] border border-[#fca5a5] rounded-lg text-xs text-[#dc2626]">
+                                                        🔒 Store Admin trial expired — publish your store to restore access
+                                                    </div>
+                                                )}
+                                                <button 
+                                                    onClick={() => goToStoreAdmin(store.subdomain)}
+                                                    className="w-full px-4 py-2 bg-[#006d2f] text-white font-semibold text-sm rounded-xl hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                                                >
+                                                    <span className="material-symbols-outlined text-base">dashboard</span>
+                                                    Store Admin Panel
+                                                </button>
+                                            </div>
+                                        );
+                                    })()}
                                     <div className="mt-3 pt-3 border-t border-dashed border-[#e0e3e6]">
                                         <p className="text-xs font-semibold text-[#3c4a3d] mb-2 flex items-center gap-1">
                                             <span className="material-symbols-outlined text-sm">lock</span>
