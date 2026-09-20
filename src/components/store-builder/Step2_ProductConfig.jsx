@@ -48,7 +48,7 @@ const ImageError = ({ error }) => {
 const Step2_ProductConfig = () => {
   const navigate = useNavigate();
   // ✅ FIX: Destructure `currentStoreId` instead of `storeId`!
-  const { productData, setProductData, currentStoreId, currentSubdomain, storeStatus, tenantId, brandData, storeType } = useStoreBuilder();
+  const { productData, setProductData, currentStoreId, currentSubdomain, storeStatus, tenantId, brandData, storeType, saveStore } = useStoreBuilder();
   const effectiveStoreType = storeType || 'product';
 
   const [bookingSettings, setBookingSettings] = React.useState({
@@ -195,6 +195,21 @@ const Step2_ProductConfig = () => {
   // and preview too, since both already render products in array order.
   const [draggedProduct, setDraggedProduct] = useState(null); // { categoryId, productId }
   const [dragOverProductId, setDragOverProductId] = useState(null);
+  const [draggedCategoryId, setDraggedCategoryId] = useState(null);
+  const [dragOverCategoryId, setDragOverCategoryId] = useState(null);
+
+  const reorderCategories = (fromId, toId) => {
+    if (fromId === toId) return;
+    setCategories(prev => {
+      const arr = [...prev];
+      const fromIdx = arr.findIndex(c => c.id === fromId);
+      const toIdx = arr.findIndex(c => c.id === toId);
+      if (fromIdx === -1 || toIdx === -1) return prev;
+      const [moved] = arr.splice(fromIdx, 1);
+      arr.splice(toIdx, 0, moved);
+      return arr;
+    });
+  };
 
   const reorderProducts = (categoryId, fromProductId, toProductId) => {
     if (fromProductId === toProductId) return;
@@ -417,6 +432,7 @@ const Step2_ProductConfig = () => {
   }, [categories, bannerImage, bannerTagline, bannerSubtitle, bannerCta, bannerHeight, bannerBgColor, showCta, showText, textAlignment, textColor, textShadow, enableImageZoom, categoryImageShape, categoryImageSize, autoSlideProductImages, addToCartLabel]);
 
   const generateId = () => Math.floor(Date.now() + Math.random() * 1000);
+  const pendingInventoryUpdates = React.useRef([]);
 
   // CSV Upload — parse and merge into existing categories
   const handleCSVUpload = (e) => {
@@ -432,57 +448,127 @@ const Step2_ProductConfig = () => {
       const sizeIdx = headers.indexOf('size');
       const unitIdx = headers.indexOf('unit');
       const priceIdx = headers.indexOf('price');
+      const inStockIdx = headers.indexOf('instock');
 
       if (catIdx === -1 || prodIdx === -1) {
         alert('CSV must have category_name and product_name columns');
         return;
       }
 
+      // Parse CSV rows
+      const csvRows = [];
+      for (let i = 1; i < lines.length; i++) {
+        const cols = lines[i].split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+        const catName = cols[catIdx];
+        const prodName = cols[prodIdx];
+        if (!catName || !prodName) continue;
+        csvRows.push({
+          catName, prodName,
+          varName: cols[varIdx] || 'Default',
+          size: cols[sizeIdx] || '',
+          unit: cols[unitIdx] || '',
+          price: cols[priceIdx] || '',
+          inStock: inStockIdx !== -1 ? cols[inStockIdx] : ''
+        });
+      }
+
+      // Count what will change for confirmation
+      const csvProductNames = [...new Set(csvRows.map(r => r.prodName.toLowerCase()))];
+      const existingProductNames = categories.flatMap(c => c.products.map(p => p.name.toLowerCase()));
+      const toArchive = existingProductNames.filter(n => !csvProductNames.includes(n));
+      const toCreate = csvProductNames.filter(n => !existingProductNames.includes(n));
+
+      const msg = `CSV Upload Summary:
+- ${toCreate.length} new product(s) will be created
+- ${csvProductNames.length - toCreate.length} existing product(s) will be updated
+- ${toArchive.length} product(s) not in CSV will be archived
+
+Continue?`;
+
+      if (!window.confirm(msg)) {
+        e.target.value = '';
+        return;
+      }
+
+      // Build new categories from CSV
+      const inventorySnapshot = [];
       setCategories(prev => {
         const updated = [...prev];
-        
-        for (let i = 1; i < lines.length; i++) {
-          const cols = lines[i].split(',').map(c => c.trim().replace(/^"|"$/g, ''));
-          const catName = cols[catIdx];
-          const prodName = cols[prodIdx];
-          const varName = cols[varIdx] || 'Default';
-          const size = cols[sizeIdx] || '';
-          const unit = cols[unitIdx] || '';
-          const price = cols[priceIdx] || '';
 
-          if (!catName || !prodName) continue;
+        // Archive products not in CSV
+        updated.forEach(cat => {
+          cat.products.forEach(prod => {
+            if (!csvProductNames.includes(prod.name.toLowerCase())) {
+              prod._archived = true;
+            }
+          });
+          cat.products = cat.products.filter(p => !p._archived);
+        });
 
-          // Find or create category
+        // Add/update from CSV
+        for (const row of csvRows) {
+          const { catName, prodName, varName, size, unit, price, inStock } = row;
+
           let cat = updated.find(c => c.name.toLowerCase() === catName.toLowerCase());
           if (!cat) {
             cat = { id: generateId(), name: catName, image: null, products: [] };
             updated.push(cat);
           }
 
-          // Find or create product
           let prod = cat.products.find(p => p.name.toLowerCase() === prodName.toLowerCase());
           if (!prod) {
             prod = { id: generateId(), name: prodName, description: '', images: [], bulkPricing: false, discount: 0, variations: [] };
             cat.products.push(prod);
           }
 
-          // Find or create variation
           let vari = prod.variations.find(v => v.name.toLowerCase() === varName.toLowerCase());
           if (!vari) {
             vari = { id: generateId(), name: varName, image: null, sizes: [] };
             prod.variations.push(vari);
           }
 
-          // Add size if not duplicate
           if (size) {
             const sizeExists = vari.sizes.find(s => s.size === size && s.unit === unit);
             if (!sizeExists) {
-              vari.sizes.push({ id: generateId(), size, unit, price });
+              const sizeId = generateId();
+              vari.sizes.push({ id: sizeId, size, unit, price });
+              if (inStock !== '') inventorySnapshot.push({ sizeId, inStock: parseInt(inStock) || 0 });
+            } else if (inStock !== '') {
+              inventorySnapshot.push({ sizeId: sizeExists.id, inStock: parseInt(inStock) || 0 });
             }
+            // Update price if changed
+            const existingSize = vari.sizes.find(s => s.size === size && s.unit === unit);
+            if (existingSize && price) existingSize.price = price;
           }
         }
+        pendingInventoryUpdates.current = inventorySnapshot;
         return updated;
       });
+
+      console.log('Inventory updates queued:', inventorySnapshot.length);
+      // Save store first, then sync inventory
+      if (pendingInventoryUpdates.current.length > 0) {
+        const syncInventory = async (storeId) => {
+          const token = localStorage.getItem('token');
+          const resp = await fetch(`https://api.aapnaestore.com/api/store/${storeId}/inventory/sync-csv`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ updates: pendingInventoryUpdates.current })
+          });
+          const data = await resp.json(); console.log('Inventory sync result:', data);
+          const inventorySnapshot = [];
+        };
+
+        if (currentStoreId) {
+          // Store already exists — save then sync
+          if (saveStore) {
+            saveStore().then(() => syncInventory(currentStoreId))
+              .catch(err => console.error('Save/sync failed:', err));
+          } else {
+            setTimeout(() => syncInventory(currentStoreId), 3000);
+          }
+        }
+      }
 
       alert('Products imported successfully!');
     };
@@ -491,14 +577,14 @@ const Step2_ProductConfig = () => {
   };
 
   const downloadCSVTemplate = () => {
-    const csv = `category_name,product_name,variation_name,size,unit,price
-Shoes,Leather Shoes,Black,7,UK,654
-Shoes,Leather Shoes,Black,8,UK,654
-Shoes,Leather Shoes,Black,9,UK,654
-Shoes,Leather Shoes,Tan,7,UK,647
-Shoes,Leather Shoes,Tan,8,UK,647
-Cakes,Birthday Cake,Chocolate,500,g,550
-Cakes,Birthday Cake,Vanilla,500,g,500`;
+    const csv = `category_name,product_name,variation_name,size,unit,price,InStock
+Shoes,Leather Shoes,Black,7,UK,654,50
+Shoes,Leather Shoes,Black,8,UK,654,30
+Shoes,Leather Shoes,Black,9,UK,654,20
+Shoes,Leather Shoes,Tan,7,UK,647,15
+Shoes,Leather Shoes,Tan,8,UK,647,10
+Cakes,Birthday Cake,Chocolate,500,g,550,5
+Cakes,Birthday Cake,Vanilla,500,g,500,8`;
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -1336,8 +1422,22 @@ Cakes,Birthday Cake,Vanilla,500,g,500`;
           const isCategoryImgUploading = uploadingStates[categoryImgErrorKey];
 
           return (
-          <Card key={category.id} className="mb-4 bg-[#f2f4f7] border border-[#bbcbb9]/20">
+          <Card
+            key={category.id}
+            className="mb-4 bg-[#f2f4f7] border border-[#bbcbb9]/20"
+            onDragOver={(e) => { e.preventDefault(); if (dragOverCategoryId !== category.id) setDragOverCategoryId(category.id); }}
+            onDrop={() => { if (draggedCategoryId) reorderCategories(draggedCategoryId, category.id); setDragOverCategoryId(null); }}
+            style={{ opacity: draggedCategoryId === category.id ? 0.5 : 1, outline: dragOverCategoryId === category.id && draggedCategoryId !== category.id ? '2px solid #006d2f' : undefined }}
+          >
             <div className="flex items-center gap-3">
+              <span
+                className="material-symbols-outlined text-[#bbcbb9] cursor-grab active:cursor-grabbing select-none"
+                style={{ fontSize: 20 }}
+                draggable
+                onDragStart={(e) => { e.stopPropagation(); setDraggedCategoryId(category.id); }}
+                onDragEnd={() => { setDraggedCategoryId(null); setDragOverCategoryId(null); }}
+                title="Drag to reorder"
+              >drag_indicator</span>
               <button
                 onClick={() => toggleExpanded(setExpandedCategories, category.id)}
                 className="text-[#556067] hover:text-[#006d2f] p-1 rounded-lg transition-colors"
