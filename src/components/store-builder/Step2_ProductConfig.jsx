@@ -576,6 +576,35 @@ Continue?`;
     e.target.value = '';
   };
 
+  const downloadCurrentProducts = () => {
+    const rows = ['category_name,product_name,variation_name,size,unit,price,InStock'];
+    categories.forEach(cat => {
+      (cat.products || []).forEach(prod => {
+        (prod.variations || []).forEach(vari => {
+          (vari.sizes || []).forEach(sz => {
+            rows.push([
+              `"${(cat.name || '').replace(/"/g, '""')}"`,
+              `"${(prod.name || '').replace(/"/g, '""')}"`,
+              `"${(vari.name || '').replace(/"/g, '""')}"`,
+              sz.size || '',
+              sz.unit || '',
+              sz.price || '',
+              ''
+            ].join(','));
+          });
+        });
+      });
+    });
+    const csv = rows.join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'my-products.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const downloadCSVTemplate = () => {
     const csv = `category_name,product_name,variation_name,size,unit,price,InStock
 Shoes,Leather Shoes,Black,7,UK,654,50
@@ -1398,6 +1427,11 @@ Cakes,Birthday Cake,Vanilla,500,g,500,8`;
             <button onClick={downloadCSVTemplate} className="flex items-center gap-1 border border-[#bbcbb9] text-[#556067] px-3 py-2 rounded-full text-xs font-semibold hover:bg-[#f2f4f7] transition-all">
               <span className="material-symbols-outlined text-sm">download</span> Template
             </button>
+            {categories.length > 0 && (
+              <button onClick={downloadCurrentProducts} className="flex items-center gap-1 border border-[#006d2f] text-[#006d2f] px-3 py-2 rounded-full text-xs font-semibold hover:bg-[#f0fff4] transition-all">
+                <span className="material-symbols-outlined text-sm">download</span> Download Products
+              </button>
+            )}
             <button onClick={() => document.getElementById('csv-upload').click()} className="flex items-center gap-1 border border-[#006d2f] text-[#006d2f] px-3 py-2 rounded-full text-xs font-semibold hover:bg-[#f0fff4] transition-all">
               <span className="material-symbols-outlined text-sm">upload_file</span> Upload CSV
             </button>
