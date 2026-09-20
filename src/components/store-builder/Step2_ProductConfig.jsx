@@ -418,6 +418,96 @@ const Step2_ProductConfig = () => {
 
   const generateId = () => Math.floor(Date.now() + Math.random() * 1000);
 
+  // CSV Upload — parse and merge into existing categories
+  const handleCSVUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const lines = ev.target.result.trim().replace(/\r/g, '').split('\n');
+      const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+      const catIdx = headers.indexOf('category_name');
+      const prodIdx = headers.indexOf('product_name');
+      const varIdx = headers.indexOf('variation_name');
+      const sizeIdx = headers.indexOf('size');
+      const unitIdx = headers.indexOf('unit');
+      const priceIdx = headers.indexOf('price');
+
+      if (catIdx === -1 || prodIdx === -1) {
+        alert('CSV must have category_name and product_name columns');
+        return;
+      }
+
+      setCategories(prev => {
+        const updated = [...prev];
+        
+        for (let i = 1; i < lines.length; i++) {
+          const cols = lines[i].split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+          const catName = cols[catIdx];
+          const prodName = cols[prodIdx];
+          const varName = cols[varIdx] || 'Default';
+          const size = cols[sizeIdx] || '';
+          const unit = cols[unitIdx] || '';
+          const price = cols[priceIdx] || '';
+
+          if (!catName || !prodName) continue;
+
+          // Find or create category
+          let cat = updated.find(c => c.name.toLowerCase() === catName.toLowerCase());
+          if (!cat) {
+            cat = { id: generateId(), name: catName, image: null, products: [] };
+            updated.push(cat);
+          }
+
+          // Find or create product
+          let prod = cat.products.find(p => p.name.toLowerCase() === prodName.toLowerCase());
+          if (!prod) {
+            prod = { id: generateId(), name: prodName, description: '', images: [], bulkPricing: false, discount: 0, variations: [] };
+            cat.products.push(prod);
+          }
+
+          // Find or create variation
+          let vari = prod.variations.find(v => v.name.toLowerCase() === varName.toLowerCase());
+          if (!vari) {
+            vari = { id: generateId(), name: varName, image: null, sizes: [] };
+            prod.variations.push(vari);
+          }
+
+          // Add size if not duplicate
+          if (size) {
+            const sizeExists = vari.sizes.find(s => s.size === size && s.unit === unit);
+            if (!sizeExists) {
+              vari.sizes.push({ id: generateId(), size, unit, price });
+            }
+          }
+        }
+        return updated;
+      });
+
+      alert('Products imported successfully!');
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
+  const downloadCSVTemplate = () => {
+    const csv = `category_name,product_name,variation_name,size,unit,price
+Shoes,Leather Shoes,Black,7,UK,654
+Shoes,Leather Shoes,Black,8,UK,654
+Shoes,Leather Shoes,Black,9,UK,654
+Shoes,Leather Shoes,Tan,7,UK,647
+Shoes,Leather Shoes,Tan,8,UK,647
+Cakes,Birthday Cake,Chocolate,500,g,550
+Cakes,Birthday Cake,Vanilla,500,g,500`;
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'product-template.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   // Category functions
   const addCategory = () => {
     if (newCategoryName.trim()) {
@@ -481,7 +571,7 @@ const Step2_ProductConfig = () => {
                 id: newId,
                 name: 'New Variation',
                 image: null,
-                sizes: [{ id: generateId(), size: '', unit: 'kg', price: '' }]
+                sizes: [{ id: generateId(), size: '', unit: '', price: '' }]
               };
               return {
                 ...p,
@@ -525,7 +615,7 @@ const Step2_ProductConfig = () => {
                 ...p,
                 variations: p.variations.map(v => {
                   if (v.id === variationId) {
-                    const newSize = { id: generateId(), size: '', unit: 'kg', price: '' };
+                    const newSize = { id: generateId(), size: '', unit: '', price: '' };
                     return {
                       ...v,
                       sizes: [...v.sizes, newSize]
@@ -1215,11 +1305,20 @@ const Step2_ProductConfig = () => {
 
       {/* Categories Section */}
       <Card className="mb-6">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
           <h2 className="font-title-lg text-title-lg text-[#191c1e]">Categories & Products</h2>
-          <button onClick={() => setShowAddCategory(true)} className="flex items-center gap-1 bg-[#25D366] text-[#005523] px-4 py-2 rounded-full font-bold text-sm hover:brightness-105 active:scale-[0.98] transition-all">
-            <span className="material-symbols-outlined text-base">add</span> Add Category
-          </button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <input type="file" id="csv-upload" accept=".csv" onChange={handleCSVUpload} className="hidden" />
+            <button onClick={downloadCSVTemplate} className="flex items-center gap-1 border border-[#bbcbb9] text-[#556067] px-3 py-2 rounded-full text-xs font-semibold hover:bg-[#f2f4f7] transition-all">
+              <span className="material-symbols-outlined text-sm">download</span> Template
+            </button>
+            <button onClick={() => document.getElementById('csv-upload').click()} className="flex items-center gap-1 border border-[#006d2f] text-[#006d2f] px-3 py-2 rounded-full text-xs font-semibold hover:bg-[#f0fff4] transition-all">
+              <span className="material-symbols-outlined text-sm">upload_file</span> Upload CSV
+            </button>
+            <button onClick={() => setShowAddCategory(true)} className="flex items-center gap-1 bg-[#25D366] text-[#005523] px-4 py-2 rounded-full font-bold text-sm hover:brightness-105 active:scale-[0.98] transition-all">
+              <span className="material-symbols-outlined text-base">add</span> Add Category
+            </button>
+          </div>
         </div>
 
         {showAddCategory && (
