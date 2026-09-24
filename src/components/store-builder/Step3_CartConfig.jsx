@@ -26,6 +26,7 @@ const Step3_CartConfig = () => {
     hsnCode: cartData.hsnCode || '',
     storeState: cartData.storeState || '',
     panNumber: cartData.panNumber || '',
+    tallyStockGroup: cartData.tallyStockGroup || '',
     tabName: cartData.tabName || 'Cart',
   });
 
@@ -200,6 +201,19 @@ const Step3_CartConfig = () => {
             maxLength={10}
           />
           <p className="text-xs text-[#556067] ml-1">Required on GST tax invoice</p>
+        </div>
+
+        <div className="space-y-1 mb-4 pt-4 border-t border-[#e0e3e6]">
+          <label className="font-label-md text-[#3c4a3d] ml-1 text-xs uppercase tracking-wider font-bold">Tally / Accounting Settings</label>
+          <p className="text-xs text-[#556067] ml-1 mb-3">These settings help export your inventory in Tally-compatible format</p>
+          <label className="font-label-md text-[#3c4a3d] ml-1 text-xs uppercase tracking-wider">Tally Stock Group Name</label>
+          <Input
+            type="text"
+            placeholder="e.g. Trading Goods, Finished Goods"
+            value={settings.tallyStockGroup}
+            onChange={(e) => setSettings(prev => ({ ...prev, tallyStockGroup: e.target.value }))}
+          />
+          <p className="text-xs text-[#556067] ml-1">Your CA will tell you what to enter here. Used in Tally inventory import.</p>
         </div>
 
         <Toggle label="Show GST Breakdown on Cart Page" checked={settings.showGSTBreakdownCart} onChange={() => handleToggle('showGSTBreakdownCart')} className="mb-3" />
