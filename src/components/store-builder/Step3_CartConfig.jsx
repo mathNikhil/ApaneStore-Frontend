@@ -23,6 +23,8 @@ const Step3_CartConfig = () => {
     showGSTBreakdownCart: cartData.showGSTBreakdownCart !== undefined ? cartData.showGSTBreakdownCart : true,
     showGSTBreakdownCheckout: cartData.showGSTBreakdownCheckout !== undefined ? cartData.showGSTBreakdownCheckout : true,
     gstNumber: cartData.gstNumber || '',
+    hsnCode: cartData.hsnCode || '',
+    storeState: cartData.storeState || '',
     tabName: cartData.tabName || 'Cart',
   });
 
@@ -126,6 +128,30 @@ const Step3_CartConfig = () => {
           />
           <p className="text-xs text-[#556067] ml-1">Shown on cart and order pages to build customer trust</p>
         </div>
+
+        <div className="space-y-1 mb-4">
+          <label className="font-label-md text-[#3c4a3d] ml-1 text-xs uppercase tracking-wider">HSN / SAC Code</label>
+          <Input
+            type="text"
+            placeholder="e.g. 6109 for T-shirts, 9963 for restaurants"
+            value={settings.hsnCode}
+            onChange={(e) => setSettings(prev => ({ ...prev, hsnCode: e.target.value }))}
+            maxLength={8}
+          />
+          <p className="text-xs text-[#556067] ml-1">Required on GST tax invoice for each product</p>
+        </div>
+
+        <div className="space-y-1 mb-4">
+          <label className="font-label-md text-[#3c4a3d] ml-1 text-xs uppercase tracking-wider">Place of Supply (State)</label>
+          <Input
+            type="text"
+            placeholder="e.g. Delhi, Maharashtra, Karnataka"
+            value={settings.storeState}
+            onChange={(e) => setSettings(prev => ({ ...prev, storeState: e.target.value }))}
+          />
+          <p className="text-xs text-[#556067] ml-1">Required on GST tax invoice — your business state</p>
+        </div>
+
         <Toggle label="Show GST Breakdown on Cart Page" checked={settings.showGSTBreakdownCart} onChange={() => handleToggle('showGSTBreakdownCart')} className="mb-3" />
         <Toggle label="Show GST Breakdown on Checkout Page" checked={settings.showGSTBreakdownCheckout} onChange={() => handleToggle('showGSTBreakdownCheckout')} />
       </Card>

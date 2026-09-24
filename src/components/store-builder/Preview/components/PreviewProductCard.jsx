@@ -84,11 +84,11 @@ const PreviewProductCard = ({
 
   const quickViewModal = quickViewOpen && (
     <div
-      className="absolute inset-0 bg-black/70 z-[200] flex items-end sm:items-center justify-center"
+      className="absolute inset-0 bg-black/70 z-[200] flex items-center justify-center"
       onClick={() => setQuickViewOpen(false)}
     >
       <div
-        className="w-full sm:max-w-sm sm:rounded-xl rounded-t-2xl max-h-[92%] overflow-y-auto"
+        className="w-full max-w-sm rounded-xl max-h-[92%] overflow-y-auto mx-4"
         style={{ backgroundColor: brandColors.background || '#FFFFFF' }}
         onClick={(e) => e.stopPropagation()}
       >

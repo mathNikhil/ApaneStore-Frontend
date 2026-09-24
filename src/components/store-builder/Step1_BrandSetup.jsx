@@ -56,6 +56,69 @@ const BRAND_THEMES = [
   { name: 'Olive', emoji: '🫒', colors: { primary: '#65A30D', secondary: '#BEF264', background: '#F7FEE7', button: '#65A30D', buttonLabel: '#1A2E05', fontHeader: '#1A2E05', fontBody: '#3F6212' } },
   { name: 'Crimson', emoji: '🔴', colors: { primary: '#DC143C', secondary: '#FF9AA8', background: '#FFF8F9', button: '#DC143C', buttonLabel: '#FFFFFF', fontHeader: '#3D0010', fontBody: '#9B0E2A' } },
   { name: 'Dusk', emoji: '🌆', colors: { primary: '#C084FC', secondary: '#D4AAFF', background: '#FAF5FF', button: '#A855F7', buttonLabel: '#FFFFFF', fontHeader: '#3B0764', fontBody: '#7C3AED' } },
+  // ── FASHION ──
+  { name: 'Noir Light', emoji: '🖤', colors: { primary: '#1A1A1A', secondary: '#888888', background: '#FFFFFF', button: '#1A1A1A', buttonLabel: '#FFFFFF', fontHeader: '#000000', fontBody: '#555555' } },
+  { name: 'Noir Dark', emoji: '🖤', colors: { primary: '#E0E0E0', secondary: '#666666', background: '#121212', button: '#E0E0E0', buttonLabel: '#121212', fontHeader: '#FFFFFF', fontBody: '#AAAAAA' } },
+  { name: 'Blush Light', emoji: '🩷', colors: { primary: '#C9727A', secondary: '#F5C5C8', background: '#FFF0F2', button: '#C9727A', buttonLabel: '#FFFFFF', fontHeader: '#4A1A1D', fontBody: '#8B4A50' } },
+  { name: 'Blush Dark', emoji: '🩷', colors: { primary: '#FF9AA2', secondary: '#8B3A42', background: '#2A1015', button: '#FF9AA2', buttonLabel: '#2A1015', fontHeader: '#FFD0D5', fontBody: '#CC7A82' } },
+  { name: 'Denim Light', emoji: '👖', colors: { primary: '#1E3A5F', secondary: '#7A9CC0', background: '#F0F4F8', button: '#1E3A5F', buttonLabel: '#FFFFFF', fontHeader: '#0D1B2A', fontBody: '#3D5A7A' } },
+  { name: 'Denim Dark', emoji: '👖', colors: { primary: '#5B8DB8', secondary: '#2A4A6B', background: '#0D1B2A', button: '#5B8DB8', buttonLabel: '#0D1B2A', fontHeader: '#B8D4EC', fontBody: '#7AAAD0' } },
+  { name: 'Gold Light', emoji: '✨', colors: { primary: '#B8860B', secondary: '#FFD700', background: '#FFF8E7', button: '#B8860B', buttonLabel: '#3D2A00', fontHeader: '#3D2A00', fontBody: '#7A5C00' } },
+  { name: 'Gold Dark', emoji: '✨', colors: { primary: '#FFD700', secondary: '#8B6500', background: '#1A1400', button: '#FFD700', buttonLabel: '#1A1400', fontHeader: '#FFE566', fontBody: '#C8A000' } },
+  { name: 'Ivory Light', emoji: '🤍', colors: { primary: '#C8A882', secondary: '#E8D5B7', background: '#FDFAF6', button: '#A67C52', buttonLabel: '#3D2B1F', fontHeader: '#2C1A0E', fontBody: '#6B4226' } },
+  { name: 'Ivory Dark', emoji: '🤍', colors: { primary: '#D4B896', secondary: '#6B4C30', background: '#1A1008', button: '#D4B896', buttonLabel: '#1A1008', fontHeader: '#F0E0CC', fontBody: '#AA8866' } },
+  { name: 'Neon Light', emoji: '⚡', colors: { primary: '#CC00CC', secondary: '#00CCCC', background: '#F5F0FF', button: '#CC00CC', buttonLabel: '#FFFFFF', fontHeader: '#330033', fontBody: '#660066' } },
+  { name: 'Neon Dark', emoji: '⚡', colors: { primary: '#FF00FF', secondary: '#00FFFF', background: '#0A0A0A', button: '#FF00FF', buttonLabel: '#000000', fontHeader: '#FFFFFF', fontBody: '#CCCCCC' } },
+  { name: 'Khaki Light', emoji: '🪖', colors: { primary: '#556B2F', secondary: '#8B9D6A', background: '#F5F0EA', button: '#556B2F', buttonLabel: '#FFFFFF', fontHeader: '#1A2209', fontBody: '#3D4E22' } },
+  { name: 'Khaki Dark', emoji: '🪖', colors: { primary: '#8BA05A', secondary: '#3D4E22', background: '#111A05', button: '#8BA05A', buttonLabel: '#111A05', fontHeader: '#C8D8A0', fontBody: '#7A9050' } },
+  { name: 'Coral Light', emoji: '🪸', colors: { primary: '#FF6B35', secondary: '#FFB347', background: '#FFF5EE', button: '#FF6B35', buttonLabel: '#FFFFFF', fontHeader: '#3D1500', fontBody: '#7A3500' } },
+  { name: 'Coral Dark', emoji: '🪸', colors: { primary: '#FF8C5A', secondary: '#994000', background: '#1A0800', button: '#FF8C5A', buttonLabel: '#1A0800', fontHeader: '#FFCCAA', fontBody: '#CC6633' } },
+  { name: 'Zari Light', emoji: '🪡', colors: { primary: '#8B1A4A', secondary: '#D4648A', background: '#FFF0F5', button: '#8B1A4A', buttonLabel: '#FFE4F0', fontHeader: '#3D0020', fontBody: '#6B0035' } },
+  { name: 'Zari Dark', emoji: '🪡', colors: { primary: '#D4648A', secondary: '#5C0D30', background: '#1A0010', button: '#D4648A', buttonLabel: '#1A0010', fontHeader: '#FFB8D4', fontBody: '#AA4466' } },
+  { name: 'Indigo Light', emoji: '💙', colors: { primary: '#1C3557', secondary: '#D4AF37', background: '#F5F0FF', button: '#1C3557', buttonLabel: '#D4AF37', fontHeader: '#0D1B2A', fontBody: '#3D5A7A' } },
+  { name: 'Indigo Dark', emoji: '💙', colors: { primary: '#4A7AAA', secondary: '#C8A030', background: '#080D14', button: '#4A7AAA', buttonLabel: '#C8A030', fontHeader: '#B0CCE8', fontBody: '#7AAAC8' } },
+  // ── FOOD ──
+  { name: 'Spice Light', emoji: '🌶️', colors: { primary: '#D4380D', secondary: '#FF9A6C', background: '#FFF7F0', button: '#D4380D', buttonLabel: '#FFFFFF', fontHeader: '#3D0C00', fontBody: '#873800' } },
+  { name: 'Spice Dark', emoji: '🌶️', colors: { primary: '#FF6B3A', secondary: '#882200', background: '#1A0500', button: '#FF6B3A', buttonLabel: '#1A0500', fontHeader: '#FFCCAA', fontBody: '#CC5522' } },
+  { name: 'Fresh Light', emoji: '🥗', colors: { primary: '#2D7A3A', secondary: '#7AC47F', background: '#F0FFF2', button: '#2D7A3A', buttonLabel: '#FFFFFF', fontHeader: '#092B00', fontBody: '#237804' } },
+  { name: 'Fresh Dark', emoji: '🥗', colors: { primary: '#5AAA66', secondary: '#1A4422', background: '#050F06', button: '#5AAA66', buttonLabel: '#050F06', fontHeader: '#AADDAA', fontBody: '#448855' } },
+  { name: 'Cocoa Light', emoji: '☕', colors: { primary: '#6F4E37', secondary: '#C49A6C', background: '#FDF8F3', button: '#6F4E37', buttonLabel: '#FFF8F0', fontHeader: '#2C1A0A', fontBody: '#8B6347' } },
+  { name: 'Cocoa Dark', emoji: '☕', colors: { primary: '#C49A6C', secondary: '#4A3020', background: '#140A02', button: '#C49A6C', buttonLabel: '#140A02', fontHeader: '#E8CCAA', fontBody: '#AA8855' } },
+  { name: 'Mango Light', emoji: '🥭', colors: { primary: '#E07B00', secondary: '#FFD166', background: '#FFFBE6', button: '#E07B00', buttonLabel: '#FFFFFF', fontHeader: '#3D2000', fontBody: '#7A4400' } },
+  { name: 'Mango Dark', emoji: '🥭', colors: { primary: '#FFB347', secondary: '#8B4A00', background: '#1A0F00', button: '#FFB347', buttonLabel: '#1A0F00', fontHeader: '#FFDD99', fontBody: '#CC8822' } },
+  { name: 'Tomato Light', emoji: '🍕', colors: { primary: '#C0392B', secondary: '#E8876A', background: '#FFF8F7', button: '#C0392B', buttonLabel: '#FFFFFF', fontHeader: '#3D0000', fontBody: '#7A1A0A' } },
+  { name: 'Tomato Dark', emoji: '🍕', colors: { primary: '#FF6B5B', secondary: '#880022', background: '#1A0000', button: '#FF6B5B', buttonLabel: '#1A0000', fontHeader: '#FFBBAA', fontBody: '#CC4433' } },
+  { name: 'Matcha Light', emoji: '🍵', colors: { primary: '#3A6B4A', secondary: '#86C29A', background: '#F0FFF4', button: '#3A6B4A', buttonLabel: '#FFFFF0', fontHeader: '#0D2B16', fontBody: '#2D5A3D' } },
+  { name: 'Matcha Dark', emoji: '🍵', colors: { primary: '#66AA7A', secondary: '#224433', background: '#060F08', button: '#66AA7A', buttonLabel: '#060F08', fontHeader: '#AADDBB', fontBody: '#558866' } },
+  { name: 'Saffron Light', emoji: '🫖', colors: { primary: '#C47E17', secondary: '#E8B96A', background: '#FFF9F0', button: '#8B5A00', buttonLabel: '#FFF3E0', fontHeader: '#3D2200', fontBody: '#7A4400' } },
+  { name: 'Saffron Dark', emoji: '🫖', colors: { primary: '#E8A030', secondary: '#6B3A00', background: '#140C00', button: '#E8A030', buttonLabel: '#140C00', fontHeader: '#FFCC77', fontBody: '#CC8822' } },
+  { name: 'Berry Light', emoji: '🫐', colors: { primary: '#6A1E8A', secondary: '#B87AC4', background: '#FDF5FF', button: '#6A1E8A', buttonLabel: '#FFE8FF', fontHeader: '#2D0040', fontBody: '#5C1A7A' } },
+  { name: 'Berry Dark', emoji: '🫐', colors: { primary: '#AA55CC', secondary: '#440055', background: '#0D0014', button: '#AA55CC', buttonLabel: '#0D0014', fontHeader: '#DDAAEE', fontBody: '#9944BB' } },
+  { name: 'Turmeric Light', emoji: '💛', colors: { primary: '#C8A000', secondary: '#E8D060', background: '#FFFDF0', button: '#A07800', buttonLabel: '#2D2000', fontHeader: '#1A1400', fontBody: '#5A4400' } },
+  { name: 'Turmeric Dark', emoji: '💛', colors: { primary: '#E8C840', secondary: '#665500', background: '#100E00', button: '#E8C840', buttonLabel: '#100E00', fontHeader: '#FFEE99', fontBody: '#BBAA22' } },
+  { name: 'Burgundy Light', emoji: '🍷', colors: { primary: '#6B1A26', secondary: '#A0536A', background: '#FFF5F7', button: '#6B1A26', buttonLabel: '#FFE8EC', fontHeader: '#2D0008', fontBody: '#5C1A22' } },
+  { name: 'Burgundy Dark', emoji: '🍷', colors: { primary: '#AA4455', secondary: '#440010', background: '#120006', button: '#AA4455', buttonLabel: '#120006', fontHeader: '#DDAAAA', fontBody: '#993344' } },
+  // ── TOYS ──
+  { name: 'Playful Light', emoji: '🎮', colors: { primary: '#E63900', secondary: '#FFB347', background: '#FFFDE7', button: '#E63900', buttonLabel: '#FFFFFF', fontHeader: '#3D0A00', fontBody: '#7A2200' } },
+  { name: 'Playful Dark', emoji: '🎮', colors: { primary: '#FF6633', secondary: '#CC6600', background: '#1A0A00', button: '#FF6633', buttonLabel: '#1A0A00', fontHeader: '#FFCCAA', fontBody: '#FF9955' } },
+  { name: 'Rainbow Light', emoji: '🌈', colors: { primary: '#E91E63', secondary: '#FF9800', background: '#FFF8FF', button: '#E91E63', buttonLabel: '#FFFFFF', fontHeader: '#3D0020', fontBody: '#7A0035' } },
+  { name: 'Rainbow Dark', emoji: '🌈', colors: { primary: '#FF6699', secondary: '#FF8800', background: '#1A0010', button: '#FF6699', buttonLabel: '#1A0010', fontHeader: '#FFBBDD', fontBody: '#FF4488' } },
+  { name: 'Sky Light', emoji: '🚀', colors: { primary: '#0A1172', secondary: '#4FC3F7', background: '#E8F4FD', button: '#0A1172', buttonLabel: '#E0F7FF', fontHeader: '#000530', fontBody: '#0A2B6B' } },
+  { name: 'Sky Dark', emoji: '🚀', colors: { primary: '#4488CC', secondary: '#112255', background: '#020510', button: '#4488CC', buttonLabel: '#020510', fontHeader: '#AACCEE', fontBody: '#3377BB' } },
+  { name: 'Jungle Light', emoji: '🦁', colors: { primary: '#1B5E20', secondary: '#F9A825', background: '#F1F8E9', button: '#1B5E20', buttonLabel: '#FFFDE7', fontHeader: '#002200', fontBody: '#2E7D32' } },
+  { name: 'Jungle Dark', emoji: '🦁', colors: { primary: '#44AA44', secondary: '#CC8800', background: '#030F03', button: '#44AA44', buttonLabel: '#030F03', fontHeader: '#AADDAA', fontBody: '#338833' } },
+  { name: 'Bubblegum Light', emoji: '🩵', colors: { primary: '#E91E8C', secondary: '#F8BBD9', background: '#FFF0F8', button: '#E91E8C', buttonLabel: '#FFFFFF', fontHeader: '#3D0030', fontBody: '#7A005A' } },
+  { name: 'Bubblegum Dark', emoji: '🩵', colors: { primary: '#FF55AA', secondary: '#880044', background: '#160008', button: '#FF55AA', buttonLabel: '#160008', fontHeader: '#FFBBDD', fontBody: '#CC3388' } },
+  { name: 'Brick Light', emoji: '🟥', colors: { primary: '#B71C1C', secondary: '#FFD600', background: '#FFF8F8', button: '#B71C1C', buttonLabel: '#FFFF99', fontHeader: '#3D0000', fontBody: '#7A0000' } },
+  { name: 'Brick Dark', emoji: '🟥', colors: { primary: '#EE4444', secondary: '#AA9900', background: '#140000', button: '#EE4444', buttonLabel: '#140000', fontHeader: '#FFAAAA', fontBody: '#CC3333' } },
+  { name: 'Superhero Light', emoji: '⚡', colors: { primary: '#1A237E', secondary: '#E53935', background: '#EEF0FF', button: '#1A237E', buttonLabel: '#FFE0E0', fontHeader: '#000030', fontBody: '#1A237E' } },
+  { name: 'Superhero Dark', emoji: '⚡', colors: { primary: '#4455CC', secondary: '#CC2222', background: '#050510', button: '#4455CC', buttonLabel: '#050510', fontHeader: '#AABBEE', fontBody: '#3344AA' } },
+  { name: 'Rajput Light', emoji: '🏰', colors: { primary: '#7B0000', secondary: '#C8960C', background: '#FFF8F0', button: '#7B0000', buttonLabel: '#FFF3CC', fontHeader: '#2D0000', fontBody: '#5C2800' } },
+  { name: 'Rajput Dark', emoji: '🏰', colors: { primary: '#CC2222', secondary: '#AA7700', background: '#140000', button: '#CC2222', buttonLabel: '#140000', fontHeader: '#FFAAAA', fontBody: '#AA3300' } },
+  { name: 'Carousel Light', emoji: '🎠', colors: { primary: '#B07D62', secondary: '#D4B896', background: '#FDF5EE', button: '#8A5C42', buttonLabel: '#FFF8F2', fontHeader: '#3D2010', fontBody: '#6B4030' } },
+  { name: 'Carousel Dark', emoji: '🎠', colors: { primary: '#D4AA88', secondary: '#6B4030', background: '#120A04', button: '#D4AA88', buttonLabel: '#120A04', fontHeader: '#EED4BB', fontBody: '#BB8866' } },
+  { name: 'Warli Light', emoji: '🎨', colors: { primary: '#5D3A1A', secondary: '#D2691E', background: '#FFF8F0', button: '#5D3A1A', buttonLabel: '#FDEBD0', fontHeader: '#1A0A00', fontBody: '#4A2508' } },
+  { name: 'Warli Dark', emoji: '🎨', colors: { primary: '#C87A3A', secondary: '#442210', background: '#0F0700', button: '#C87A3A', buttonLabel: '#0F0700', fontHeader: '#EEBB88', fontBody: '#AA6633' } }
 ];
 
 const DEFAULT_BRAND_COLORS = {
@@ -323,6 +386,27 @@ const Step1_BrandSetup = () => {
   const [headingFontOpen, setHeadingFontOpen] = useState(false);
   const [bodyFontOpen, setBodyFontOpen] = useState(false);
 
+  const [themeFilter, setThemeFilter] = useState('All'); // All, Fashion, Food, Toys
+  const [themeMode, setThemeMode] = useState('Both'); // Both, Light, Dark
+
+  const getFilteredThemes = () => {
+    return BRAND_THEMES.filter(t => {
+      const isIndustry = t.name.includes('Noir') || t.name.includes('Blush') || t.name.includes('Denim') || t.name.includes('Gold') || t.name.includes('Ivory') || t.name.includes('Neon') || t.name.includes('Khaki') || t.name.includes('Coral') || t.name.includes('Zari') || t.name.includes('Indigo');
+      const isFood = t.name.includes('Spice') || t.name.includes('Fresh') || t.name.includes('Cocoa') || t.name.includes('Mango') || t.name.includes('Tomato') || t.name.includes('Matcha') || t.name.includes('Saffron') || t.name.includes('Berry') || t.name.includes('Turmeric') || t.name.includes('Burgundy');
+      const isToys = t.name.includes('Playful') || t.name.includes('Rainbow') || t.name.includes('Sky') || t.name.includes('Jungle') || t.name.includes('Bubblegum') || t.name.includes('Brick') || t.name.includes('Superhero') || t.name.includes('Rajput') || t.name.includes('Carousel') || t.name.includes('Warli');
+      const isOriginal = !isIndustry && !isFood && !isToys;
+
+      const modeMatch = themeMode === 'Both' ? true : themeMode === 'Light' ? (t.name.endsWith('Light') || isOriginal) : t.name.endsWith('Dark');
+
+      if (themeFilter === 'All') return modeMatch;
+      if (themeFilter === 'Fashion') return isIndustry && modeMatch;
+      if (themeFilter === 'Food') return isFood && modeMatch;
+      if (themeFilter === 'Toys') return isToys && modeMatch;
+      if (themeFilter === 'Classic') return isOriginal && modeMatch;
+      return modeMatch;
+    });
+  };
+
   const handleThemeSelect = (theme) => {
     if (theme.name === 'Custom') return;
     setSelectedTheme(theme.name);
@@ -559,28 +643,60 @@ const Step1_BrandSetup = () => {
               <span className="material-symbols-outlined text-[#556067] text-lg" style={{ transform: themeDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>expand_more</span>
             </button>
             {themeDropdownOpen && (
-              <div className="absolute z-50 w-full mt-1 bg-white border border-[#e0e3e6] rounded-lg shadow-lg overflow-hidden" style={{ maxHeight: 320, overflowY: 'auto' }}>
-                {BRAND_THEMES.map(theme => (
-                  <button
-                    key={theme.name}
-                    type="button"
-                    onClick={() => { handleThemeSelect(theme); setThemeDropdownOpen(false); }}
-                    className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-[#f0faf4] transition-colors text-sm"
-                    style={{ background: selectedTheme === theme.name ? '#f0faf4' : undefined, borderLeft: selectedTheme === theme.name ? '3px solid #25D366' : '3px solid transparent' }}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span>{theme.emoji}</span>
-                      <span className="font-medium text-[#191C1E]">{theme.name}</span>
-                    </div>
-                    {theme.colors && (
-                      <div className="flex gap-1">
-                        {Object.values(theme.colors).map((hex, i) => (
-                          <div key={i} style={{ width: 14, height: 14, borderRadius: '50%', background: hex, border: '0.5px solid rgba(0,0,0,0.1)' }} />
-                        ))}
-                      </div>
-                    )}
-                  </button>
-                ))}
+              <div className="absolute z-50 w-full mt-1 bg-white border border-[#e0e3e6] rounded-lg shadow-lg overflow-hidden" style={{ maxHeight: 380, overflowY: 'auto' }}>
+                {/* Filter tabs */}
+                <div className="flex gap-1 p-2 border-b border-[#e0e3e6] bg-[#f8faf8] sticky top-0 z-10 flex-wrap">
+                  {['All','Classic','Fashion','Food','Toys'].map(f => (
+                    <button key={f} type="button" onClick={(e) => { e.stopPropagation(); setThemeFilter(f); }}
+                      className="px-2 py-1 rounded-full text-xs font-semibold transition-colors"
+                      style={{ background: themeFilter === f ? '#25D366' : '#e0e3e6', color: themeFilter === f ? '#005523' : '#556067' }}>
+                      {f}
+                    </button>
+                  ))}
+                  <div className="ml-auto flex gap-1">
+                    {['Both','Light','Dark'].map(m => (
+                      <button key={m} type="button" onClick={(e) => { e.stopPropagation(); setThemeMode(m); }}
+                        className="px-2 py-1 rounded-full text-xs font-semibold transition-colors"
+                        style={{ background: themeMode === m ? '#006d2f' : '#e0e3e6', color: themeMode === m ? '#fff' : '#556067' }}>
+                        {m === 'Light' ? '☀️' : m === 'Dark' ? '🌙' : '⊕'} {m}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {getFilteredThemes().map((theme, idx) => {
+                  const themes = getFilteredThemes();
+                  const prev = themes[idx - 1];
+                  const isFirstOriginal = !prev && themeFilter === 'All';
+                  const prevWasOriginal = prev && !['Noir','Blush','Denim','Gold','Ivory','Neon','Khaki','Coral','Zari','Indigo','Spice','Fresh','Cocoa','Mango','Tomato','Matcha','Saffron','Berry','Turmeric','Burgundy','Playful','Rainbow','Sky','Jungle','Bubblegum','Brick','Superhero','Rajput','Carousel','Warli'].some(n => prev.name.includes(n));
+                  const isFirstFashion = theme.name.includes('Noir') && (!prev || prevWasOriginal);
+                  const isFirstFood = theme.name.includes('Spice') && prev && !prev.name.includes('Spice');
+                  const isFirstToys = theme.name.includes('Playful') && prev && !prev.name.includes('Playful');
+                  return (
+                    <React.Fragment key={theme.name}>
+                      {isFirstFashion && themeFilter === 'All' && <div className="px-3 py-1 text-xs font-bold text-[#006d2f] bg-[#f0faf4] border-y border-[#e0e3e6]">👗 Fashion</div>}
+                      {isFirstFood && themeFilter === 'All' && <div className="px-3 py-1 text-xs font-bold text-[#006d2f] bg-[#f0faf4] border-y border-[#e0e3e6]">🍽️ Food</div>}
+                      {isFirstToys && themeFilter === 'All' && <div className="px-3 py-1 text-xs font-bold text-[#006d2f] bg-[#f0faf4] border-y border-[#e0e3e6]">🧸 Toys</div>}
+                      <button
+                        type="button"
+                        onClick={() => { handleThemeSelect(theme); setThemeDropdownOpen(false); }}
+                        className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-[#f0faf4] transition-colors text-sm"
+                        style={{ background: selectedTheme === theme.name ? '#f0faf4' : undefined, borderLeft: selectedTheme === theme.name ? '3px solid #25D366' : '3px solid transparent' }}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span>{theme.emoji}</span>
+                          <span className="font-medium text-[#191C1E]">{theme.name}</span>
+                        </div>
+                        {theme.colors && (
+                          <div className="flex gap-1">
+                            {Object.values(theme.colors).map((hex, i) => (
+                              <div key={i} style={{ width: 14, height: 14, borderRadius: '50%', background: hex, border: '0.5px solid rgba(0,0,0,0.1)' }} />
+                            ))}
+                          </div>
+                        )}
+                      </button>
+                    </React.Fragment>
+                  );
+                })}
               </div>
             )}
           </div>
