@@ -25,6 +25,7 @@ const Step3_CartConfig = () => {
     gstNumber: cartData.gstNumber || '',
     hsnCode: cartData.hsnCode || '',
     storeState: cartData.storeState || '',
+    panNumber: cartData.panNumber || '',
     tabName: cartData.tabName || 'Cart',
   });
 
@@ -187,6 +188,18 @@ const Step3_CartConfig = () => {
             <option value="Puducherry">Puducherry</option>
           </select>
           <p className="text-xs text-[#556067] ml-1">Required on GST tax invoice — your business state</p>
+        </div>
+
+        <div className="space-y-1 mb-4">
+          <label className="font-label-md text-[#3c4a3d] ml-1 text-xs uppercase tracking-wider">PAN Number</label>
+          <Input
+            type="text"
+            placeholder="e.g. AAAAA0000A"
+            value={settings.panNumber}
+            onChange={(e) => setSettings(prev => ({ ...prev, panNumber: e.target.value.toUpperCase() }))}
+            maxLength={10}
+          />
+          <p className="text-xs text-[#556067] ml-1">Required on GST tax invoice</p>
         </div>
 
         <Toggle label="Show GST Breakdown on Cart Page" checked={settings.showGSTBreakdownCart} onChange={() => handleToggle('showGSTBreakdownCart')} className="mb-3" />
