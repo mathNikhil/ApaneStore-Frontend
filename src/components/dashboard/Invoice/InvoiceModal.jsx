@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { tenantAPI } from '../../../services/api';
 
 const INDIAN_STATES = [
   'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
@@ -13,19 +14,41 @@ const INDIAN_STATES = [
 const API_URL = import.meta.env.VITE_API_URL || 'https://api.aapnaestore.com';
 
 const InvoiceModal = ({ subscription, onClose, onSuccess }) => {
-  const tenantName = (() => {
-    try { return JSON.parse(localStorage.getItem('user') || '{}').company_name || ''; } catch { return ''; }
-  })();
-
   const [gstStatus, setGstStatus] = useState('not_applicable');
   const [form, setForm] = useState({
-    tenant_business_name: tenantName,
+    tenant_business_name: '',
     tenant_gstin: '',
     tenant_address: '',
     tenant_state: '',
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const result = await tenantAPI.getMe();
+        if (result.success) {
+          const t = result.data;
+          setForm(f => ({
+            ...f,
+            tenant_business_name: t.business_name || t.company_name || '',
+            tenant_address: t.address || '',
+            tenant_state: t.state || '',
+            tenant_gstin: t.gst_number || '',
+          }));
+          if (t.gst_number) setGstStatus('has_gstin');
+        }
+      } catch (e) {
+        // fallback to localStorage
+        try {
+          const u = JSON.parse(localStorage.getItem('user') || '{}');
+          setForm(f => ({ ...f, tenant_business_name: u.company_name || '' }));
+        } catch {}
+      }
+    };
+    load();
+  }, []);
 
   const handleChange = (e) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -134,10 +157,11 @@ const InvoiceModal = ({ subscription, onClose, onSuccess }) => {
               type="text"
               name="tenant_business_name"
               value={form.tenant_business_name}
-              readOnly
-              className="w-full px-4 py-2.5 border border-[#e0e3e6] rounded-lg text-sm bg-[#f2f4f7] text-[#556067] cursor-not-allowed"
+              onChange={handleChange}
+              placeholder="Registered business name"
+              className="w-full px-4 py-2.5 border border-[#bbcbb9] rounded-lg text-sm focus:outline-none focus:border-[#006d2f]"
             />
-            <p className="text-xs text-[#556067] mt-1">Auto-filled from your profile. Update your name in Profile settings.</p>
+            <p className="text-xs text-[#556067] mt-1">Auto-filled from your profile. Edit if needed.</p>
           </div>
 
           {/* GST Status */}

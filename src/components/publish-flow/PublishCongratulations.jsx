@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { storeAPI } from '../../services/api';
+import { storeAPI, tenantAPI } from '../../services/api';
+import InvoiceDetailsPopup from './InvoiceDetailsPopup';
 
 
 const EmbedCodeCard = ({ storeUrl }) => {
@@ -90,14 +91,26 @@ const PublishCongratulations = () => {
     const [storeUrl, setStoreUrl] = useState('');
     const [adminUrl, setAdminUrl] = useState('');
     const [loading, setLoading] = useState(true);
+    const [showInvoicePopup, setShowInvoicePopup] = useState(false);
 
     useEffect(() => {
         const load = async () => {
             try {
-                const [storeResult, flowResult] = await Promise.all([
+                const [storeResult, flowResult, tenantResult] = await Promise.all([
                     storeAPI.getById(storeId),
                     storeAPI.getPublishFlowState(storeId),
+                    tenantAPI.getMe(),
                 ]);
+
+                // Show popup if mandatory invoice fields are missing
+                if (tenantResult.success) {
+                    const t = tenantResult.data;
+                    if (!t.state || !t.address || !t.business_name || !t.full_name) {
+                        setShowInvoicePopup(true);
+                    }
+                } else {
+                    setShowInvoicePopup(true);
+                }
 
                 const STOREFRONT_URL = import.meta.env.VITE_STOREFRONT_URL || 'http://localhost:3002';
                 const STORE_ADMIN_URL = import.meta.env.VITE_STORE_ADMIN_URL || 'http://localhost:3006';
@@ -129,6 +142,7 @@ const PublishCongratulations = () => {
     }
 
     return (
+        <>
         <div className="min-h-screen bg-[#f7f9fc] pb-10">
             <div className="sticky top-0 bg-white border-b border-[#e0e3e6] px-4 py-4 flex items-center justify-between">
                 <span className="font-semibold text-[#006d2f]">Publish eStore</span>
@@ -200,6 +214,11 @@ const PublishCongratulations = () => {
                 </div>
             </div>
         </div>
+
+            {showInvoicePopup && (
+                <InvoiceDetailsPopup onComplete={() => setShowInvoicePopup(false)} />
+            )}
+        </>
     );
 };
 

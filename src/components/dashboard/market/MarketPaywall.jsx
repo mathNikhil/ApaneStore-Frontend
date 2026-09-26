@@ -99,7 +99,7 @@ export default function MarketPaywall({ tenantId, onSubscribed }) {
                   </div>
                 )}
                 <div className="text-xs font-semibold text-gray-600 mt-0.5">
-                  Total: ₹{(plan.price_monthly / 100 * (1 + (plan.gst_rate || 18) / 100)).toFixed(2)}
+                  Total: ₹{(plan.price_monthly / 100 * (1 + (plan.gst_rate != null ? parseFloat(plan.gst_rate) : 18) / 100)).toFixed(2)}
                 </div>
                 {plan.price_yearly && (
                   <div className="text-xs text-green-600 mt-0.5">₹{Math.round(plan.price_yearly / 100)}/yr — save 16%</div>
@@ -130,7 +130,7 @@ export default function MarketPaywall({ tenantId, onSubscribed }) {
                 ${plan.is_recommended
                   ? 'bg-[#25D366] text-white hover:bg-[#1db954]'
                   : 'border-2 border-[#25D366] text-[#25D366] hover:bg-[#25D366]/5'}`}>
-              {paying === plan.id ? 'Opening payment...' : `Subscribe — ₹${(plan.price_monthly / 100 * (1 + (plan.gst_rate || 18) / 100)).toFixed(2)} (incl. GST)`}
+              {paying === plan.id ? 'Opening payment...' : `Subscribe — ₹${(plan.price_monthly / 100 * (1 + (plan.gst_rate != null ? parseFloat(plan.gst_rate) : 18) / 100)).toFixed(2)} (incl. GST)`}
             </button>
           </div>
         ))}

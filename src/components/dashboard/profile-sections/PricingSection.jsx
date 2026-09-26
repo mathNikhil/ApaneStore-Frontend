@@ -63,7 +63,7 @@ const PricingSection = () => {
         </div>
         <div>
           <h1 className="text-xl font-bold text-[#191c1e]">Pricing Plans</h1>
-          <p className="text-xs text-[#556067]">All prices include 18% GST · No hidden charges</p>
+          <p className="text-xs text-[#556067]">All prices include GST · No hidden charges</p>
         </div>
       </div>
 
@@ -114,7 +114,7 @@ const PricingSection = () => {
                   <div className="grid grid-cols-4 px-4 py-2 bg-white">
                     <div className="text-xs font-semibold text-[#556067] uppercase tracking-wider">Duration</div>
                     <div className="text-xs font-semibold text-[#556067] uppercase tracking-wider text-center">Base</div>
-                    <div className="text-xs font-semibold text-[#556067] uppercase tracking-wider text-center">GST (18%)</div>
+                    <div className="text-xs font-semibold text-[#556067] uppercase tracking-wider text-center">GST</div>
                     <div className="text-xs font-semibold text-[#556067] uppercase tracking-wider text-right">Total</div>
                   </div>
 
@@ -160,7 +160,7 @@ const PricingSection = () => {
       )}
 
       <div className="mt-6 p-4 bg-[#f2f4f7] rounded-xl text-xs text-[#556067] space-y-1">
-        <p>• All prices are inclusive of 18% GST</p>
+        <p>• All prices are inclusive of GST</p>
         <p>• Subscriptions are non-refundable as per our Refund Policy</p>
         <p>• Prices are subject to change. Existing subscriptions are not affected by price changes</p>
         <p>• For billing queries contact: nikhil.mathur1215@gmail.com</p>
