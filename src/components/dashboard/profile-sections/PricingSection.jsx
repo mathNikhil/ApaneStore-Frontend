@@ -34,8 +34,9 @@ const PricingSection = () => {
       .finally(() => setLoading(false));
   }, []);
 
-  // Group by plan_key
+  // Group by plan_key — exclude own hosting plans
   const grouped = plans.reduce((acc, plan) => {
+    if (plan.plan_key === 'custom_domain_own_hosting' || plan.plan_key === 'subdomain_own_hosting') return acc;
     if (!acc[plan.plan_key]) acc[plan.plan_key] = [];
     acc[plan.plan_key].push(plan);
     return acc;
