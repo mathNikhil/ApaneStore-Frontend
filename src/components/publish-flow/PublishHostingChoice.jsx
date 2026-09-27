@@ -98,27 +98,7 @@ const PublishHostingChoice = () => {
                     </ul>
                 </button>
 
-                {/* My Own Hosting — same white-card treatment, never
-                    greyed out; it's a fully active, selectable option. */}
-                <button
-                    onClick={() => setHostingType('own')}
-                    className={`w-full text-left p-5 rounded-2xl border-2 mb-4 transition-all ${
-                        hostingType === 'own' ? 'border-[#25D366] bg-[#25D366]/5' : 'border-[#e0e3e6] bg-white'
-                    }`}
-                >
-                    <div className="flex items-center gap-3 mb-2">
-                        <span className={`material-symbols-outlined ${hostingType === 'own' ? 'text-[#006d2f]' : 'text-[#bbcbb9]'}`}>
-                            {hostingType === 'own' ? 'radio_button_checked' : 'radio_button_unchecked'}
-                        </span>
-                        <h3 className="text-lg font-semibold text-[#191c1e]">My Own Hosting</h3>
-                    </div>
-                    <p className="text-sm text-[#556067] mb-3">Self-managed — use your own hosting provider and server.</p>
-                    <ul className="space-y-1.5 text-sm text-[#556067]">
-                        <li className="flex items-center gap-2"><span className="material-symbols-outlined text-sm text-[#8e9eab]">info</span>Technical setup required</li>
-                        <li className="flex items-center gap-2"><span className="material-symbols-outlined text-sm text-[#8e9eab]">settings</span>You manage updates, security, and uptime</li>
-                    </ul>
-                    <p className="text-xs text-[#8e9eab] mt-3">Select this if you already have a server and technical expertise.</p>
-                </button>
+                {/* My Own Hosting — hidden until feature is ready */}
             </div>
 
             <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e0e3e6] px-4 py-4 flex justify-between">

@@ -5,7 +5,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'https://api.aapnaestore.com';
 const PLAN_LABELS = {
   subdomain_apnaestore: { name: 'Free Subdomain + AapnaEstore Hosting', icon: 'language', desc: 'Get a free subdomain (yourstore.aapnaestore.com). Hosting managed by us.' },
   custom_domain_apnaestore: { name: 'Custom Domain + AapnaEstore Hosting', icon: 'domain', desc: 'Bring your own domain. Hosting managed by us.' },
-  custom_domain_own_hosting: { name: 'Custom Domain + Own Hosting', icon: 'dns', desc: 'Bring your own domain and host on your own server.' },
+  // custom_domain_own_hosting: hidden until feature is ready
 };
 
 const CYCLE_ORDER = ['30days', '90days', '365days'];
