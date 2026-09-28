@@ -583,6 +583,7 @@ const PreviewProfileTab = ({
                   <option value="">Select state</option>
                   {INDIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
+                </select>
               </div>
             )}
 
