@@ -1,5 +1,36 @@
 import React, { useState } from 'react';
 
+const INDIAN_STATES = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal','Delhi','Jammu and Kashmir','Ladakh','Puducherry','Chandigarh','Andaman and Nicobar Islands','Dadra and Nagar Haveli and Daman and Diu','Lakshadweep'];
+
+const CITIES_BY_STATE = {
+  'Delhi': ['New Delhi','Delhi','Dwarka','Rohini','Pitam Pura','Janakpuri','Laxmi Nagar','Saket','Noida Extension'],
+  'Maharashtra': ['Mumbai','Pune','Nagpur','Nashik','Aurangabad','Solapur','Kolhapur','Amravati','Thane','Navi Mumbai'],
+  'Karnataka': ['Bengaluru','Mysuru','Hubli','Mangaluru','Belagavi','Kalaburagi','Davanagere','Ballari','Vijayapura'],
+  'Tamil Nadu': ['Chennai','Coimbatore','Madurai','Tiruchirappalli','Salem','Tirunelveli','Vellore','Erode','Thoothukudi'],
+  'Gujarat': ['Ahmedabad','Surat','Vadodara','Rajkot','Bhavnagar','Jamnagar','Junagadh','Gandhinagar','Anand'],
+  'Uttar Pradesh': ['Lucknow','Kanpur','Agra','Varanasi','Meerut','Allahabad','Ghaziabad','Bareilly','Aligarh','Noida'],
+  'Rajasthan': ['Jaipur','Jodhpur','Udaipur','Kota','Bikaner','Ajmer','Alwar','Bhilwara','Sikar'],
+  'West Bengal': ['Kolkata','Howrah','Durgapur','Asansol','Siliguri','Bardhaman','Malda','Baharampur'],
+  'Andhra Pradesh': ['Visakhapatnam','Vijayawada','Guntur','Nellore','Kurnool','Rajahmundry','Tirupati','Kakinada'],
+  'Telangana': ['Hyderabad','Warangal','Karimnagar','Nizamabad','Khammam','Secunderabad','Ramagundam'],
+  'Kerala': ['Thiruvananthapuram','Kochi','Kozhikode','Thrissur','Kannur','Kollam','Palakkad','Alappuzha'],
+  'Madhya Pradesh': ['Bhopal','Indore','Jabalpur','Gwalior','Ujjain','Sagar','Dewas','Satna'],
+  'Bihar': ['Patna','Gaya','Bhagalpur','Muzaffarpur','Purnia','Darbhanga','Bihar Sharif','Arrah'],
+  'Punjab': ['Ludhiana','Amritsar','Jalandhar','Patiala','Bathinda','Mohali','Hoshiarpur','Firozpur'],
+  'Haryana': ['Gurugram','Faridabad','Panipat','Ambala','Rohtak','Hisar','Karnal','Sonipat'],
+  'Odisha': ['Bhubaneswar','Cuttack','Rourkela','Brahmapur','Sambalpur','Puri','Balasore'],
+  'Jharkhand': ['Ranchi','Jamshedpur','Dhanbad','Bokaro','Deoghar','Hazaribagh','Giridih'],
+  'Chhattisgarh': ['Raipur','Bhilai','Bilaspur','Korba','Durg','Rajnandgaon','Jagdalpur'],
+  'Uttarakhand': ['Dehradun','Haridwar','Roorkee','Haldwani','Rudrapur','Kashipur','Rishikesh'],
+  'Himachal Pradesh': ['Shimla','Dharamsala','Solan','Mandi','Palampur','Baddi','Nahan'],
+  'Assam': ['Guwahati','Silchar','Dibrugarh','Jorhat','Nagaon','Tinsukia','Tezpur'],
+  'Goa': ['Panaji','Margao','Mapusa','Ponda','Bicholim','Sanquelim'],
+  'Puducherry': ['Puducherry','Karaikal','Mahe','Yanam'],
+  'Chandigarh': ['Chandigarh'],
+  'Jammu and Kashmir': ['Srinagar','Jammu','Anantnag','Baramulla','Sopore','Udhampur'],
+  'Ladakh': ['Leh','Kargil'],
+};
+
 // Minimal inline brand icons — avoids depending on Material Symbols, which
 // doesn't include social platform logos.
 const FacebookIcon = (props) => (
@@ -32,10 +63,14 @@ const PreviewProfileTab = ({
   setDefaultAddress,
   updateProfileInfo,
   onLogout,
+  isFirstTime,
+  onProfileSaved,
 }) => {
   const { profile, brand, address } = data || {};
   const brandColors = brand?.colors || {};
   const brandFonts = brand?.fonts || { heading: 'Inter', body: 'Inter' };
+
+  // Address fields/rules from Step 5
   const addressFields = address?.fields || {
     recipientName: true,
     recipientMobile: true,
@@ -75,6 +110,7 @@ const PreviewProfileTab = ({
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [editingAddressId, setEditingAddressId] = useState(null);
   const [editingProfile, setEditingProfile] = useState(false);
+  React.useEffect(() => { if (isFirstTime) setEditingProfile(true); }, [isFirstTime]);
   const [profileNameInput, setProfileNameInput] = useState(profile?.name || '');
   const [profileEmailInput, setProfileEmailInput] = useState(profile?.email || '');
   const [savingProfile, setSavingProfile] = useState(false);
@@ -96,11 +132,16 @@ const PreviewProfileTab = ({
 
   const handleSaveProfile = async () => {
     if (!updateProfileInfo) return;
+    if (!profileNameInput.trim()) {
+      alert('Please enter your name');
+      return;
+    }
     setSavingProfile(true);
     try {
       const result = await updateProfileInfo({ name: profileNameInput.trim(), email: profileEmailInput.trim() });
       if (result.success) {
         setEditingProfile(false);
+        if (isFirstTime && onProfileSaved) onProfileSaved();
       } else {
         alert(result.error || 'Failed to save. Please try again.');
       }
@@ -252,7 +293,7 @@ const PreviewProfileTab = ({
             ) : (
               <>
                 <div className="flex items-center gap-2">
-                  <h2 className="text-xl font-bold" style={{ color: brandColors.fontHeader, fontFamily: brandFonts?.heading || 'Inter' }}>
+                  <h2 className="text-xl font-bold" style={{ color: brandColors.fontHeader, fontFamily: brandFonts?.body || 'Inter' }}>
                     {profile?.name || 'Add your name'}
                   </h2>
                   <button
@@ -282,7 +323,7 @@ const PreviewProfileTab = ({
       {/* ADDRESS BOOK — From Step 5, shared with Cart tab */}
       <div className="rounded-lg border p-4 mb-4" style={{ backgroundColor: brandColors.background || '#FFFFFF' }}>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="font-semibold text-sm" style={{ color: brandColors.fontHeader, fontFamily: brandFonts?.heading || 'Inter' }}>
+          <h3 className="font-semibold text-sm" style={{ color: brandColors.fontHeader, fontFamily: brandFonts?.body || 'Inter' }}>
             Address Book
           </h3>
           <span className="text-xs" style={{ color: brandColors.fontBody, fontFamily: brandFonts?.body || 'Inter' }}>
@@ -399,7 +440,7 @@ const PreviewProfileTab = ({
       {/* ADDRESS FORM - Add/Edit */}
       {showAddressForm && (
         <div className="rounded-lg border p-4 mb-4" style={{ backgroundColor: brandColors.background || '#FFFFFF' }}>
-          <h3 className="font-semibold text-sm mb-3" style={{ color: brandColors.fontHeader, fontFamily: brandFonts?.heading || 'Inter' }}>
+          <h3 className="font-semibold text-sm mb-3" style={{ color: brandColors.fontHeader, fontFamily: brandFonts?.body || 'Inter' }}>
             {editingAddressId ? 'Edit Address' : 'Add New Address'}
           </h3>
 
@@ -517,10 +558,14 @@ const PreviewProfileTab = ({
                   type="text"
                   value={addressForm.city}
                   onChange={(e) => handleAddressChange('city', e.target.value)}
-                  placeholder="Enter city"
+                  placeholder="Search city"
+                  list="city-options"
                   className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black/10"
                   style={{ borderColor: brandColors.secondary }}
                 />
+                <datalist id="city-options">
+                  {(CITIES_BY_STATE[addressForm.state] || []).map(c => <option key={c} value={c} />)}
+                </datalist>
               </div>
             )}
 
@@ -529,14 +574,15 @@ const PreviewProfileTab = ({
                 <label className="block text-xs font-medium mb-1" style={{ color: brandColors.fontBody, fontFamily: brandFonts?.body || 'Inter' }}>
                   State <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="text"
+                <select
                   value={addressForm.state}
                   onChange={(e) => handleAddressChange('state', e.target.value)}
-                  placeholder="Enter state"
-                  className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black/10"
+                  className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black/10 bg-white"
                   style={{ borderColor: brandColors.secondary }}
-                />
+                >
+                  <option value="">Select state</option>
+                  {INDIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
               </div>
             )}
 
@@ -605,7 +651,7 @@ const PreviewProfileTab = ({
 
       {/* ABOUT US - From Step 7 */}
       <div className="rounded-lg border p-4 mb-4" style={{ backgroundColor: brandColors.background || '#FFFFFF' }}>
-        <h3 className="font-semibold text-sm mb-2" style={{ color: brandColors.fontHeader, fontFamily: brandFonts?.heading || 'Inter' }}>
+        <h3 className="font-semibold text-sm mb-2" style={{ color: brandColors.fontHeader, fontFamily: brandFonts?.body || 'Inter' }}>
           About Us
         </h3>
         <p className="text-sm leading-relaxed" style={{ color: brandColors.fontBody, fontFamily: brandFonts?.body || 'Inter' }}>
@@ -615,7 +661,7 @@ const PreviewProfileTab = ({
 
       {/* SUPPORT DETAILS - From Step 7 */}
       <div className="rounded-lg border p-4 mb-4" style={{ backgroundColor: brandColors.background || '#FFFFFF' }}>
-        <h3 className="font-semibold text-sm mb-3" style={{ color: brandColors.fontHeader, fontFamily: brandFonts?.heading || 'Inter' }}>
+        <h3 className="font-semibold text-sm mb-3" style={{ color: brandColors.fontHeader, fontFamily: brandFonts?.body || 'Inter' }}>
           Support Details
         </h3>
         <div className="space-y-2">
@@ -637,7 +683,7 @@ const PreviewProfileTab = ({
       {/* SOCIAL MEDIA - From Step 7, clickable icons linking to the tenant's pages */}
       {socialEntries.length > 0 && (
         <div className="rounded-lg border p-4 mb-4" style={{ backgroundColor: brandColors.background || '#FFFFFF' }}>
-          <h3 className="font-semibold text-sm mb-3" style={{ color: brandColors.fontHeader, fontFamily: brandFonts?.heading || 'Inter' }}>
+          <h3 className="font-semibold text-sm mb-3" style={{ color: brandColors.fontHeader, fontFamily: brandFonts?.body || 'Inter' }}>
             Follow Us
           </h3>
           <div className="flex items-center gap-3">
