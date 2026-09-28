@@ -152,7 +152,7 @@ export default function Market() {
         <div style={{ background:'#fff', borderRadius:20, padding:28, width:'100%', maxWidth:440, boxShadow:'0 8px 32px rgba(0,0,0,0.2)' }}>
           <div style={{ textAlign:'center', marginBottom:20 }}>
             <div style={{ fontSize:36, marginBottom:8 }}>🎉</div>
-            <h2 style={{ fontSize:20, fontWeight:800, color:'#191c1e', marginBottom:4 }}>WhatsApp Market Activated!</h2>
+            <h2 style={{ fontSize:20, fontWeight:800, color:'#191c1e', marginBottom:4 }}>Invoice Details</h2>
             <p style={{ fontSize:13, color:'#556067' }}>Enter your invoice details for GST compliance. These will be used for all your AapnaEstore invoices.</p>
           </div>
           <div style={{ marginBottom:14 }}>
@@ -185,9 +185,8 @@ export default function Market() {
             <label style={{ fontSize:12, fontWeight:700, color:'#556067', textTransform:'uppercase', display:'block', marginBottom:4 }}>Billing Address</label>
             <textarea value={invoiceFields.address} onChange={e => setInvoiceFields(p => ({...p, address: e.target.value}))} placeholder="Full billing address" style={{ width:'100%', padding:'10px 14px', border:'1px solid #e0e3e6', borderRadius:8, fontSize:14, boxSizing:'border-box', height:70, resize:'vertical' }} />
           </div>
-          <div style={{ display:'flex', gap:10 }}>
-            <button onClick={() => setShowInvoicePopup(false)} style={{ flex:1, padding:10, border:'1px solid #e0e3e6', borderRadius:8, background:'#fff', cursor:'pointer', fontSize:14, color:'#556067' }}>Skip for now</button>
-            <button onClick={handleSaveInvoiceDetails} disabled={!invoiceFields.business_name || !invoiceFields.state || invoiceSaving} style={{ flex:2, padding:10, border:'none', borderRadius:8, background:'#25D366', color:'#fff', cursor:'pointer', fontSize:14, fontWeight:700 }}>
+          <div style={{ display:'flex' }}>
+            <button onClick={handleSaveInvoiceDetails} disabled={!invoiceFields.business_name || !invoiceFields.state || invoiceSaving} style={{ flex:1, padding:10, border:'none', borderRadius:8, background:'#25D366', color:'#fff', cursor:'pointer', fontSize:14, fontWeight:700 }}>
               {invoiceSaved ? '✅ Saved!' : invoiceSaving ? 'Saving...' : 'Save Details'}
             </button>
           </div>
