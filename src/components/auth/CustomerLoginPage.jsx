@@ -63,7 +63,7 @@ const CustomerLoginPage = () => {
               prefix="+91"
               placeholder="9876543210"
               maxLength={10}
-              type="tel"
+              type="tel" inputMode="numeric" pattern="[0-9]*"
               value={mobile}
               onChange={(e) => setMobile(e.target.value.replace(/\D/g, ''))}
               error={error}
