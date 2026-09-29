@@ -36,6 +36,7 @@ function App() {
     <AuthProvider>
       <Toaster position="top-center" toastOptions={{ duration: 4000, style: { borderRadius: '10px', fontWeight: '500', fontSize: '14px' }, success: { style: { background: '#006d2f', color: '#fff' } }, error: { style: { background: '#ba1a1a', color: '#fff' } } }} />
       <StoreBuilderProvider>
+        <ImpersonationHandler />
         <BrowserRouter>
           <Routes>
             {/* Public Routes */}
