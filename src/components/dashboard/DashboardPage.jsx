@@ -115,11 +115,31 @@ const DashboardPage = () => {
         );
     }
 
+    const isImpersonated = localStorage.getItem('isImpersonated') === 'true';
+    const impersonationBanner = isImpersonated ? (
+        <div style={{ 
+            position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999,
+            background: '#dc2626', color: '#fff', 
+            padding: '8px 16px', textAlign: 'center',
+            fontSize: 13, fontWeight: 700,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
+        }}>
+            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>admin_panel_settings</span>
+            ⚠️ Super Admin Mode — You are managing this tenant's dashboard
+            <button 
+                onClick={() => { localStorage.clear(); window.location.href = '/'; }}
+                style={{ marginLeft: 16, padding: '2px 12px', background: '#fff', color: '#dc2626', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 700, fontSize: 12 }}
+            >
+                Exit
+            </button>
+        </div>
+    ) : null;
+
     if (hasStores) {
-        return <DashboardReturnUser stores={stores} subscriptions={subscriptions} onStoreUpdate={handleStoreUpdate} />;
+        return <>{impersonationBanner}<div style={isImpersonated ? { marginTop: 40 } : {}}><DashboardReturnUser stores={stores} subscriptions={subscriptions} onStoreUpdate={handleStoreUpdate} /></div></>;
     }
 
-    return <DashboardFirstTime />;
+    return <>{impersonationBanner}<div style={isImpersonated ? { marginTop: 40 } : {}}><DashboardFirstTime /></div></>;
 };
 
 export default DashboardPage;
