@@ -44,6 +44,8 @@ if (impToken) {
   localStorage.setItem('deviceFingerprint', fp);
   sessionStorage.setItem('sessionVerified', 'true');
   sessionStorage.setItem('sessionVerified', '1');
+  // Set placeholder user so AuthContext doesn't block
+  localStorage.setItem('user', JSON.stringify({ id: 0, impersonated: true }));
   window.history.replaceState({}, '', '/dashboard');
 }
 
