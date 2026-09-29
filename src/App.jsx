@@ -39,7 +39,11 @@ if (impToken) {
   localStorage.setItem('token', impToken);
   localStorage.setItem('isImpersonated', 'true');
   localStorage.setItem('loginTime', Date.now().toString());
+  // Set device fingerprint so AuthContext auto-verify passes
+  const fp = navigator.userAgent + screen.width + screen.height + navigator.language;
+  localStorage.setItem('deviceFingerprint', fp);
   sessionStorage.setItem('sessionVerified', 'true');
+  sessionStorage.setItem('sessionVerified', '1');
   window.history.replaceState({}, '', '/dashboard');
 }
 
