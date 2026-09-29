@@ -39,6 +39,8 @@ const ImpersonationHandler = () => {
       localStorage.clear();
       localStorage.setItem('token', impToken);
       localStorage.setItem('isImpersonated', 'true');
+      localStorage.setItem('loginTime', Date.now().toString());
+      sessionStorage.setItem('sessionVerified', 'true');
       window.history.replaceState({}, '', '/dashboard');
       window.location.href = '/dashboard';
     }
