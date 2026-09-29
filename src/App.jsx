@@ -31,6 +31,21 @@ import AdminProtectedRoute from './components/admin/AdminProtectedRoute';
 
 import './styles/globals.css';
 
+const ImpersonationHandler = () => {
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const impToken = params.get('impersonate');
+    if (impToken) {
+      localStorage.clear();
+      localStorage.setItem('token', impToken);
+      localStorage.setItem('isImpersonated', 'true');
+      window.history.replaceState({}, '', '/dashboard');
+      window.location.href = '/dashboard';
+    }
+  }, []);
+  return null;
+};
+
 function App() {
   return (
     <AuthProvider>
