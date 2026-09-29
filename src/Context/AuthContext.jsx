@@ -80,6 +80,11 @@ export const AuthProvider = ({ children }) => {
     // Auto-verify session if valid 12-hour token exists on same device
     const checkAutoVerify = () => {
         if (sessionStorage.getItem('sessionVerified')) return true;
+        // Super admin impersonation — bypass all checks
+        if (localStorage.getItem('isImpersonated') === 'true') {
+            sessionStorage.setItem('sessionVerified', '1');
+            return true;
+        }
         const token = localStorage.getItem('token');
         const loginTime = localStorage.getItem('loginTime');
         const fingerprint = localStorage.getItem('deviceFingerprint');
