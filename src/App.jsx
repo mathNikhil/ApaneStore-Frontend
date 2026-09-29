@@ -31,22 +31,19 @@ import AdminProtectedRoute from './components/admin/AdminProtectedRoute';
 
 import './styles/globals.css';
 
-const ImpersonationHandler = () => {
-  React.useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const impToken = params.get('impersonate');
-    if (impToken) {
-      localStorage.clear();
-      localStorage.setItem('token', impToken);
-      localStorage.setItem('isImpersonated', 'true');
-      localStorage.setItem('loginTime', Date.now().toString());
-      sessionStorage.setItem('sessionVerified', 'true');
-      window.history.replaceState({}, '', '/dashboard');
-      window.location.href = '/dashboard';
-    }
-  }, []);
-  return null;
-};
+// Handle impersonation synchronously before React renders
+const params = new URLSearchParams(window.location.search);
+const impToken = params.get('impersonate');
+if (impToken) {
+  localStorage.clear();
+  localStorage.setItem('token', impToken);
+  localStorage.setItem('isImpersonated', 'true');
+  localStorage.setItem('loginTime', Date.now().toString());
+  sessionStorage.setItem('sessionVerified', 'true');
+  window.history.replaceState({}, '', '/dashboard');
+}
+
+const ImpersonationHandler = () => null;
 
 function App() {
   return (
