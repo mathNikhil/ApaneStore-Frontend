@@ -52,7 +52,9 @@ export const AuthProvider = ({ children }) => {
         // Check 12-hour session on same device
         const twelveHours = 12 * 60 * 60 * 1000;
         const currentFingerprint = getDeviceFingerprint();
-        if (savedFingerprint && savedFingerprint !== currentFingerprint) {
+        // Skip fingerprint check for super admin impersonation
+        const isImpersonated = localStorage.getItem('isImpersonated') === 'true';
+        if (!isImpersonated && savedFingerprint && savedFingerprint !== currentFingerprint) {
             // Different device — clear session, force new OTP
             localStorage.removeItem('token');
             localStorage.removeItem('loginTime');
