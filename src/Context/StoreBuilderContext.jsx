@@ -100,6 +100,8 @@ export const StoreBuilderProvider = ({ children }) => {
         showGSTBreakdownCart: true,
         showGSTBreakdownCheckout: true,
         gstNumber: '',
+        deliveryZones: [],
+        dineInLocations: [],
     });
 
     // Step 4: Payment Data
@@ -591,9 +593,9 @@ export const StoreBuilderProvider = ({ children }) => {
                     });
                 }
                 
-                // Populate Cart Data
+                // Populate Cart Data — reset first to avoid mixing with previous store
                 if (config.cart) {
-                    setCartData(prev => ({ ...prev, ...config.cart }));
+                    setCartData(prev => ({ ...prev, ...config.cart, deliveryZones: config.cart.deliveryZones || [], dineInLocations: config.cart.dineInLocations || [] }));
                 }
                 
                 // Populate Payment Data
@@ -611,9 +613,9 @@ export const StoreBuilderProvider = ({ children }) => {
                     setOrderData(prev => ({ ...prev, ...config.order }));
                 }
                 
-                // Populate Profile Data
+                // Populate Profile Data — reset first to avoid mixing with previous store
                 if (config.profile) {
-                    setProfileData(prev => ({ ...prev, ...config.profile }));
+                    setProfileData(config.profile);
                 }
                 
                 // Populate Return Data
