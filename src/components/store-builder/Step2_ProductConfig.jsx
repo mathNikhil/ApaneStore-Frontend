@@ -546,17 +546,16 @@ Continue?`;
       });
 
       console.log('Inventory updates queued:', inventorySnapshot.length);
-      // Save store first, then sync inventory
-      if (pendingInventoryUpdates.current.length > 0) {
+      // Save store first, then sync inventory — use inventorySnapshot directly
+      if (inventorySnapshot.length > 0) {
         const syncInventory = async (storeId) => {
           const token = localStorage.getItem('token');
           const resp = await fetch(`https://api.aapnaestore.com/api/store/${storeId}/inventory/sync-csv`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ updates: pendingInventoryUpdates.current })
+            body: JSON.stringify({ updates: inventorySnapshot })
           });
           const data = await resp.json(); console.log('Inventory sync result:', data);
-          const inventorySnapshot = [];
         };
 
         if (currentStoreId) {
