@@ -7,7 +7,7 @@ import Toggle from '../Common/Toggle';
 import Slider from '../Common/Slider';
 
 const Step6_OrderTrackerConfig = () => {
-  const { orderData, setOrderData } = useStoreBuilder();
+  const { orderData, setOrderData, currentStoreId } = useStoreBuilder();
 
   const [settings, setSettings] = useState({
     enableCancellation: orderData.enableCancellation !== undefined ? orderData.enableCancellation : false,
@@ -25,6 +25,19 @@ const Step6_OrderTrackerConfig = () => {
     console.log('Saving Step 6 data:', settings); // Debug log
     setOrderData(settings);
   }, [settings]);
+
+  React.useEffect(function() {
+    setSettings({
+      enableCancellation: orderData.enableCancellation !== undefined ? orderData.enableCancellation : false,
+      cancellationWindow: orderData.cancellationWindow || 2,
+      cancelOnlyConfirmed: orderData.cancelOnlyConfirmed !== undefined ? orderData.cancelOnlyConfirmed : true,
+      showCancelReason: orderData.showCancelReason !== undefined ? orderData.showCancelReason : true,
+      sendCancelEmail: orderData.sendCancelEmail !== undefined ? orderData.sendCancelEmail : true,
+      showStatusTimeline: orderData.showStatusTimeline !== undefined ? orderData.showStatusTimeline : true,
+      showEstimatedDelivery: orderData.showEstimatedDelivery !== undefined ? orderData.showEstimatedDelivery : true,
+      ordersTabName: orderData.ordersTabName || 'Orders',
+    });
+  }, [currentStoreId]);
 
   const handleToggle = (key) => {
     setSettings(prev => ({ ...prev, [key]: !prev[key] }));

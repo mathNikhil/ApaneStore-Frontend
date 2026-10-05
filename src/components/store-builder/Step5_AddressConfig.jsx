@@ -6,7 +6,7 @@ import Toggle from '../Common/Toggle';
 import Slider from '../Common/Slider';
 
 const Step5_AddressConfig = () => {
-  const { addressData, setAddressData } = useStoreBuilder();
+  const { addressData, setAddressData, currentStoreId } = useStoreBuilder();
 
   const [settings, setSettings] = useState({
     maxAddresses: addressData.maxAddresses || 3,
@@ -31,6 +31,17 @@ const Step5_AddressConfig = () => {
     console.log('Saving Step 5 data:', settings); // Debug log
     setAddressData(settings);
   }, [settings]);
+
+  React.useEffect(function() {
+    setSettings({
+      maxAddresses: addressData.maxAddresses || 3,
+      allowDefaultAddress: addressData.allowDefaultAddress !== undefined ? addressData.allowDefaultAddress : true,
+      showAddressLabels: addressData.showAddressLabels !== undefined ? addressData.showAddressLabels : true,
+      allowAddressEditing: addressData.allowAddressEditing !== undefined ? addressData.allowAddressEditing : true,
+      allowAddressDeletion: addressData.allowAddressDeletion !== undefined ? addressData.allowAddressDeletion : true,
+      fields: addressData.fields || { recipientName: true, recipientMobile: true, addressLine1: true, addressLine2: false, city: true, state: true, pincode: true, landmark: false },
+    });
+  }, [currentStoreId]);
 
   const handleToggle = (key) => {
     setSettings(prev => ({ ...prev, [key]: !prev[key] }));

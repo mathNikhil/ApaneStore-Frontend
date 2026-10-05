@@ -7,7 +7,7 @@ import Toggle from '../Common/Toggle';
 import Slider from '../Common/Slider';
 
 const Step3_CartConfig = () => {
-  const { cartData, setCartData, profileData } = useStoreBuilder();
+  const { cartData, setCartData, profileData, currentStoreId } = useStoreBuilder();
 
   const [settings, setSettings] = useState({
     enableDineIn: cartData.enableDineIn || false,

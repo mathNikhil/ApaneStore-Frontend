@@ -13,6 +13,22 @@ import Toggle from '../Common/Toggle';
 const Step4_PaymentConfig = () => {
   const { paymentData, setPaymentData, currentStoreId } = useStoreBuilder();
   const [searchParams] = useSearchParams();
+  React.useEffect(function() {
+    setSettings({
+      upiEnabled: paymentData.upiEnabled !== undefined ? paymentData.upiEnabled : true,
+      upiId: paymentData.upiId || '',
+      upiAppName: paymentData.upiAppName || '',
+      showQRCode: paymentData.showQRCode !== undefined ? paymentData.showQRCode : true,
+      showUPIId: paymentData.showUPIId !== undefined ? paymentData.showUPIId : true,
+      codEnabled: true,
+      cardEnabled: false,
+      netBankingEnabled: false,
+      cashfreeEnabled: paymentData.cashfreeEnabled || false,
+      stripeEnabled: false,
+      defaultPayment: paymentData.defaultPayment || 'upi',
+    });
+  }, [currentStoreId]);
+
   const effectiveStoreId = currentStoreId || searchParams.get('storeId') || new URLSearchParams(window.location.search).get('storeId') || localStorage.getItem('currentStoreId');
 
   const [settings, setSettings] = useState({
