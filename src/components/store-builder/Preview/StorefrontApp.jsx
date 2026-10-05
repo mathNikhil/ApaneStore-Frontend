@@ -177,8 +177,15 @@ const StorefrontApp = ({ builderData, storeId, device = 'desktop', className = '
     supportTime: builderData.profile.supportTime,
     supportEmail: builderData.profile.supportEmail,
     aboutUs: builderData.profile.aboutUs,
+    storeAddress: builderData.profile.storeAddress || '',
+    storeState: builderData.profile.storeState || '',
+    storeCity: builderData.profile.storeCity || '',
+    storePincode: builderData.profile.storePincode || '',
+    returnPolicy: builderData.profile.returnPolicy || '',
+    storeLocations: builderData.profile.storeLocations || [],
     socialLinks: builderData.profile.socialLinks,
     feedbackLinks: builderData.profile.feedbackLinks,
+    profile: builderData.profile,
 
     // ✅ Was missing entirely — Step 8's return policy never reached
     // usePreviewData at all, regardless of what usePreviewData itself did
