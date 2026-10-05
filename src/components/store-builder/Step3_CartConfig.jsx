@@ -7,7 +7,7 @@ import Toggle from '../Common/Toggle';
 import Slider from '../Common/Slider';
 
 const Step3_CartConfig = () => {
-  const { cartData, setCartData } = useStoreBuilder();
+  const { cartData, setCartData, profileData } = useStoreBuilder();
 
   const [settings, setSettings] = useState({
     enableDineIn: cartData.enableDineIn || false,
@@ -28,6 +28,8 @@ const Step3_CartConfig = () => {
     panNumber: cartData.panNumber || '',
     tallyStockGroup: cartData.tallyStockGroup || '',
     tabName: cartData.tabName || 'Cart',
+    deliveryZones: cartData.deliveryZones || [],
+    dineInLocations: cartData.dineInLocations || [],
   });
 
   // Save to context on every change
@@ -47,6 +49,60 @@ const Step3_CartConfig = () => {
 
   const handleSliderChange = (key, value) => {
     setSettings(prev => ({ ...prev, [key]: parseInt(value) }));
+  };
+
+  // Get all store locations from Step 7
+  const mainStore = { id: 'main', name: 'Main Store', address: profileData?.storeAddress || '' };
+  const additionalLocations = profileData?.storeLocations || [];
+  const allLocations = [mainStore, ...additionalLocations.filter(l => l.name && l.address)];
+  const hasMultipleLocations = allLocations.length > 1;
+
+  // Delivery zone helpers
+  const getZonesForLocation = (locationId) => {
+    const existing = settings.deliveryZones.find(z => z.storeAddressId === locationId);
+    return existing?.zones || [];
+  };
+
+  const updateZonesForLocation = (locationId, locationName, zones) => {
+    const updated = settings.deliveryZones.filter(z => z.storeAddressId !== locationId);
+    if (zones.length > 0) {
+      updated.push({ storeAddressId: locationId, storeAddressName: locationName, zones });
+    }
+    handleChange('deliveryZones', updated);
+  };
+
+  const addZone = (locationId, locationName) => {
+    const zones = getZonesForLocation(locationId);
+    updateZonesForLocation(locationId, locationName, [...zones, { pincode: '', area: '', deliveryCost: 0 }]);
+  };
+
+  const updateZone = (locationId, locationName, idx, field, value) => {
+    const zones = [...getZonesForLocation(locationId)];
+    zones[idx] = { ...zones[idx], [field]: value };
+    updateZonesForLocation(locationId, locationName, zones);
+  };
+
+  const removeZone = (locationId, locationName, idx) => {
+    const zones = getZonesForLocation(locationId).filter((_, i) => i !== idx);
+    updateZonesForLocation(locationId, locationName, zones);
+  };
+
+  // Dine-in per location helpers
+  const isDineInEnabledForLocation = (locationId) => {
+    if (!settings.dineInLocations.length) return true; // default all enabled
+    const loc = settings.dineInLocations.find(l => l.id === locationId);
+    return loc ? loc.dineInEnabled : true;
+  };
+
+  const toggleDineInForLocation = (locationId, locationName) => {
+    const existing = settings.dineInLocations.find(l => l.id === locationId);
+    let updated;
+    if (existing) {
+      updated = settings.dineInLocations.map(l => l.id === locationId ? { ...l, dineInEnabled: !l.dineInEnabled } : l);
+    } else {
+      updated = [...settings.dineInLocations, { id: locationId, name: locationName, dineInEnabled: false }];
+    }
+    handleChange('dineInLocations', updated);
   };
 
   return (
@@ -89,6 +145,25 @@ const Step3_CartConfig = () => {
             <p className="text-xs text-[#556067] mt-1">This label appears on the order type selector in your storefront</p>
           </div>
         )}
+
+        {/* Per-location dine-in toggle — only shown if multiple locations */}
+        {settings.enableDineIn && hasMultipleLocations && (
+          <div className="mb-4 ml-1 border border-[#e0e3e6] rounded-xl p-3">
+            <p className="text-xs font-semibold text-[#3c4a3d] uppercase tracking-wider mb-3">Dine-In Per Location</p>
+            {allLocations.map(loc => (
+              <div key={loc.id} className="flex items-center justify-between py-2 border-b border-[#f0f2f5] last:border-0">
+                <div>
+                  <p className="text-sm font-semibold text-[#191c1e]">{loc.name}</p>
+                  <p className="text-xs text-[#556067]">{loc.address}</p>
+                </div>
+                <Toggle
+                  checked={isDineInEnabledForLocation(loc.id)}
+                  onChange={() => toggleDineInForLocation(loc.id, loc.name)}
+                />
+              </div>
+            ))}
+          </div>
+        )}
         <Toggle label="Enable Free Delivery" checked={settings.freeDelivery} onChange={() => handleToggle('freeDelivery')} className="mb-4" />
         <Slider label="Free Delivery Threshold" value={settings.freeDeliveryThreshold} onChange={(e) => handleSliderChange('freeDeliveryThreshold', e.target.value)} valueLabel={`₹${settings.freeDeliveryThreshold}`} min={0} max={2000} unit="₹" className="mb-4" />
         <Toggle label="Show Progress Bar on Cart Page" description="Encourages customers to add more items for free delivery" checked={settings.showProgressBar} onChange={() => handleToggle('showProgressBar')} className="mb-3" />
@@ -103,6 +178,98 @@ const Step3_CartConfig = () => {
             <Input type="text" value={settings.deliveryCharge} onChange={(e) => setSettings(prev => ({ ...prev, deliveryCharge: Number(e.target.value.replace(/[^0-9.]/g, '')) || 0 }))} className="pl-8" />
           </div>
         </div>
+      </Card>
+
+      {/* DELIVERY ZONES SECTION */}
+      <Card className="mb-6">
+        <div className="flex items-center gap-2 mb-4">
+          <span className="material-symbols-outlined text-[#006d2f] filled">pin_drop</span>
+          <div>
+            <h2 className="font-label-md text-label-md text-[#556067] uppercase tracking-wider text-xs">Delivery Zones</h2>
+            <p className="text-xs text-[#8e9eab] mt-0.5">Optional. Leave empty to deliver anywhere. Add zones to restrict delivery and set per-zone charges.</p>
+          </div>
+        </div>
+
+        {!hasMultipleLocations ? (
+          /* Single store — one zone table */
+          <div>
+            <p className="text-xs font-semibold text-[#3c4a3d] uppercase tracking-wider mb-2">Main Store Delivery Zones</p>
+            {getZonesForLocation('main').length > 0 && (
+              <div className="mb-2">
+                <div className="grid grid-cols-12 gap-1 mb-1 px-1">
+                  <span className="col-span-3 text-xs text-[#8e9eab] uppercase">Pincode</span>
+                  <span className="col-span-5 text-xs text-[#8e9eab] uppercase">Area Name</span>
+                  <span className="col-span-3 text-xs text-[#8e9eab] uppercase">Cost (₹)</span>
+                  <span className="col-span-1"></span>
+                </div>
+                {getZonesForLocation('main').map((zone, idx) => (
+                  <div key={idx} className="grid grid-cols-12 gap-1 mb-1 items-center">
+                    <input value={zone.pincode} onChange={e => updateZone('main', 'Main Store', idx, 'pincode', e.target.value.replace(/\D/g, '').slice(0,6))}
+                      placeholder="1100" inputMode="numeric"
+                      className="col-span-3 border border-[#e0e3e6] rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-[#006d2f]" />
+                    <input value={zone.area} onChange={e => updateZone('main', 'Main Store', idx, 'area', e.target.value)}
+                      placeholder="Pitam Pura"
+                      className="col-span-5 border border-[#e0e3e6] rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-[#006d2f]" />
+                    <input value={zone.deliveryCost} onChange={e => updateZone('main', 'Main Store', idx, 'deliveryCost', Number(e.target.value.replace(/\D/g,'')) || 0)}
+                      placeholder="0" inputMode="numeric"
+                      className="col-span-3 border border-[#e0e3e6] rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-[#006d2f]" />
+                    <button onClick={() => removeZone('main', 'Main Store', idx)} className="col-span-1 text-red-400 hover:text-red-600 flex justify-center">
+                      <span className="material-symbols-outlined text-base">delete</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <button onClick={() => addZone('main', 'Main Store')}
+              className="w-full py-2 border-2 border-dashed border-[#006d2f] text-[#006d2f] rounded-xl text-sm font-semibold hover:bg-[#f0faf4] transition-all flex items-center justify-center gap-1">
+              <span className="material-symbols-outlined text-base">add</span> Add Delivery Zone
+            </button>
+            {getZonesForLocation('main').length > 0 && (
+              <p className="text-xs text-[#556067] mt-2">💡 Enter pincode prefix (e.g. 1100 covers 110000-110099). Customer pincode must start with your prefix.</p>
+            )}
+          </div>
+        ) : (
+          /* Multiple locations — one zone table per location */
+          <div className="space-y-4">
+            {allLocations.map(loc => (
+              <div key={loc.id} className="border border-[#e0e3e6] rounded-xl p-3">
+                <p className="text-sm font-semibold text-[#191c1e] mb-2">🏪 {loc.name}</p>
+                {loc.address && <p className="text-xs text-[#556067] mb-2">{loc.address}</p>}
+                {getZonesForLocation(loc.id).length > 0 && (
+                  <div className="mb-2">
+                    <div className="grid grid-cols-12 gap-1 mb-1 px-1">
+                      <span className="col-span-3 text-xs text-[#8e9eab] uppercase">Pincode</span>
+                      <span className="col-span-5 text-xs text-[#8e9eab] uppercase">Area Name</span>
+                      <span className="col-span-3 text-xs text-[#8e9eab] uppercase">Cost (₹)</span>
+                      <span className="col-span-1"></span>
+                    </div>
+                    {getZonesForLocation(loc.id).map((zone, idx) => (
+                      <div key={idx} className="grid grid-cols-12 gap-1 mb-1 items-center">
+                        <input value={zone.pincode} onChange={e => updateZone(loc.id, loc.name, idx, 'pincode', e.target.value.replace(/\D/g,'').slice(0,6))}
+                          placeholder="1100" inputMode="numeric"
+                          className="col-span-3 border border-[#e0e3e6] rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-[#006d2f]" />
+                        <input value={zone.area} onChange={e => updateZone(loc.id, loc.name, idx, 'area', e.target.value)}
+                          placeholder="Area name"
+                          className="col-span-5 border border-[#e0e3e6] rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-[#006d2f]" />
+                        <input value={zone.deliveryCost} onChange={e => updateZone(loc.id, loc.name, idx, 'deliveryCost', Number(e.target.value.replace(/\D/g,'')) || 0)}
+                          placeholder="0" inputMode="numeric"
+                          className="col-span-3 border border-[#e0e3e6] rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-[#006d2f]" />
+                        <button onClick={() => removeZone(loc.id, loc.name, idx)} className="col-span-1 text-red-400 hover:text-red-600 flex justify-center">
+                          <span className="material-symbols-outlined text-base">delete</span>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <button onClick={() => addZone(loc.id, loc.name)}
+                  className="w-full py-2 border-2 border-dashed border-[#006d2f] text-[#006d2f] rounded-xl text-sm font-semibold hover:bg-[#f0faf4] transition-all flex items-center justify-center gap-1">
+                  <span className="material-symbols-outlined text-base">add</span> Add Zone
+                </button>
+              </div>
+            ))}
+            <p className="text-xs text-[#556067]">💡 Pincode prefix (e.g. 1100 covers 110000-110099). Orders auto-assigned to matching location.</p>
+          </div>
+        )}
       </Card>
 
       <Card>
