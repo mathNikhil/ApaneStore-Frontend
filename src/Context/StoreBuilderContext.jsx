@@ -522,7 +522,18 @@ export const StoreBuilderProvider = ({ children }) => {
                 const config = store.config || {};
                 
                 console.log('📡 Store config:', config);
-                
+
+                // ✅ Reset ALL state to defaults before loading new store
+                // This prevents data from previous store leaking into new store
+                setBrandData({});
+                setProductData({ categories: [], banner: {} });
+                setCartData({ enableDineIn: false, dineInLabel: 'Dine In', freeDelivery: false, freeDeliveryThreshold: 0, deliveryCharge: 0, showProgressBar: true, showDeliveryMessage: true, enableGST: true, gstRate: 0, tabName: 'Cart', taxLabel: 'GST', showGSTBreakdownCart: true, showGSTBreakdownCheckout: true, gstNumber: '', deliveryZones: [], dineInLocations: [] });
+                setPaymentData({ codEnabled: false, upiEnabled: false, cardEnabled: false, netBankingEnabled: false, upiId: '', upiAppName: '', showQRCode: true, showUPIId: true, defaultPayment: 'cod' });
+                setAddressData({});
+                setOrderData({});
+                setProfileData({});
+                setReturnData({});
+
                 // ✅ Set store ID
                 setCurrentStoreId(storeId);
                 if (store.store_type) setStoreType(store.store_type);
