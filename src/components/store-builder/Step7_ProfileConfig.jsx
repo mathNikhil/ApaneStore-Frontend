@@ -8,7 +8,8 @@ import Input from '../Common/Input';
 
 const Step7_ProfileConfig = () => {
   const navigate = useNavigate();
-  const { profileData, setProfileData, productData, brandData } = useStoreBuilder();
+  const { profileData, setProfileData, productData, brandData, currentStoreId } = useStoreBuilder();
+  const profileDataRef = React.useRef(false);
 
   var hasProducts = false;
   if (productData.categories) {
@@ -38,6 +39,28 @@ const Step7_ProfileConfig = () => {
     storeCity: profileData.storeCity || '',
     storePincode: profileData.storePincode || '',
   });
+
+  // Sync when store changes (store switch or refresh)
+  useEffect(function() {
+    setProfile({
+      officeNumber: profileData.officeNumber || '',
+      storeAddress: profileData.storeAddress || '',
+      supportTime: profileData.supportTime || '9:00 AM - 6:00 PM',
+      supportEmail: profileData.supportEmail || '',
+      aboutUs: profileData.aboutUs || '',
+      facebook: (profileData.socialLinks && profileData.socialLinks.facebook) || '',
+      instagram: (profileData.socialLinks && profileData.socialLinks.instagram) || '',
+      twitter: (profileData.socialLinks && profileData.socialLinks.twitter) || '',
+      youtube: (profileData.socialLinks && profileData.socialLinks.youtube) || '',
+      facebookReviews: (profileData.feedbackLinks && profileData.feedbackLinks.facebookReviews) || '',
+      instagramFeedback: (profileData.feedbackLinks && profileData.feedbackLinks.instagramFeedback) || '',
+      returnPolicy: profileData.returnPolicy || '',
+      storeLocations: profileData.storeLocations || [],
+      storeState: profileData.storeState || '',
+      storeCity: profileData.storeCity || '',
+      storePincode: profileData.storePincode || '',
+    });
+  }, [currentStoreId]);
 
   useEffect(function() {
     setProfileData({
