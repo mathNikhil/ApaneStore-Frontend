@@ -449,6 +449,7 @@ const Step2_ProductConfig = () => {
       const unitIdx = headers.indexOf('unit');
       const priceIdx = headers.indexOf('price');
       const inStockIdx = headers.indexOf('instock');
+      const sizeIdCsvIdx = headers.indexOf('size_id');
 
       if (catIdx === -1 || prodIdx === -1) {
         alert('CSV must have category_name and product_name columns');
@@ -468,7 +469,8 @@ const Step2_ProductConfig = () => {
           size: cols[sizeIdx] || '',
           unit: cols[unitIdx] || '',
           price: cols[priceIdx] || '',
-          inStock: inStockIdx !== -1 ? cols[inStockIdx] : ''
+          inStock: inStockIdx !== -1 ? cols[inStockIdx] : '',
+          csvSizeId: sizeIdCsvIdx !== -1 ? (cols[sizeIdCsvIdx] || '').trim() : ''
         });
       }
 
@@ -507,7 +509,7 @@ Continue?`;
 
         // Add/update from CSV
         for (const row of csvRows) {
-          const { catName, prodName, varName, size, unit, price, inStock } = row;
+          const { catName, prodName, varName, size, unit, price, inStock, csvSizeId } = row;
 
           let cat = updated.find(c => c.name.toLowerCase() === catName.toLowerCase());
           if (!cat) {
@@ -530,11 +532,12 @@ Continue?`;
           if (size) {
             const sizeExists = vari.sizes.find(s => s.size === size && s.unit === unit);
             if (!sizeExists) {
-              const sizeId = generateId();
+              const sizeId = csvSizeId || generateId();
               vari.sizes.push({ id: sizeId, size, unit, price });
               if (inStock !== '') inventorySnapshot.push({ sizeId, inStock: parseInt(inStock) || 0 });
             } else if (inStock !== '') {
-              inventorySnapshot.push({ sizeId: sizeExists.id, inStock: parseInt(inStock) || 0 });
+              const sizeId = csvSizeId || sizeExists.id;
+              inventorySnapshot.push({ sizeId, inStock: parseInt(inStock) || 0 });
             }
             // Update price if changed
             const existingSize = vari.sizes.find(s => s.size === size && s.unit === unit);
@@ -576,7 +579,7 @@ Continue?`;
   };
 
   const downloadCurrentProducts = () => {
-    const rows = ['category_name,product_name,variation_name,size,unit,price,InStock'];
+    const rows = ['category_name,product_name,variation_name,size,unit,price,InStock,size_id'];
     categories.forEach(cat => {
       (cat.products || []).forEach(prod => {
         (prod.variations || []).forEach(vari => {
@@ -588,7 +591,8 @@ Continue?`;
               sz.size || '',
               sz.unit || '',
               sz.price || '',
-              ''
+              '',
+              sz.id || ''
             ].join(','));
           });
         });
