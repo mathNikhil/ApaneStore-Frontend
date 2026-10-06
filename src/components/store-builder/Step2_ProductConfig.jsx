@@ -579,12 +579,32 @@ Continue?`;
     e.target.value = '';
   };
 
-  const downloadCurrentProducts = () => {
+  const downloadCurrentProducts = async () => {
+    // Fetch current stock from inventory table
+    let stockMap = {};
+    try {
+      const token = localStorage.getItem('token');
+      if (currentStoreId && token) {
+        const resp = await fetch(`https://api.aapnaestore.com/api/store/${currentStoreId}/inventory`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await resp.json();
+        if (data.success && data.data) {
+          data.data.forEach(item => {
+            stockMap[String(item.size_id)] = parseInt(item.stock_quantity) || 0;
+          });
+        }
+      }
+    } catch(err) {
+      console.warn('Could not fetch inventory for CSV:', err);
+    }
+
     const rows = ['category_name,product_name,variation_name,size,unit,price,InStock,size_id'];
     categories.forEach(cat => {
       (cat.products || []).forEach(prod => {
         (prod.variations || []).forEach(vari => {
           (vari.sizes || []).forEach(sz => {
+            const currentStock = stockMap[String(sz.id)] !== undefined ? stockMap[String(sz.id)] : '';
             rows.push([
               `"${(cat.name || '').replace(/"/g, '""')}"`,
               `"${(prod.name || '').replace(/"/g, '""')}"`,
@@ -592,7 +612,7 @@ Continue?`;
               sz.size || '',
               sz.unit || '',
               sz.price || '',
-              '',
+              currentStock,
               sz.id || ''
             ].join(','));
           });
