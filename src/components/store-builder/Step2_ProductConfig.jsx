@@ -470,7 +470,14 @@ const Step2_ProductConfig = () => {
           unit: cols[unitIdx] || '',
           price: cols[priceIdx] || '',
           inStock: inStockIdx !== -1 ? cols[inStockIdx] : '',
-          csvSizeId: sizeIdCsvIdx !== -1 ? (cols[sizeIdCsvIdx] || '').trim() : ''
+          csvSizeId: sizeIdCsvIdx !== -1 ? (() => {
+            const raw = (cols[sizeIdCsvIdx] || '').trim();
+            // Convert scientific notation (1.79E+12) back to integer
+            if (raw && raw.includes('E+')) {
+              try { return String(Math.round(parseFloat(raw))); } catch(e) { return raw; }
+            }
+            return raw;
+          })() : ''
         });
       }
 
