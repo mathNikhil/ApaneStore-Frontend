@@ -1,4 +1,5 @@
 import AIAssistant from './AIAssistant';
+import * as XLSX from 'xlsx';
 import { showSuccess, showError } from '../../utils/toast';
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
