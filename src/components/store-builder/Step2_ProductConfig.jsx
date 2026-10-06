@@ -703,6 +703,10 @@ Cakes,Birthday Cake,Vanilla,500,g,500,8`;
         }
         return c;
       }));
+      // Save store and delete from inventory
+      setTimeout(() => {
+        if (saveStore) saveStore().catch(err => console.error('Save after delete failed:', err));
+      }, 500);
       const token = localStorage.getItem('token');
       if (currentStoreId && token && prod) {
         fetch(`https://api.aapnaestore.com/api/store/${currentStoreId}/inventory/delete-product`, {
