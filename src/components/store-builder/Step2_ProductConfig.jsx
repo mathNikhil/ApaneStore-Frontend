@@ -494,6 +494,8 @@ Continue?`;
 
       // Build new categories from CSV
       const inventorySnapshot = [];
+      const capturedStoreId = currentStoreId; // capture before async callback
+      const capturedToken = localStorage.getItem('token');
       setCategories(prev => {
         const updated = [...prev];
 
@@ -549,9 +551,9 @@ Continue?`;
         // Sync inventory INSIDE setCategories callback where inventorySnapshot is populated
         if (inventorySnapshot.length > 0) {
           const doSync = async () => {
-            const token = localStorage.getItem('token');
-            const storeId = currentStoreId;
-            if (!storeId) return;
+            const token = capturedToken;
+            const storeId = capturedStoreId;
+            if (!storeId) { console.warn('No storeId for sync'); return; }
             try {
               const resp = await fetch(`https://api.aapnaestore.com/api/store/${storeId}/inventory/sync-csv`, {
                 method: 'POST',
