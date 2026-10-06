@@ -694,27 +694,22 @@ Cakes,Birthday Cake,Vanilla,500,g,500,8`;
   };
 
   const deleteProduct = (categoryId, productId) => {
-    if (window.confirm('Archive this product? It will be hidden from your store and greyed out in inventory. You can restore it later.')) {
-      setCategories(categories.map(cat => {
-        if (cat.id === categoryId) {
-          return {
-            ...cat,
-            products: cat.products.map(p => {
-              if (p.id === productId) return { ...p, _archived: true };
-              return p;
-            })
-          };
+    if (window.confirm('Delete this product? It will be permanently removed from your store and inventory.')) {
+      const cat = categories.find(c => c.id === categoryId);
+      const prod = cat?.products?.find(p => p.id === productId);
+      setCategories(categories.map(c => {
+        if (c.id === categoryId) {
+          return { ...c, products: c.products.filter(p => p.id !== productId) };
         }
-        return cat;
+        return c;
       }));
-      // Mark as archived in inventory table
       const token = localStorage.getItem('token');
-      if (currentStoreId && token) {
-        fetch(`https://api.aapnaestore.com/api/store/${currentStoreId}/inventory/archive-product`, {
-          method: 'POST',
+      if (currentStoreId && token && prod) {
+        fetch(`https://api.aapnaestore.com/api/store/${currentStoreId}/inventory/delete-product`, {
+          method: 'DELETE',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ productId })
-        }).catch(err => console.error('Archive failed:', err));
+          body: JSON.stringify({ productId: prod.id })
+        }).catch(err => console.error('Delete failed:', err));
       }
     }
   };
