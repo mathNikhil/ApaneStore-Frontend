@@ -541,10 +541,10 @@ Continue?`;
             if (!sizeExists) {
               const sizeId = csvSizeId || generateId();
               vari.sizes.push({ id: sizeId, size, unit, price });
-              if (inStock !== '') inventorySnapshot.push({ sizeId, inStock: parseInt(inStock) || 0 });
+              if (inStock !== '') inventorySnapshot.push({ sizeId, inStock: parseInt(inStock) || 0, productName: prodName, variationName: varName, size, unit });
             } else if (inStock !== '') {
               const sizeId = csvSizeId || sizeExists.id;
-              inventorySnapshot.push({ sizeId, inStock: parseInt(inStock) || 0 });
+              inventorySnapshot.push({ sizeId, inStock: parseInt(inStock) || 0, productName: prodName, variationName: varName, size, unit });
             }
             const existingSize = vari.sizes.find(s => s.size === size && s.unit === unit);
             if (existingSize && price) existingSize.price = price;
