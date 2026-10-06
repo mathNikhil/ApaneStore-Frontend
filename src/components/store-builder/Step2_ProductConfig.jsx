@@ -585,14 +585,13 @@ Continue?`;
     try {
       const token = localStorage.getItem('token');
       if (currentStoreId && token) {
-        const resp = await fetch(`https://api.aapnaestore.com/api/store/${currentStoreId}/inventory`, {
+        const resp = await fetch(`https://api.aapnaestore.com/api/store/${currentStoreId}/inventory/stock-for-csv`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await resp.json();
         if (data.success && data.data) {
-          data.data.forEach(item => {
-            stockMap[String(item.size_id)] = parseInt(item.stock_quantity) || 0;
-          });
+          // data.data is already a stockMap { size_id: quantity }
+          Object.assign(stockMap, data.data);
         }
       }
     } catch(err) {
