@@ -694,13 +694,28 @@ Cakes,Birthday Cake,Vanilla,500,g,500,8`;
   };
 
   const deleteProduct = (categoryId, productId) => {
-    if (window.confirm('Are you sure you want to delete this product?')) {
+    if (window.confirm('Archive this product? It will be hidden from your store and greyed out in inventory. You can restore it later.')) {
       setCategories(categories.map(cat => {
         if (cat.id === categoryId) {
-          return { ...cat, products: cat.products.filter(p => p.id !== productId) };
+          return {
+            ...cat,
+            products: cat.products.map(p => {
+              if (p.id === productId) return { ...p, _archived: true };
+              return p;
+            })
+          };
         }
         return cat;
       }));
+      // Mark as archived in inventory table
+      const token = localStorage.getItem('token');
+      if (currentStoreId && token) {
+        fetch(`https://api.aapnaestore.com/api/store/${currentStoreId}/inventory/archive-product`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ productId })
+        }).catch(err => console.error('Archive failed:', err));
+      }
     }
   };
 
