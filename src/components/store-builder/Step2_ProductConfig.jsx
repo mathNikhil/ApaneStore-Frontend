@@ -545,32 +545,31 @@ Continue?`;
           }
         }
         pendingInventoryUpdates.current = inventorySnapshot;
+
+        // Sync inventory INSIDE setCategories callback where inventorySnapshot is populated
+        if (inventorySnapshot.length > 0) {
+          const doSync = async () => {
+            const token = localStorage.getItem('token');
+            const storeId = currentStoreId;
+            if (!storeId) return;
+            try {
+              const resp = await fetch(`https://api.aapnaestore.com/api/store/${storeId}/inventory/sync-csv`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ updates: inventorySnapshot })
+              });
+              const data = await resp.json();
+              console.log('Inventory sync result:', data, 'updates:', inventorySnapshot.length);
+            } catch(err) {
+              console.error('Inventory sync failed:', err);
+            }
+          };
+          // Small delay to let saveStore complete first
+          setTimeout(doSync, 2000);
+        }
+
         return updated;
       });
-
-      console.log('Inventory updates queued:', inventorySnapshot.length);
-      // Save store first, then sync inventory — use inventorySnapshot directly
-      if (inventorySnapshot.length > 0) {
-        const syncInventory = async (storeId) => {
-          const token = localStorage.getItem('token');
-          const resp = await fetch(`https://api.aapnaestore.com/api/store/${storeId}/inventory/sync-csv`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ updates: inventorySnapshot })
-          });
-          const data = await resp.json(); console.log('Inventory sync result:', data);
-        };
-
-        if (currentStoreId) {
-          // Store already exists — save then sync
-          if (saveStore) {
-            saveStore().then(() => syncInventory(currentStoreId))
-              .catch(err => console.error('Save/sync failed:', err));
-          } else {
-            setTimeout(() => syncInventory(currentStoreId), 3000);
-          }
-        }
-      }
 
       alert('Products imported successfully!');
     };
