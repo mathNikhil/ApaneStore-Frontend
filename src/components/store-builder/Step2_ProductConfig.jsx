@@ -603,52 +603,38 @@ Continue?`;
   };
 
   const downloadCurrentProducts = async () => {
-    // Fetch current stock from inventory table
     let stockMap = {};
     try {
-      const token = localStorage.getItem('token');
-      const storeIdForCsv = currentStoreId || localStorage.getItem('currentStoreId');
-      console.log('Fetching stock for store:', storeIdForCsv);
-      if (storeIdForCsv) {
-        const resp = await fetch(`https://api.aapnaestore.com/api/store/${storeIdForCsv}/inventory/stock-for-csv`);
+      const storeIdForXlsx = currentStoreId || localStorage.getItem('currentStoreId');
+      if (storeIdForXlsx) {
+        const resp = await fetch(`https://api.aapnaestore.com/api/store/${storeIdForXlsx}/inventory/stock-for-csv`);
         const data = await resp.json();
-        if (data.success && data.data) {
-          // data.data is already a stockMap { size_id: quantity }
-          Object.assign(stockMap, data.data);
-        }
+        if (data.success && data.data) Object.assign(stockMap, data.data);
       }
-    } catch(err) {
-      console.warn('Could not fetch inventory for CSV:', err);
-    }
+    } catch(err) { console.warn('Could not fetch inventory:', err); }
 
-    const rows = ['category_name,product_name,variation_name,size,unit,price,InStock,size_id'];
+    const rows = [['category_name','product_name','variation_name','size','unit','price','InStock','size_id']];
     categories.forEach(cat => {
-      (cat.products || []).forEach(prod => {
+      (cat.products || []).filter(p => !p._archived).forEach(prod => {
         (prod.variations || []).forEach(vari => {
           (vari.sizes || []).forEach(sz => {
-            const currentStock = stockMap[String(sz.id)] !== undefined ? stockMap[String(sz.id)] : '';
-            rows.push([
-              `"${(cat.name || '').replace(/"/g, '""')}"`,
-              `"${(prod.name || '').replace(/"/g, '""')}"`,
-              `"${(vari.name || '').replace(/"/g, '""')}"`,
-              sz.size || '',
-              sz.unit || '',
-              sz.price || '',
-              currentStock,
-              sz.id || ''
-            ].join(','));
+            const currentStock = stockMap[String(sz.id)] !== undefined ? stockMap[String(sz.id)] : 0;
+            rows.push([cat.name||'', prod.name||'', vari.name||'', sz.size||'', sz.unit||'', sz.price||'', currentStock, String(sz.id||'')]);
           });
         });
       });
     });
-    const csv = rows.join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'my-products.csv';
-    a.click();
-    URL.revokeObjectURL(url);
+
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    // Force size_id column (H=index 7) as text to prevent Excel scientific notation
+    const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+    for (let r = 1; r <= range.e.r; r++) {
+      const cellAddr = XLSX.utils.encode_cell({ r, c: 7 });
+      if (ws[cellAddr]) { ws[cellAddr].t = 's'; ws[cellAddr].v = String(ws[cellAddr].v); }
+    }
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Products');
+    XLSX.writeFile(wb, 'my-products.xlsx');
   };
 
   const downloadCSVTemplate = () => {
