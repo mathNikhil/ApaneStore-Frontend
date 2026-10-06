@@ -1480,7 +1480,7 @@ Cakes,Birthday Cake,Vanilla,500,g,500,8`;
               </button>
             )}
             <button onClick={() => document.getElementById('csv-upload').click()} className="flex items-center gap-1 border border-[#006d2f] text-[#006d2f] px-3 py-2 rounded-full text-xs font-semibold hover:bg-[#f0fff4] transition-all">
-              <span className="material-symbols-outlined text-sm">upload_file</span> Upload CSV
+              <span className="material-symbols-outlined text-sm">upload_file</span> Upload Products
             </button>
             <button onClick={() => setShowAddCategory(true)} className="flex items-center gap-1 bg-[#25D366] text-[#005523] px-4 py-2 rounded-full font-bold text-sm hover:brightness-105 active:scale-[0.98] transition-all">
               <span className="material-symbols-outlined text-base">add</span> Add Category
