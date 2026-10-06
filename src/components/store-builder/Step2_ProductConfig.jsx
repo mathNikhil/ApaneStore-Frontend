@@ -638,21 +638,20 @@ Continue?`;
   };
 
   const downloadCSVTemplate = () => {
-    const csv = `category_name,product_name,variation_name,size,unit,price,InStock
-Shoes,Leather Shoes,Black,7,UK,654,50
-Shoes,Leather Shoes,Black,8,UK,654,30
-Shoes,Leather Shoes,Black,9,UK,654,20
-Shoes,Leather Shoes,Tan,7,UK,647,15
-Shoes,Leather Shoes,Tan,8,UK,647,10
-Cakes,Birthday Cake,Chocolate,500,g,550,5
-Cakes,Birthday Cake,Vanilla,500,g,500,8`;
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'product-template.csv';
-    a.click();
-    URL.revokeObjectURL(url);
+    const rows = [
+      ['category_name','product_name','variation_name','size','unit','price','InStock'],
+      ['Shoes','Leather Shoes','Black','7','UK','654','50'],
+      ['Shoes','Leather Shoes','Black','8','UK','654','30'],
+      ['Shoes','Leather Shoes','Black','9','UK','654','20'],
+      ['Shoes','Leather Shoes','Tan','7','UK','647','15'],
+      ['Shoes','Leather Shoes','Tan','8','UK','647','10'],
+      ['Cakes','Birthday Cake','Chocolate','500','g','550','5'],
+      ['Cakes','Birthday Cake','Vanilla','500','g','500','8'],
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Template');
+    XLSX.writeFile(wb, 'product-template.xlsx');
   };
 
   // Category functions
