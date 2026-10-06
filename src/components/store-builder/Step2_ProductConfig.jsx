@@ -584,10 +584,10 @@ Continue?`;
     let stockMap = {};
     try {
       const token = localStorage.getItem('token');
-      if (currentStoreId && token) {
-        const resp = await fetch(`https://api.aapnaestore.com/api/store/${currentStoreId}/inventory/stock-for-csv`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
+      const storeIdForCsv = currentStoreId || localStorage.getItem('currentStoreId');
+      console.log('Fetching stock for store:', storeIdForCsv);
+      if (storeIdForCsv) {
+        const resp = await fetch(`https://api.aapnaestore.com/api/store/${storeIdForCsv}/inventory/stock-for-csv`);
         const data = await resp.json();
         if (data.success && data.data) {
           // data.data is already a stockMap { size_id: quantity }
