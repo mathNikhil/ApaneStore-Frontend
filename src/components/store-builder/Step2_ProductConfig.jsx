@@ -710,7 +710,7 @@ Cakes,Birthday Cake,Vanilla,500,g,500,8`;
       const token = localStorage.getItem('token');
       if (currentStoreId && token && prod) {
         fetch(`https://api.aapnaestore.com/api/store/${currentStoreId}/inventory/delete-product`, {
-          method: 'DELETE',
+          method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify({ productId: prod.id })
         }).catch(err => console.error('Delete failed:', err));
