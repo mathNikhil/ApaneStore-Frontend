@@ -438,47 +438,62 @@ const Step2_ProductConfig = () => {
   const handleCSVUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const isXlsx = file.name.endsWith('.xlsx') || file.name.endsWith('.xls');
     const reader = new FileReader();
     reader.onload = (ev) => {
-      const lines = ev.target.result.trim().replace(/\r/g, '').split('\n');
-      const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-      const catIdx = headers.indexOf('category_name');
-      const prodIdx = headers.indexOf('product_name');
-      const varIdx = headers.indexOf('variation_name');
-      const sizeIdx = headers.indexOf('size');
-      const unitIdx = headers.indexOf('unit');
-      const priceIdx = headers.indexOf('price');
-      const inStockIdx = headers.indexOf('instock');
-      const sizeIdCsvIdx = headers.indexOf('size_id');
-
-      if (catIdx === -1 || prodIdx === -1) {
-        alert('CSV must have category_name and product_name columns');
-        return;
-      }
-
-      // Parse CSV rows
-      const csvRows = [];
-      for (let i = 1; i < lines.length; i++) {
-        const cols = lines[i].split(',').map(c => c.trim().replace(/^"|"$/g, ''));
-        const catName = cols[catIdx];
-        const prodName = cols[prodIdx];
-        if (!catName || !prodName) continue;
-        csvRows.push({
-          catName, prodName,
-          varName: cols[varIdx] || 'Default',
-          size: cols[sizeIdx] || '',
-          unit: cols[unitIdx] || '',
-          price: cols[priceIdx] || '',
-          inStock: inStockIdx !== -1 ? cols[inStockIdx] : '',
-          csvSizeId: sizeIdCsvIdx !== -1 ? (() => {
-            const raw = (cols[sizeIdCsvIdx] || '').trim();
-            // Convert scientific notation (1.79E+12) back to integer
-            if (raw && raw.includes('E+')) {
-              try { return String(Math.round(parseFloat(raw))); } catch(e) { return raw; }
-            }
-            return raw;
-          })() : ''
-        });
+      let csvRows = [];
+      if (isXlsx) {
+        // Parse XLSX — size_id stored as text, no scientific notation issue
+        const wb = XLSX.read(ev.target.result, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const data = XLSX.utils.sheet_to_json(ws, { defval: '' });
+        csvRows = data.map(row => ({
+          catName: String(row['category_name'] || '').trim(),
+          prodName: String(row['product_name'] || '').trim(),
+          varName: String(row['variation_name'] || 'Default').trim(),
+          size: String(row['size'] || '').trim(),
+          unit: String(row['unit'] || '').trim(),
+          price: String(row['price'] || '').trim(),
+          inStock: row['InStock'] !== undefined && row['InStock'] !== '' ? String(row['InStock']) : '',
+          csvSizeId: String(row['size_id'] || '').trim()
+        })).filter(r => r.catName && r.prodName);
+      } else {
+        // Parse CSV (legacy)
+        const lines = ev.target.result.trim().replace(/\r/g, '').split('\n');
+        const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+        const catIdx = headers.indexOf('category_name');
+        const prodIdx = headers.indexOf('product_name');
+        const varIdx = headers.indexOf('variation_name');
+        const sizeIdx = headers.indexOf('size');
+        const unitIdx = headers.indexOf('unit');
+        const priceIdx = headers.indexOf('price');
+        const inStockIdx = headers.indexOf('instock');
+        const sizeIdCsvIdx = headers.indexOf('size_id');
+        if (catIdx === -1 || prodIdx === -1) {
+          alert('File must have category_name and product_name columns');
+          return;
+        }
+        for (let i = 1; i < lines.length; i++) {
+          const cols = lines[i].split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+          const catName = cols[catIdx];
+          const prodName = cols[prodIdx];
+          if (!catName || !prodName) continue;
+          csvRows.push({
+            catName, prodName,
+            varName: cols[varIdx] || 'Default',
+            size: cols[sizeIdx] || '',
+            unit: cols[unitIdx] || '',
+            price: cols[priceIdx] || '',
+            inStock: inStockIdx !== -1 ? cols[inStockIdx] : '',
+            csvSizeId: sizeIdCsvIdx !== -1 ? (() => {
+              const raw = (cols[sizeIdCsvIdx] || '').trim();
+              if (raw && raw.toUpperCase().includes('E+')) {
+                try { return String(Math.round(parseFloat(raw))); } catch(e) { return raw; }
+              }
+              return raw;
+            })() : ''
+          });
+        }
       }
 
       // Count what will change for confirmation
@@ -582,7 +597,7 @@ Continue?`;
 
       alert('Products imported successfully!');
     };
-    reader.readAsText(file);
+    if (isXlsx) { reader.readAsArrayBuffer(file); } else { reader.readAsText(file); }
     e.target.value = '';
   };
 
@@ -708,12 +723,13 @@ Cakes,Birthday Cake,Vanilla,500,g,500,8`;
         if (saveStore) saveStore().catch(err => console.error('Save after delete failed:', err));
       }, 500);
       const token = localStorage.getItem('token');
+      console.log('Delete attempt:', { currentStoreId, hasProd: !!prod, prodId: prod?.id, token: !!token });
       if (currentStoreId && token && prod) {
         fetch(`https://api.aapnaestore.com/api/store/${currentStoreId}/inventory/delete-product`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify({ productId: prod.id })
-        }).catch(err => console.error('Delete failed:', err));
+        }).then(r => r.json()).then(d => console.log('Delete result:', d)).catch(err => console.error('Delete failed:', err));
       }
     }
   };
@@ -1467,7 +1483,7 @@ Cakes,Birthday Cake,Vanilla,500,g,500,8`;
         <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
           <h2 className="font-title-lg text-title-lg text-[#191c1e]">Categories & Products</h2>
           <div className="flex items-center gap-2 flex-wrap">
-            <input type="file" id="csv-upload" accept=".csv" onChange={handleCSVUpload} className="hidden" />
+            <input type="file" id="csv-upload" accept=".csv,.xlsx,.xls" onChange={handleCSVUpload} className="hidden" />
             <button onClick={downloadCSVTemplate} className="flex items-center gap-1 border border-[#bbcbb9] text-[#556067] px-3 py-2 rounded-full text-xs font-semibold hover:bg-[#f2f4f7] transition-all">
               <span className="material-symbols-outlined text-sm">download</span> Template
             </button>
