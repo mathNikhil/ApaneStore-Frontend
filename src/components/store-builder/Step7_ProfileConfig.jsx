@@ -34,6 +34,7 @@ const Step7_ProfileConfig = () => {
     facebookReviews: profileData.feedbackLinks && profileData.feedbackLinks.facebookReviews ? profileData.feedbackLinks.facebookReviews : '',
     instagramFeedback: profileData.feedbackLinks && profileData.feedbackLinks.instagramFeedback ? profileData.feedbackLinks.instagramFeedback : '',
     returnPolicy: profileData.returnPolicy || '',
+    shippingInfo: profileData.shippingInfo || '',
     storeLocations: profileData.storeLocations || [],
     storeState: profileData.storeState || '',
     storeCity: profileData.storeCity || '',
@@ -55,6 +56,7 @@ const Step7_ProfileConfig = () => {
       facebookReviews: (profileData.feedbackLinks && profileData.feedbackLinks.facebookReviews) || '',
       instagramFeedback: (profileData.feedbackLinks && profileData.feedbackLinks.instagramFeedback) || '',
       returnPolicy: profileData.returnPolicy || '',
+    shippingInfo: profileData.shippingInfo || '',
       storeLocations: profileData.storeLocations || [],
       storeState: profileData.storeState || '',
       storeCity: profileData.storeCity || '',
@@ -80,6 +82,7 @@ const Step7_ProfileConfig = () => {
         instagramFeedback: profile.instagramFeedback || '',
       },
       returnPolicy: profile.returnPolicy || '',
+      shippingInfo: profile.shippingInfo || '',
       storeLocations: profile.storeLocations || [],
       storeState: profile.storeState || '',
       storeCity: profile.storeCity || '',
@@ -275,10 +278,19 @@ const Step7_ProfileConfig = () => {
 
         {/* Return Policy */}
         <div className="space-y-1">
-          <label className="block text-label-md font-label-md text-[#3c4a3d] uppercase tracking-wider text-xs">Return Policy <span className="text-[#8e9eab] normal-case font-normal">(Optional)</span></label>
+          <label className="block text-label-md font-label-md text-[#3c4a3d] uppercase tracking-wider text-xs">Return & Exchange Policy <span className="text-[#8e9eab] normal-case font-normal">(Optional)</span></label>
           <textarea value={profile.returnPolicy || ''} onChange={function(e) { handleChange('returnPolicy', e.target.value); }}
             className="w-full bg-[#f2f4f7] border border-[#bbcbb9] rounded-lg px-4 py-3 focus:ring-2 focus:ring-[#25D366] focus:border-[#006d2f] outline-none transition-all resize-none"
             rows="3" placeholder="e.g. We accept returns within 7 days of delivery. Items must be unused and in original packaging..." />
+          <p className="text-xs text-[#556067]">If filled, customers will see this on your store profile page.</p>
+        </div>
+
+        {/* Shipping Info */}
+        <div className="space-y-1 mt-4">
+          <label className="block text-label-md font-label-md text-[#3c4a3d] uppercase tracking-wider text-xs">Shipping Information <span className="text-[#8e9eab] normal-case font-normal">(Optional)</span></label>
+          <textarea value={profile.shippingInfo || ''} onChange={function(e) { handleChange('shippingInfo', e.target.value); }}
+            className="w-full bg-[#f2f4f7] border border-[#bbcbb9] rounded-lg px-4 py-3 focus:ring-2 focus:ring-[#25D366] focus:border-[#006d2f] outline-none transition-all resize-none"
+            rows="3" placeholder="e.g. We ship within 2-3 business days. Free shipping on orders above ₹500..." />
           <p className="text-xs text-[#556067]">If filled, customers will see this on your store profile page.</p>
         </div>
       </Card>
