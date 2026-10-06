@@ -492,12 +492,10 @@ Continue?`;
         return;
       }
 
-      // Build new categories from CSV
+      // Build inventorySnapshot OUTSIDE setCategories to avoid React async issues
       const inventorySnapshot = [];
-      const capturedStoreId = currentStoreId; // capture before async callback
-      const capturedToken = localStorage.getItem('token');
-      setCategories(prev => {
-        const updated = [...prev];
+      const updatedCategories = (() => {
+        const updated = JSON.parse(JSON.stringify(categories)); // deep clone current categories
 
         // Archive products not in CSV
         updated.forEach(cat => {
@@ -541,37 +539,39 @@ Continue?`;
               const sizeId = csvSizeId || sizeExists.id;
               inventorySnapshot.push({ sizeId, inStock: parseInt(inStock) || 0 });
             }
-            // Update price if changed
             const existingSize = vari.sizes.find(s => s.size === size && s.unit === unit);
             if (existingSize && price) existingSize.price = price;
           }
         }
-        pendingInventoryUpdates.current = inventorySnapshot;
-
-        // Sync inventory INSIDE setCategories callback where inventorySnapshot is populated
-        if (inventorySnapshot.length > 0) {
-          const doSync = async () => {
-            const token = capturedToken;
-            const storeId = capturedStoreId;
-            if (!storeId) { console.warn('No storeId for sync'); return; }
-            try {
-              const resp = await fetch(`https://api.aapnaestore.com/api/store/${storeId}/inventory/sync-csv`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ updates: inventorySnapshot })
-              });
-              const data = await resp.json();
-              console.log('Inventory sync result:', data, 'updates:', inventorySnapshot.length);
-            } catch(err) {
-              console.error('Inventory sync failed:', err);
-            }
-          };
-          // Small delay to let saveStore complete first
-          setTimeout(doSync, 2000);
-        }
-
         return updated;
-      });
+      })();
+
+      // Set categories synchronously
+      setCategories(updatedCategories);
+      pendingInventoryUpdates.current = inventorySnapshot;
+
+      console.log('Inventory updates queued:', inventorySnapshot.length, inventorySnapshot);
+
+      // Sync inventory after save
+      if (inventorySnapshot.length > 0 && currentStoreId) {
+        const token = localStorage.getItem('token');
+        const storeId = currentStoreId;
+        const doSync = async () => {
+          try {
+            console.log('Calling sync-csv with', inventorySnapshot.length, 'updates for store', storeId);
+            const resp = await fetch(`https://api.aapnaestore.com/api/store/${storeId}/inventory/sync-csv`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+              body: JSON.stringify({ updates: inventorySnapshot })
+            });
+            const data = await resp.json();
+            console.log('Inventory sync result:', data);
+          } catch(err) {
+            console.error('Inventory sync failed:', err);
+          }
+        };
+        setTimeout(doSync, 3000); // wait for saveStore to complete
+      }
 
       alert('Products imported successfully!');
     };
