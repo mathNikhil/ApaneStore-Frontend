@@ -89,6 +89,9 @@ const Step7_ProfileConfig = () => {
       },
       returnPolicy: profile.returnPolicy || '',
       shippingInfo: profile.shippingInfo || '',
+      seoTitle: profile.seoTitle || '',
+      seoDescription: profile.seoDescription || '',
+      seoKeywords: profile.seoKeywords || '',
       storeLocations: profile.storeLocations || [],
       storeState: profile.storeState || '',
       storeCity: profile.storeCity || '',
@@ -122,7 +125,12 @@ const Step7_ProfileConfig = () => {
   };
 
   var handleSaveAndContinue = async function() {
-    if (saveStore) await saveStore().catch(console.error);
+    console.log('Step7 saving profile:', profile);
+    console.log('seoTitle:', profile.seoTitle);
+    if (saveStore) {
+      const result = await saveStore().catch(console.error);
+      console.log('Save result:', result);
+    }
     navigate('/store-builder/step/8');
   };
 
