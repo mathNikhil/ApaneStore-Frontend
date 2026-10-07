@@ -5,7 +5,7 @@ const API = import.meta.env.VITE_API_URL || 'https://api.aapnaestore.com';
 const STEPS = {
   1: ['store_name', 'tagline'],
   2: ['banner_tagline', 'product_description'],
-  7: ['about_us'],
+  7: ['about_us', 'seo_title', 'meta_description', 'keywords', 'shipping_info', 'return_policy'],
 };
 
 const TYPE_CONFIG = {
@@ -14,6 +14,11 @@ const TYPE_CONFIG = {
   banner_tagline: { label: 'Banner Text', icon: 'image', desc: 'Bold text for your hero banner' },
   product_description: { label: 'Product Description', icon: 'inventory_2', desc: 'Compelling product copy' },
   about_us: { label: 'About Us', icon: 'info', desc: 'Your brand story' },
+  seo_title: { label: 'SEO Title', icon: 'travel_explore', desc: 'Google search title (max 60 chars)' },
+  meta_description: { label: 'Meta Description', icon: 'description', desc: 'Google search description (max 160 chars)' },
+  keywords: { label: 'Keywords', icon: 'tag', desc: 'Search keywords for Google' },
+  shipping_info: { label: 'Shipping Information', icon: 'local_shipping', desc: 'Shipping policy for customers' },
+  return_policy: { label: 'Return & Exchange Policy', icon: 'assignment_return', desc: 'Return and exchange terms' },
 };
 
 const CONTEXT_KEY = 'ai_tenant_context';
