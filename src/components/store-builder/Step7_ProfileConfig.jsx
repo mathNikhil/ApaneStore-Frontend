@@ -35,6 +35,9 @@ const Step7_ProfileConfig = () => {
     instagramFeedback: profileData.feedbackLinks && profileData.feedbackLinks.instagramFeedback ? profileData.feedbackLinks.instagramFeedback : '',
     returnPolicy: profileData.returnPolicy || '',
     shippingInfo: profileData.shippingInfo || '',
+    seoTitle: profileData.seoTitle || '',
+    seoDescription: profileData.seoDescription || '',
+    seoKeywords: profileData.seoKeywords || '',
     storeLocations: profileData.storeLocations || [],
     storeState: profileData.storeState || '',
     storeCity: profileData.storeCity || '',
@@ -57,6 +60,9 @@ const Step7_ProfileConfig = () => {
       instagramFeedback: (profileData.feedbackLinks && profileData.feedbackLinks.instagramFeedback) || '',
       returnPolicy: profileData.returnPolicy || '',
     shippingInfo: profileData.shippingInfo || '',
+    seoTitle: profileData.seoTitle || '',
+    seoDescription: profileData.seoDescription || '',
+    seoKeywords: profileData.seoKeywords || '',
       storeLocations: profileData.storeLocations || [],
       storeState: profileData.storeState || '',
       storeCity: profileData.storeCity || '',
@@ -349,6 +355,57 @@ const Step7_ProfileConfig = () => {
       </Card>
 
 
+      <Card className="mb-6">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-10 h-10 rounded-lg bg-[#e8f5e9] text-[#006d2f] flex items-center justify-center">
+            <span className="material-symbols-outlined">travel_explore</span>
+          </div>
+          <div>
+            <h2 className="font-headline-md text-headline-md text-[#191c1e] uppercase text-base">SEO & Discoverability</h2>
+            <p className="text-xs text-[#556067]">Help customers find your store on Google and social media</p>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div className="space-y-1">
+            <label className="block text-label-md font-label-md text-[#3c4a3d] uppercase tracking-wider text-xs">
+              SEO Title <span className="text-[#8e9eab] normal-case font-normal">(shown on Google — max 60 chars)</span>
+            </label>
+            <Input
+              value={profile.seoTitle || ''}
+              onChange={function(e) { handleChange('seoTitle', e.target.value.slice(0, 60)); }}
+              placeholder={`${profile.storeName || 'Your Store'} - Shop Online`}
+            />
+            <p className="text-xs text-[#8e9eab]">{(profile.seoTitle || '').length}/60 characters</p>
+          </div>
+
+          <div className="space-y-1">
+            <label className="block text-label-md font-label-md text-[#3c4a3d] uppercase tracking-wider text-xs">
+              Meta Description <span className="text-[#8e9eab] normal-case font-normal">(shown on Google — max 160 chars)</span>
+            </label>
+            <textarea
+              value={profile.seoDescription || ''}
+              onChange={function(e) { handleChange('seoDescription', e.target.value.slice(0, 160)); }}
+              className="w-full bg-[#f2f4f7] border border-[#bbcbb9] rounded-lg px-4 py-3 focus:ring-2 focus:ring-[#25D366] focus:border-[#006d2f] outline-none transition-all resize-none text-sm"
+              rows="3"
+              placeholder="Describe your store in 1-2 sentences. What do you sell? Where are you located?"
+            />
+            <p className="text-xs text-[#8e9eab]">{(profile.seoDescription || '').length}/160 characters</p>
+          </div>
+
+          <div className="space-y-1">
+            <label className="block text-label-md font-label-md text-[#3c4a3d] uppercase tracking-wider text-xs">
+              Keywords <span className="text-[#8e9eab] normal-case font-normal">(comma separated)</span>
+            </label>
+            <Input
+              value={profile.seoKeywords || ''}
+              onChange={function(e) { handleChange('seoKeywords', e.target.value); }}
+              placeholder="e.g. ethnic wear, kurti, delhi fashion, handmade jewellery"
+            />
+            <p className="text-xs text-[#556067]">Add words your customers search for on Google</p>
+          </div>
+        </div>
+      </Card>
 
     </StoreBuilderLayout>
     </>
