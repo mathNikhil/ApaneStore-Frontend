@@ -125,12 +125,7 @@ const Step7_ProfileConfig = () => {
   };
 
   var handleSaveAndContinue = async function() {
-    console.log('Step7 saving profile:', profile);
-    console.log('seoTitle:', profile.seoTitle);
-    if (saveStore) {
-      const result = await saveStore().catch(console.error);
-      console.log('Save result:', result);
-    }
+    if (saveStore) await saveStore().catch(console.error);
     navigate('/store-builder/step/8');
   };
 
