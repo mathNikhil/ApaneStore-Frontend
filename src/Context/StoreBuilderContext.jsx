@@ -163,6 +163,11 @@ export const StoreBuilderProvider = ({ children }) => {
             facebookReviews: '',
             instagramFeedback: '',
         },
+        seoTitle: '',
+        seoDescription: '',
+        seoKeywords: '',
+        shippingInfo: '',
+        returnPolicy: '',
     });
 
     // Step 8: Return Data
