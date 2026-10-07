@@ -118,6 +118,7 @@ const Step7_ProfileConfig = () => {
     var newProfile = { ...profile };
     newProfile[key] = value;
     setProfile(newProfile);
+    setProfileData(newProfile);
   };
 
   var handleSaveAndContinue = function() {
