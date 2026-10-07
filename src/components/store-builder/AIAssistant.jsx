@@ -5,7 +5,7 @@ const API = import.meta.env.VITE_API_URL || 'https://api.aapnaestore.com';
 const STEPS = {
   1: ['store_name', 'tagline'],
   2: ['banner_tagline', 'product_description'],
-  7: ['about_us', 'seo_title', 'meta_description', 'keywords', 'shipping_info', 'return_policy'],
+  7: ['about_us', 'shipping_info', 'return_policy', 'seo_title', 'meta_description', 'keywords'],
 };
 
 const TYPE_CONFIG = {
