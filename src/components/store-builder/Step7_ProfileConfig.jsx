@@ -8,7 +8,7 @@ import Input from '../Common/Input';
 
 const Step7_ProfileConfig = () => {
   const navigate = useNavigate();
-  const { profileData, setProfileData, productData, brandData, currentStoreId } = useStoreBuilder();
+  const { profileData, setProfileData, productData, brandData, currentStoreId, saveStore } = useStoreBuilder();
   const profileDataRef = React.useRef(false);
 
   var hasProducts = false;
@@ -121,8 +121,8 @@ const Step7_ProfileConfig = () => {
     setProfileData(newProfile);
   };
 
-  var handleSaveAndContinue = function() {
-    // Navigate to Step 8 (Return Policy)
+  var handleSaveAndContinue = async function() {
+    if (saveStore) await saveStore().catch(console.error);
     navigate('/store-builder/step/8');
   };
 
