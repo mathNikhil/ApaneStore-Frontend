@@ -19,7 +19,7 @@ const PreviewCustomerAuth = ({ brand, storeId, onAuthenticated, onCancel }) => {
   const [timeLeft, setTimeLeft] = useState(30);
   const [canResend, setCanResend] = useState(false);
   const [devOtpHint, setDevOtpHint] = useState('');
-  const [consentGiven, setConsentGiven] = useState(() => !!localStorage.getItem(`consent_${storeId}`));
+  const [consentGiven, setConsentGiven] = useState(false);
   const inputRefs = useRef([]);
 
   const primary = brand?.colors?.primary || '#25D366';
