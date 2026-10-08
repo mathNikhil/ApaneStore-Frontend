@@ -6,6 +6,7 @@ import { customerAuthAPI } from '../../../services/api';
 // specific store — a phone number is a separate customer at every store).
 const PreviewCustomerAuth = ({ brand, storeId, onAuthenticated, onCancel }) => {
   const headingFont = brand?.fonts?.heading || 'Inter';
+  const storeName = brand?.brandName || brand?.storeName || brand?.name || 'This Store';
   const bodyFont = brand?.fonts?.body || 'Inter';
   const primaryColor = brand?.colors?.primary || '#25D366';
   const fontHeader = brand?.colors?.fontHeader || '#191C1E';
@@ -18,7 +19,7 @@ const PreviewCustomerAuth = ({ brand, storeId, onAuthenticated, onCancel }) => {
   const [timeLeft, setTimeLeft] = useState(30);
   const [canResend, setCanResend] = useState(false);
   const [devOtpHint, setDevOtpHint] = useState('');
-  const [consentGiven, setConsentGiven] = useState(false);
+  const [consentGiven, setConsentGiven] = useState(() => !!localStorage.getItem(`consent_${storeId}`));
   const inputRefs = useRef([]);
 
   const primary = brand?.colors?.primary || '#25D366';
@@ -163,7 +164,7 @@ const PreviewCustomerAuth = ({ brand, storeId, onAuthenticated, onCancel }) => {
 
             <div className="flex items-start gap-2">
               <input type="checkbox" id="consent" checked={consentGiven}
-                onChange={e => setConsentGiven(e.target.checked)}
+                onChange={e => { setConsentGiven(e.target.checked); if (e.target.checked) localStorage.setItem(`consent_${storeId}`, '1'); else localStorage.removeItem(`consent_${storeId}`); }}
                 className="mt-1 cursor-pointer" />
               <label htmlFor="consent" className="text-xs text-gray-500 cursor-pointer">
                 I agree to the <a href="/profile/terms" target="_blank" style={{ color: primaryColor }} className="underline">Terms & Conditions</a> and <a href="/profile/privacy" target="_blank" style={{ color: primaryColor }} className="underline">Privacy Policy</a>
