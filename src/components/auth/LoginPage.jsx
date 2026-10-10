@@ -35,6 +35,8 @@ const LoginPage = () => {
   const [error, setError] = useState('');
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showCompleteForm, setShowCompleteForm] = useState(false);
+  const [showLinkPhone, setShowLinkPhone] = useState(false);
+  const [linkPhone, setLinkPhone] = useState('');
   const [googleProfile, setGoogleProfile] = useState(null);
   const [companyName, setCompanyName] = useState('');
   const [businessType, setBusinessType] = useState('');
@@ -58,7 +60,7 @@ const LoginPage = () => {
       } else if (data.success && data.isNewTenant) {
         setGoogleProfile(data);
         setCompanyName(data.name || '');
-        setShowCompleteForm(true);
+        setShowLinkPhone(true);
       } else {
         showError(data.error || 'Google login failed');
       }
@@ -92,6 +94,32 @@ const LoginPage = () => {
         showError(data.error || 'Registration failed');
       }
     } catch(e) { showError('Registration failed'); }
+    setGoogleLoading(false);
+  };
+
+  const handleLinkPhone = async (e) => {
+    e.preventDefault();
+    if (linkPhone.length !== 10) { showError("Enter valid 10-digit mobile number"); return; }
+    setGoogleLoading(true);
+    try {
+      const res = await fetch(API + "/api/auth/google/link-phone", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ googleId: googleProfile.googleId, email: googleProfile.email, name: googleProfile.name, phone: linkPhone })
+      });
+      const data = await res.json();
+      if (data.success && data.linked) {
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("user", JSON.stringify(data.tenant));
+        navigate("/dashboard");
+      } else if (data.success && !data.linked) {
+        setShowLinkPhone(false);
+        setBusinessPhone(linkPhone);
+        setShowCompleteForm(true);
+      } else {
+        showError(data.error || "Failed to link account");
+      }
+    } catch(e2) { showError("Failed to link account"); }
     setGoogleLoading(false);
   };
 
@@ -178,6 +206,33 @@ const LoginPage = () => {
       setLoading(false);
     }
   };
+
+  if (showLinkPhone) return (
+    <div className="min-h-screen flex items-center justify-center bg-[#f7f9fc] px-4">
+      <div className="w-full max-w-md bg-white rounded-xl shadow-md border border-[#bbcbb9] p-6">
+        <div className="text-center mb-6">
+          <h1 className="font-semibold text-xl text-[#191c1e]">Enter Your Mobile Number</h1>
+          <p className="text-sm text-[#3c4a3d] mt-2">Signed in as <strong>{googleProfile?.email}</strong></p>
+          <p className="text-sm text-[#556067] mt-1">Enter your registered mobile to link your existing account.</p>
+        </div>
+        <form onSubmit={handleLinkPhone} className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-[#3c4a3d] uppercase tracking-wider mb-1">Mobile Number *</label>
+            <div className="flex items-center border border-[#bbcbb9] rounded-xl overflow-hidden">
+              <span className="px-3 py-3 bg-[#f2f4f7] text-sm text-[#556067]">+91</span>
+              <input type="tel" value={linkPhone} onChange={e => setLinkPhone(e.target.value.replace(/\D/g, ""))}
+                maxLength={10} placeholder="9876543210" required
+                className="flex-1 px-3 py-3 text-sm outline-none" autoFocus />
+            </div>
+          </div>
+          <button type="submit" disabled={googleLoading}
+            className="w-full py-3 bg-[#25D366] text-[#005523] font-bold rounded-xl hover:brightness-105 disabled:opacity-50">
+            {googleLoading ? "Checking..." : "Continue"}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
 
   if (showCompleteForm) return (
     <div className="min-h-screen flex items-center justify-center bg-[#f7f9fc] px-4">
