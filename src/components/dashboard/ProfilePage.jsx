@@ -12,6 +12,7 @@ import PlatformSection from './profile-sections/PlatformSection';
 import PricingSection from './profile-sections/PricingSection';
 import InvoiceList from './Invoice/InvoiceList';
 import ReferSection from './profile-sections/ReferSection';
+import DataDeletionSection from './profile-sections/DataDeletionSection';
 
 const NAV_ITEMS = [
   { key: 'about',     label: 'About AapnaEstore', icon: 'info'           },
@@ -31,6 +32,7 @@ const getSectionComponent = (key) => {
     case 'terms':    return <TermsSection />;
     case 'platform': return <PlatformSection />;
     case 'pricing':  return <PricingSection />;
+    case 'data-deletion': return <DataDeletionSection />;
     case 'invoices': return <InvoiceList />;
 
     case 'refer':    return <ReferSection />;
