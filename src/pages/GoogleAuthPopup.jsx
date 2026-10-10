@@ -5,6 +5,12 @@ const API = 'https://api.aapnaestore.com';
 
 const GoogleAuthPopup = () => {
   const [status, setStatus] = useState('Loading...');
+  const [storeName, setStoreName] = useState('AapnaEstore');
+  const [storeLogo, setStoreLogo] = useState('');
+  const [storeName, setStoreName] = useState('AapnaEstore');
+  const [storeLogo, setStoreLogo] = useState('');
+  const [storeName, setStoreName] = useState('AapnaEstore');
+  const [storeLogo, setStoreLogo] = useState('');
   const params = new URLSearchParams(window.location.search);
   const storeId = params.get('storeId');
 
@@ -17,6 +23,13 @@ const GoogleAuthPopup = () => {
 
   useEffect(() => {
     if (!storeId) { setStatus('Missing store ID'); return; }
+    fetch('https://api.aapnaestore.com/api/public/store-by-id/' + storeId)
+      .then(r => r.json()).then(d => {
+        if (d.success && d.data) {
+          setStoreName(d.data.config?.brand?.brandName || d.data.name || 'AapnaEstore');
+          setStoreLogo(d.data.config?.brand?.logoUrl || '');
+        }
+      }).catch(() => {});
 
     const initGoogle = () => {
       if (!window.google) { setStatus('Google not loaded'); return; }
@@ -55,8 +68,8 @@ const GoogleAuthPopup = () => {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif', background: '#f8fafc' }}>
-      <img src="/src/assets/images/Apnaestore-Logo.png" alt="AapnaEstore" style={{ height: 48, marginBottom: 24 }} />
-      <h2 style={{ fontSize: 18, color: '#191c1e', marginBottom: 8 }}>Sign in with Google</h2>
+      {storeLogo ? <img src={storeLogo} alt={storeName} style={{ height: 52, marginBottom: 16, objectFit: 'contain' }} /> : null}
+      <h2 style={{ fontSize: 18, color: '#191c1e', marginBottom: 8 }}>Sign in to {storeName}</h2>
       <p style={{ fontSize: 13, color: '#556067', marginBottom: 24 }}>{status}</p>
       <div id="google-btn"></div>
     </div>
