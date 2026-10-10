@@ -5,10 +5,12 @@ const API = 'https://api.aapnaestore.com';
 
 const GoogleAuthPopup = () => {
   const [status, setStatus] = useState('Loading...');
-  const [storeName, setStoreName] = useState('AapnaEstore');
-  const [storeLogo, setStoreLogo] = useState('');
+  const [storeName, setStoreName] = useState(storeNameParam);
+  const [storeLogo, setStoreLogo] = useState(storeLogoParam);
   const params = new URLSearchParams(window.location.search);
   const storeId = params.get('storeId');
+  const storeNameParam = decodeURIComponent(params.get('storeName') || 'AapnaEstore');
+  const storeLogoParam = decodeURIComponent(params.get('storeLogo') || '');
 
   const sendToParent = (data) => {
     if (window.opener) {
