@@ -1,5 +1,6 @@
 import React from 'react';
 import { Toaster } from 'react-hot-toast';
+import GoogleAuthPopup from './pages/GoogleAuthPopup';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './Context/AuthContext';
 import { StoreBuilderProvider } from './Context/StoreBuilderContext';
