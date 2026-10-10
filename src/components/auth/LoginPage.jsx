@@ -64,6 +64,33 @@ const LoginPage = () => {
     setGoogleLoading(false);
   };
 
+  const handleFacebookLogin = () => {
+    if (!window.FB) { showError('Facebook SDK not loaded'); return; }
+    window.FB.login((response) => {
+      if (response.authResponse) {
+        const { accessToken, userID } = response.authResponse;
+        setGoogleLoading(true);
+        fetch(API + '/api/auth/facebook', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ accessToken, userID })
+        })
+        .then(r => r.json())
+        .then(data => {
+          if (data.success && !data.isNewTenant) {
+            saveAndRedirect(data.token, data.tenant);
+          } else if (data.success && data.isNewTenant) {
+            setGoogleProfile({ ...data, isFacebook: true });
+            setCompanyName(data.name || '');
+            setShowLinkPhone(true);
+          } else { showError(data.error || 'Facebook login failed'); }
+        })
+        .catch(() => showError('Facebook login failed'))
+        .finally(() => setGoogleLoading(false));
+      }
+    }, { scope: 'email,public_profile' });
+  };
+
   const handleLinkPhone = async (e) => {
     e.preventDefault();
     if (linkPhone.length !== 10) { showError('Enter valid 10-digit mobile number'); return; }
@@ -71,7 +98,7 @@ const LoginPage = () => {
     try {
       const res = await fetch(API + '/api/auth/google/link-phone', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ googleId: googleProfile.googleId, email: googleProfile.email, name: googleProfile.name, phone: linkPhone })
+        body: JSON.stringify({ googleId: googleProfile.isFacebook ? null : googleProfile.googleId, facebookId: googleProfile.isFacebook ? googleProfile.facebookId : null, email: googleProfile.email, name: googleProfile.name, phone: linkPhone })
       });
       const data = await res.json();
       if (data.success && data.linked) {
@@ -128,6 +155,11 @@ const LoginPage = () => {
   };
 
   React.useEffect(() => {
+    // Init Facebook SDK
+    window.fbAsyncInit = function() {
+      window.FB.init({ appId: '1428867775876072', cookie: true, xfbml: true, version: 'v18.0' });
+    };
+
     const initGoogle = () => {
       if (window.google && !window.__googleInitialized) {
         window.__googleInitialized = true;
@@ -243,6 +275,13 @@ const LoginPage = () => {
 
           {/* Google Sign-In — Primary */}
           <div id="google-signin-btn" className="w-full flex justify-center mb-4"></div>
+
+          {/* Facebook Sign-In */}
+          <button onClick={handleFacebookLogin} disabled={googleLoading}
+            className="w-full flex items-center justify-center gap-3 border border-[#1877f2] rounded-lg py-2 px-4 text-[#1877f2] font-semibold text-sm hover:bg-[#e7f0fd] transition-colors mb-3">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="#1877f2"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+            Continue with Facebook
+          </button>
 
           {/* OTP — Secondary */}
           {showOtpForm && (
