@@ -7,10 +7,6 @@ const GoogleAuthPopup = () => {
   const [status, setStatus] = useState('Loading...');
   const [storeName, setStoreName] = useState('AapnaEstore');
   const [storeLogo, setStoreLogo] = useState('');
-  const [storeName, setStoreName] = useState('AapnaEstore');
-  const [storeLogo, setStoreLogo] = useState('');
-  const [storeName, setStoreName] = useState('AapnaEstore');
-  const [storeLogo, setStoreLogo] = useState('');
   const params = new URLSearchParams(window.location.search);
   const storeId = params.get('storeId');
 
