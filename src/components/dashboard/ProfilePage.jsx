@@ -16,7 +16,6 @@ import DataDeletionSection from './profile-sections/DataDeletionSection';
 
 const NAV_ITEMS = [
   { key: 'about',     label: 'About AapnaEstore', icon: 'info'           },
-  { key: 'data-deletion', label: 'Data Deletion', icon: 'delete_forever' },
   { key: 'privacy',   label: 'Privacy Policy',    icon: 'lock'           },
   { key: 'refund',    label: 'Refund Policy',     icon: 'currency_rupee' },
   { key: 'terms',     label: 'Terms & Conditions',icon: 'description'    },
@@ -212,7 +211,10 @@ const ProfilePage = () => {
                   Login / Sign Up
                 </a>
               )}
-              <p className="text-xs text-[#556067] text-center mt-2">AapnaEstore v1.0.0</p>
+              <div className="text-center mt-2">
+                <a href="/profile/data-deletion" className="text-xs text-[#8e9eab] hover:text-[#556067] underline">Data Deletion Request</a>
+              </div>
+              <p className="text-xs text-[#556067] text-center mt-1">AapnaEstore v1.0.0</p>
             </div>
           </aside>
 
