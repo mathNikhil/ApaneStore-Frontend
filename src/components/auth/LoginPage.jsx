@@ -34,6 +34,7 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [showOtpForm, setShowOtpForm] = useState(false);
   const [showCompleteForm, setShowCompleteForm] = useState(false);
   const [showLinkPhone, setShowLinkPhone] = useState(false);
   const [linkPhone, setLinkPhone] = useState('');
@@ -56,6 +57,7 @@ const LoginPage = () => {
       if (data.success && !data.isNewTenant) {
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.tenant));
+        localStorage.setItem('loginTime', Date.now().toString());
         navigate('/dashboard');
       } else if (data.success && data.isNewTenant) {
         setGoogleProfile(data);
@@ -89,6 +91,7 @@ const LoginPage = () => {
       if (data.success) {
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.tenant));
+        localStorage.setItem('loginTime', Date.now().toString());
         navigate('/dashboard');
       } else {
         showError(data.error || 'Registration failed');
@@ -308,11 +311,15 @@ const LoginPage = () => {
               Login to your store manager
             </h1>
             <p className="text-sm text-[#3c4a3d]">
-              Enter your mobile number to receive a 6-digit verification code.
+              Sign in to manage your store.
             </p>
           </div>
 
-          {/* Form - Matching your HTML */}
+          {/* Google first */}
+          <div id="google-signin-btn" className="w-full flex justify-center mb-4"></div>
+
+          {/* OTP secondary */}
+          {showOtpForm ? (
           <form onSubmit={handleSubmit} className="space-y-6">
             <Input
               label="Mobile Number"
