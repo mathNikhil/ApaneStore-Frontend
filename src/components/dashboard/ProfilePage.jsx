@@ -16,6 +16,7 @@ import DataDeletionSection from './profile-sections/DataDeletionSection';
 
 const NAV_ITEMS = [
   { key: 'about',     label: 'About AapnaEstore', icon: 'info'           },
+  { key: 'data-deletion', label: 'Data Deletion', icon: 'delete_forever' },
   { key: 'privacy',   label: 'Privacy Policy',    icon: 'lock'           },
   { key: 'refund',    label: 'Refund Policy',     icon: 'currency_rupee' },
   { key: 'terms',     label: 'Terms & Conditions',icon: 'description'    },
