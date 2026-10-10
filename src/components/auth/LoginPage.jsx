@@ -129,7 +129,8 @@ const LoginPage = () => {
 
   React.useEffect(() => {
     const initGoogle = () => {
-      if (window.google) {
+      if (window.google && !window.__googleInitialized) {
+        window.__googleInitialized = true;
         window.google.accounts.id.initialize({
           client_id: '168190401805-8k10ipii41bokt3fg90nfudv67r72i02.apps.googleusercontent.com',
           callback: (response) => handleGoogleLogin(response.credential),
