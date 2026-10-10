@@ -4,13 +4,14 @@ const GOOGLE_CLIENT_ID = '168190401805-8k10ipii41bokt3fg90nfudv67r72i02.apps.goo
 const API = 'https://api.aapnaestore.com';
 
 const GoogleAuthPopup = () => {
-  const [status, setStatus] = useState('Loading...');
-  const [storeName, setStoreName] = useState(storeNameParam);
-  const [storeLogo, setStoreLogo] = useState(storeLogoParam);
   const params = new URLSearchParams(window.location.search);
   const storeId = params.get('storeId');
-  const storeNameParam = decodeURIComponent(params.get('storeName') || 'AapnaEstore');
-  const storeLogoParam = decodeURIComponent(params.get('storeLogo') || '');
+  const initName = decodeURIComponent(params.get('storeName') || 'AapnaEstore');
+  const initLogo = decodeURIComponent(params.get('storeLogo') || '');
+
+  const [status, setStatus] = useState('');
+  const [storeName] = useState(initName);
+  const [storeLogo] = useState(initLogo);
 
   const sendToParent = (data) => {
     if (window.opener) {
@@ -20,20 +21,10 @@ const GoogleAuthPopup = () => {
   };
 
   useEffect(() => {
-    if (!storeId) { setStatus('Missing store ID'); return; }
-
-    // Fetch store branding
-    fetch(API + '/api/public/store-by-id/' + storeId)
-      .then(r => r.json())
-      .then(d => {
-        if (d.success && d.data) {
-          setStoreName(d.data.config?.brand?.brandName || d.data.name || 'AapnaEstore');
-          setStoreLogo(d.data.config?.brand?.logoUrl || '');
-        }
-      }).catch(() => {});
+    if (!storeId) { return; }
 
     const initGoogle = () => {
-      if (!window.google) { setStatus('Google not loaded'); return; }
+      if (!window.google) { setStatus('Loading Google...'); return; }
       window.google.accounts.id.initialize({
         client_id: GOOGLE_CLIENT_ID,
         callback: async (response) => {
@@ -56,7 +47,6 @@ const GoogleAuthPopup = () => {
         { theme: 'outline', size: 'large', width: 300, text: 'continue_with' }
       );
       window.google.accounts.id.prompt();
-      setStatus('');
     };
 
     if (window.google) initGoogle();
@@ -70,9 +60,10 @@ const GoogleAuthPopup = () => {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif', background: '#f8fafc', padding: 24 }}>
-      {storeLogo && <img src={storeLogo} alt={storeName} style={{ height: 52, marginBottom: 16, objectFit: 'contain' }} />}
-      <h2 style={{ fontSize: 18, color: '#191c1e', marginBottom: 8 }}>Sign in to {storeName}</h2>
-      {status && <p style={{ fontSize: 13, color: '#556067', marginBottom: 24 }}>{status}</p>}
+      {storeLogo && <img src={storeLogo} alt={storeName} style={{ height: 56, marginBottom: 12, objectFit: 'contain' }} />}
+      <h2 style={{ fontSize: 16, fontWeight: 700, color: '#191c1e', marginBottom: 4 }}>Sign in to {storeName}</h2>
+      <p style={{ fontSize: 10, color: '#aaa', marginBottom: 20 }}>Powered by AapnaEstore</p>
+      {status && <p style={{ fontSize: 13, color: '#556067', marginBottom: 16 }}>{status}</p>}
       <div id="google-btn"></div>
     </div>
   );
