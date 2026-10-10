@@ -7,10 +7,6 @@ const GoogleAuthPopup = () => {
   const [status, setStatus] = useState('Loading...');
   const [storeName, setStoreName] = useState('AapnaEstore');
   const [storeLogo, setStoreLogo] = useState('');
-  const params = new URLSearchParams(window.location.search);
-  const storeId = params.get('storeId');
-
-  const sendToParent = (data) => {
     if (window.opener) {
       window.opener.postMessage({ type: 'GOOGLE_AUTH_RESULT', ...data }, '*');
       window.close();
