@@ -208,11 +208,11 @@ const LoginPage = () => {
             </select>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-[#3c4a3d] uppercase tracking-wider mb-1">WhatsApp Number (optional)</label>
+            <label className="block text-xs font-semibold text-[#3c4a3d] uppercase tracking-wider mb-1">Mobile Number *</label>
             <div className="flex items-center border border-[#bbcbb9] rounded-xl overflow-hidden">
               <span className="px-3 py-3 bg-[#f2f4f7] text-sm text-[#556067]">+91</span>
               <input type="tel" value={businessPhone} onChange={e => setBusinessPhone(e.target.value.replace(/\D/g, ''))}
-                maxLength={10} placeholder="9876543210"
+                maxLength={10} placeholder="9876543210" required
                 className="flex-1 px-3 py-3 text-sm outline-none" />
             </div>
           </div>
