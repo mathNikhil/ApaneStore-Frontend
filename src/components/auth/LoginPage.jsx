@@ -33,6 +33,87 @@ const LoginPage = () => {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [showCompleteForm, setShowCompleteForm] = useState(false);
+  const [googleProfile, setGoogleProfile] = useState(null);
+  const [companyName, setCompanyName] = useState('');
+  const [businessType, setBusinessType] = useState('');
+  const [businessPhone, setBusinessPhone] = useState('');
+
+  const API = import.meta.env.VITE_API_URL || 'https://api.aapnaestore.com';
+
+  const handleGoogleLogin = async (credential) => {
+    setGoogleLoading(true);
+    try {
+      const res = await fetch(API + '/api/auth/google', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credential })
+      });
+      const data = await res.json();
+      if (data.success && !data.isNewTenant) {
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.tenant));
+        navigate('/dashboard');
+      } else if (data.success && data.isNewTenant) {
+        setGoogleProfile(data);
+        setCompanyName(data.name || '');
+        setShowCompleteForm(true);
+      } else {
+        showError(data.error || 'Google login failed');
+      }
+    } catch(e) { showError('Google login failed'); }
+    setGoogleLoading(false);
+  };
+
+  const handleCompleteRegistration = async (e) => {
+    e.preventDefault();
+    if (!companyName || !businessType) { showError('Please fill all required fields'); return; }
+    setGoogleLoading(true);
+    try {
+      const res = await fetch(API + '/api/auth/google/complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          googleId: googleProfile.googleId,
+          email: googleProfile.email,
+          name: googleProfile.name,
+          company_name: companyName,
+          business_type: businessType,
+          phone: businessPhone
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.tenant));
+        navigate('/dashboard');
+      } else {
+        showError(data.error || 'Registration failed');
+      }
+    } catch(e) { showError('Registration failed'); }
+    setGoogleLoading(false);
+  };
+
+  React.useEffect(() => {
+    const initGoogle = () => {
+      if (window.google) {
+        window.google.accounts.id.initialize({
+          client_id: '168190401805-8k10ipii41bokt3fg90nfudv67r72i02.apps.googleusercontent.com',
+          callback: (response) => handleGoogleLogin(response.credential),
+        });
+        window.google.accounts.id.renderButton(
+          document.getElementById('google-signin-btn'),
+          { theme: 'outline', size: 'large', width: 400, text: 'continue_with' }
+        );
+      }
+    };
+    if (window.google) initGoogle();
+    else {
+      const script = document.querySelector('script[src*="accounts.google.com"]');
+      if (script) script.addEventListener('load', initGoogle);
+    }
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -97,6 +178,52 @@ const LoginPage = () => {
       setLoading(false);
     }
   };
+
+  if (showCompleteForm) return (
+    <div className="min-h-screen flex items-center justify-center bg-[#f7f9fc] px-4">
+      <div className="w-full max-w-md bg-white rounded-xl shadow-md border border-[#bbcbb9] p-6">
+        <div className="text-center mb-6">
+          <h1 className="font-semibold text-xl text-[#191c1e]">Complete Your Profile</h1>
+          <p className="text-sm text-[#3c4a3d] mt-1">Signed in as {googleProfile?.email}</p>
+        </div>
+        <form onSubmit={handleCompleteRegistration} className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-[#3c4a3d] uppercase tracking-wider mb-1">Business Name *</label>
+            <input value={companyName} onChange={e => setCompanyName(e.target.value)}
+              placeholder="e.g. Fashion House" required
+              className="w-full border border-[#bbcbb9] rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#006d2f]" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-[#3c4a3d] uppercase tracking-wider mb-1">Business Type *</label>
+            <select value={businessType} onChange={e => setBusinessType(e.target.value)} required
+              className="w-full border border-[#bbcbb9] rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#006d2f]">
+              <option value="">Select type</option>
+              <option value="retail">Retail Store</option>
+              <option value="restaurant">Restaurant / Food</option>
+              <option value="fashion">Fashion / Clothing</option>
+              <option value="grocery">Grocery</option>
+              <option value="electronics">Electronics</option>
+              <option value="pharmacy">Pharmacy</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-[#3c4a3d] uppercase tracking-wider mb-1">WhatsApp Number (optional)</label>
+            <div className="flex items-center border border-[#bbcbb9] rounded-xl overflow-hidden">
+              <span className="px-3 py-3 bg-[#f2f4f7] text-sm text-[#556067]">+91</span>
+              <input type="tel" value={businessPhone} onChange={e => setBusinessPhone(e.target.value.replace(/\D/g, ''))}
+                maxLength={10} placeholder="9876543210"
+                className="flex-1 px-3 py-3 text-sm outline-none" />
+            </div>
+          </div>
+          <button type="submit" disabled={googleLoading}
+            className="w-full py-3 bg-[#25D366] text-[#005523] font-bold rounded-xl hover:brightness-105 disabled:opacity-50">
+            {googleLoading ? 'Creating...' : 'Create My Store'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden bg-[#f7f9fc]">
@@ -172,6 +299,15 @@ const LoginPage = () => {
   )}
 </button>
           </form>
+
+          <div className="mt-4">
+            <div className="flex items-center gap-3 my-4">
+              <div className="flex-1 h-px bg-[#e0e3e6]" />
+              <span className="text-xs text-[#8e9eab]">or continue with</span>
+              <div className="flex-1 h-px bg-[#e0e3e6]" />
+            </div>
+            <div id="google-signin-btn" className="w-full flex justify-center"></div>
+          </div>
 
           {/* Footer - Matching your HTML */}
           <div className="mt-6 pt-6 border-t border-[#bbcbb9] text-center">
