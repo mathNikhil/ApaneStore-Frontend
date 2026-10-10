@@ -40,7 +40,7 @@ const LoginPage = () => {
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(tenant));
     localStorage.setItem('loginTime', Date.now().toString());
-    navigate('/dashboard');
+    window.location.href = '/dashboard';
   };
 
   const handleGoogleLogin = async (credential) => {
@@ -157,7 +157,7 @@ const LoginPage = () => {
   React.useEffect(() => {
     // Init Facebook SDK
     window.fbAsyncInit = function() {
-      window.FB.init({ appId: '1428867775876072', cookie: true, xfbml: true, version: 'v18.0' });
+      window.FB.init({ appId: '1428867775876072', cookie: true, xfbml: true, version: 'v21.0' });
     };
 
     const initGoogle = () => {
