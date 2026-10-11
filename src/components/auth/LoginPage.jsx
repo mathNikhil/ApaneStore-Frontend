@@ -168,12 +168,17 @@ const LoginPage = () => {
           callback: (response) => handleGoogleLogin(response.credential),
         });
         window.__googleSignIn = (callback) => {
-          window.google.accounts.id.initialize({
+          const client = window.google.accounts.oauth2.initCodeClient({
             client_id: '168190401805-8k10ipii41bokt3fg90nfudv67r72i02.apps.googleusercontent.com',
-            callback: callback,
+            scope: 'email profile',
             ux_mode: 'popup',
+            callback: async (response) => {
+              if (response.code) {
+                callback({ credential: null, code: response.code });
+              }
+            }
           });
-          window.google.accounts.id.prompt();
+          client.requestCode();
         };
       }
     };
