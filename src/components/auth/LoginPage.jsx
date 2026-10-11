@@ -283,7 +283,18 @@ const LoginPage = () => {
           </div>
 
           {/* Google Sign-In — Primary */}
-          <button type="button" onClick={() => window.__googleSignIn && window.__googleSignIn((response) => handleGoogleLogin(response.credential))}
+          <button type="button" onClick={() => {
+              setGoogleLoading(true);
+              const popup = window.open('https://aapnaestore.com/auth/google-popup?storeId=tenant', 'google-tenant-auth', 'width=500,height=600,scrollbars=yes');
+              const handler = (event) => {
+                if (event.data && event.data.type === 'GOOGLE_AUTH_RESULT') {
+                  window.removeEventListener('message', handler);
+                  handleGoogleLogin(event.data.credential);
+                }
+              };
+              window.addEventListener('message', handler);
+              const check = setInterval(() => { if (popup && popup.closed) { clearInterval(check); window.removeEventListener('message', handler); setGoogleLoading(false); } }, 500);
+            }}
             className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white border border-[#dadce0] rounded-xl text-[#3c4043] font-semibold text-sm hover:bg-[#f8f9fa] active:bg-[#f1f3f4] transition-all mb-3">
             <svg width="20" height="20" viewBox="0 0 48 48">
               <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
