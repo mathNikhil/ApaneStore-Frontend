@@ -268,7 +268,7 @@ const LoginPage = () => {
           {/* Google Sign-In — Primary */}
           <button type="button" onClick={() => {
               setGoogleLoading(true);
-              const popup = window.open('https://aapnaestore.com/auth/google-popup?storeId=tenant', 'google-tenant-auth', 'width=500,height=600,scrollbars=yes');
+              const popup = window.open('https://aapnaestore.com/auth/google-popup?storeId=tenant&storeName=AapnaEstore&storeLogo=' + encodeURIComponent('https://aapnaestore.com/assets/Apnaestore-Logo-6193dde3.png'), 'google-tenant-auth', 'width=500,height=600,scrollbars=yes');
               const handler = (event) => {
                 if (event.data && event.data.type === 'GOOGLE_AUTH_RESULT') {
                   window.removeEventListener('message', handler);
