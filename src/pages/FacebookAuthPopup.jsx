@@ -21,7 +21,7 @@ const FacebookAuthPopup = () => {
 
   const doFBLogin = () => {
     setStatus('');
-    window.FB.login(async (response) => {
+    window.FB.login((response) => {
       if (response.authResponse) {
         setStatus('Verifying...');
         try {
