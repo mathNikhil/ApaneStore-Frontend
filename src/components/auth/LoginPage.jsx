@@ -155,38 +155,10 @@ const LoginPage = () => {
   };
 
   React.useEffect(() => {
-    // Init Facebook SDK
+    // FB SDK only - Google handled via popup
     window.fbAsyncInit = function() {
-      window.FB.init({ appId: '1428867775876072', cookie: true, xfbml: true, version: 'v21.0' });
+      window.FB.init({ appId: '1428867775876072', cookie: true, xfbml: false, version: 'v21.0' });
     };
-
-    const initGoogle = () => {
-      if (window.google && !window.__googleInitialized) {
-        window.__googleInitialized = true;
-        window.google.accounts.id.initialize({
-          client_id: '168190401805-8k10ipii41bokt3fg90nfudv67r72i02.apps.googleusercontent.com',
-          callback: (response) => handleGoogleLogin(response.credential),
-        });
-        window.__googleSignIn = (callback) => {
-          const client = window.google.accounts.oauth2.initCodeClient({
-            client_id: '168190401805-8k10ipii41bokt3fg90nfudv67r72i02.apps.googleusercontent.com',
-            scope: 'email profile',
-            ux_mode: 'popup',
-            callback: async (response) => {
-              if (response.code) {
-                callback({ credential: null, code: response.code });
-              }
-            }
-          });
-          client.requestCode();
-        };
-      }
-    };
-    if (window.google) initGoogle();
-    else {
-      const interval = setInterval(() => { if (window.google) { initGoogle(); clearInterval(interval); } }, 200);
-      return () => clearInterval(interval);
-    }
   }, []);
 
   // Link Phone Screen
