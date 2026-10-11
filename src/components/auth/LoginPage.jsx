@@ -167,8 +167,12 @@ const LoginPage = () => {
           client_id: '168190401805-8k10ipii41bokt3fg90nfudv67r72i02.apps.googleusercontent.com',
           callback: (response) => handleGoogleLogin(response.credential),
         });
-        // Custom button triggers Google sign-in
-        window.__googleSignIn = () => {
+        window.__googleSignIn = (callback) => {
+          window.google.accounts.id.initialize({
+            client_id: '168190401805-8k10ipii41bokt3fg90nfudv67r72i02.apps.googleusercontent.com',
+            callback: callback,
+            ux_mode: 'popup',
+          });
           window.google.accounts.id.prompt();
         };
       }
@@ -274,7 +278,7 @@ const LoginPage = () => {
           </div>
 
           {/* Google Sign-In — Primary */}
-          <button type="button" onClick={() => window.__googleSignIn && window.__googleSignIn()}
+          <button type="button" onClick={() => window.__googleSignIn && window.__googleSignIn((response) => handleGoogleLogin(response.credential))}
             className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white border border-[#dadce0] rounded-xl text-[#3c4043] font-semibold text-sm hover:bg-[#f8f9fa] active:bg-[#f1f3f4] transition-all mb-3">
             <svg width="20" height="20" viewBox="0 0 48 48">
               <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
