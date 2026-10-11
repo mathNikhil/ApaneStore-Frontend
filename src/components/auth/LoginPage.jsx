@@ -210,13 +210,24 @@ const LoginPage = () => {
             <select value={businessType} onChange={e => setBusinessType(e.target.value)} required
               className="w-full border border-[#bbcbb9] rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#006d2f]">
               <option value="">Select type</option>
-              <option value="retail">Retail Store</option>
-              <option value="restaurant">Restaurant / Food</option>
-              <option value="fashion">Fashion / Clothing</option>
-              <option value="grocery">Grocery</option>
-              <option value="electronics">Electronics</option>
-              <option value="pharmacy">Pharmacy</option>
-              <option value="other">Other</option>
+              <option value="grocery_kirana">🛒 Grocery & Kirana</option>
+              <option value="fashion_clothing">👗 Fashion & Clothing</option>
+              <option value="food_restaurant">🍔 Food & Restaurant</option>
+              <option value="bakery_sweets">🍰 Bakery & Sweets</option>
+              <option value="electronics_gadgets">📱 Electronics & Gadgets</option>
+              <option value="beauty_cosmetics">💄 Beauty & Cosmetics</option>
+              <option value="health_pharmacy">💊 Health & Pharmacy</option>
+              <option value="home_furniture">🏠 Home & Furniture</option>
+              <option value="jewellery">💍 Jewellery</option>
+              <option value="books_stationery">📚 Books & Stationery</option>
+              <option value="organic_natural">🌿 Organic & Natural</option>
+              <option value="sports_fitness">🏋️ Sports & Fitness</option>
+              <option value="toys_kids">🧸 Toys & Kids</option>
+              <option value="gifts_handicrafts">🎁 Gifts & Handicrafts</option>
+              <option value="pet_supplies">🐾 Pet Supplies</option>
+              <option value="automotive">🚗 Automotive</option>
+              <option value="services">🔧 Services</option>
+              <option value="other">📦 Other</option>
             </select>
           </div>
           <div>
