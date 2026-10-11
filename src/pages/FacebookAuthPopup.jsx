@@ -24,19 +24,17 @@ const FacebookAuthPopup = () => {
     window.FB.login((response) => {
       if (response.authResponse) {
         setStatus('Verifying...');
-        try {
-          const res = await fetch(API + '/api/store/' + storeId + '/auth/social/facebook', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              accessToken: response.authResponse.accessToken,
-              userID: response.authResponse.userID
-            })
-          });
-          sendToParent(await res.json());
-        } catch(e) {
-          sendToParent({ success: false, error: 'Verification failed' });
-        }
+        fetch(API + '/api/store/' + storeId + '/auth/social/facebook', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            accessToken: response.authResponse.accessToken,
+            userID: response.authResponse.userID
+          })
+        })
+        .then(r => r.json())
+        .then(data => sendToParent(data))
+        .catch(() => sendToParent({ success: false, error: 'Verification failed' }));
       } else {
         sendToParent({ success: false, error: 'Facebook login cancelled' });
       }
@@ -45,16 +43,13 @@ const FacebookAuthPopup = () => {
 
   useEffect(() => {
     if (!storeId) { setStatus('Missing store ID'); return; }
-
-    const initFB = () => {
+    window.fbAsyncInit = function() {
       window.FB.init({ appId: FB_APP_ID, cookie: true, xfbml: false, version: 'v21.0' });
       doFBLogin();
     };
-
     if (window.FB) {
-      initFB();
+      doFBLogin();
     } else {
-      window.fbAsyncInit = initFB;
       const script = document.createElement('script');
       script.src = 'https://connect.facebook.net/en_US/sdk.js';
       script.async = true;
