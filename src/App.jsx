@@ -1,6 +1,7 @@
 import React from 'react';
 import { Toaster } from 'react-hot-toast';
 import GoogleAuthPopup from './pages/GoogleAuthPopup';
+import FacebookAuthPopup from './pages/FacebookAuthPopup';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './Context/AuthContext';
 import { StoreBuilderProvider } from './Context/StoreBuilderContext';
@@ -87,6 +88,7 @@ function App() {
             <Route path="/store-builder/*" element={<ProtectedRoute><StoreBuilderRouter /></ProtectedRoute>} />
             
             <Route path="/auth/google-popup" element={<GoogleAuthPopup />} />
+            <Route path="/auth/facebook-popup" element={<FacebookAuthPopup />} />
             {/* Super Admin Routes */}
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin/dashboard" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
