@@ -30,6 +30,7 @@ const GoogleAuthPopup = () => {
         callback: async (response) => {
           setStatus('Verifying...');
           try {
+            if (storeId === 'tenant') { sendToParent({ type: 'GOOGLE_AUTH_RESULT', credential: response.credential }); return; }
             const res = await fetch(API + '/api/store/' + storeId + '/auth/social/google', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
