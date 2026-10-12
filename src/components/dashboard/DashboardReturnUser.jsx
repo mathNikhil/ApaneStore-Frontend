@@ -17,8 +17,120 @@ const DashboardReturnUser = ({ stores = [], subscriptions = {}, onStoreUpdate })
     const [adminPasswords, setAdminPasswords] = useState({});
     const [passwordVisible, setPasswordVisible] = useState({});
     const [passwordLoading, setPasswordLoading] = useState({});
+    const [notifModal, setNotifModal] = useState(null); // storeId
+    const [showTemplates, setShowTemplates] = useState(false);
+    const [activeTemplateTab, setActiveTemplateTab] = useState('order_confirmed');
+    const [templates, setTemplates] = useState({});
+    const [templateLoading, setTemplateLoading] = useState(false);
+    const [templateSaving, setTemplateSaving] = useState(false);
+    const [templatePreview, setTemplatePreview] = useState(false);
+
+    const TEMPLATE_TABS = [
+        { key: 'order_confirmed', label: 'Order Confirmed', icon: '🎉' },
+        { key: 'order_packed', label: 'Order Packed', icon: '📦' },
+        { key: 'out_for_delivery', label: 'Out for Delivery', icon: '🚚' },
+        { key: 'delivered', label: 'Delivered', icon: '✅' },
+        { key: 'cancelled', label: 'Cancelled', icon: '❌' },
+        { key: 'return_requested', label: 'Return Requested', icon: '↩️' },
+    ];
+
+    const DEFAULT_SUBJECTS = {
+        order_confirmed: 'Your order has been confirmed! 🎉',
+        order_packed: 'Your order is packed and ready 📦',
+        out_for_delivery: 'Your order is on its way! 🚚',
+        delivered: 'Your order has been delivered ✅',
+        cancelled: 'Your order has been cancelled',
+        return_requested: 'Return request received ↩️',
+    };
+
+    const DEFAULT_BODIES = {
+        order_confirmed: `Hi {{customer_name}},\n\nThank you for your order! We have received your order #{{order_id}} and it is being processed.\n\nItems: {{item_list}}\nTotal: {{total_amount}}\n\nWe will notify you once your order is packed.\n\nWarm regards,\n{{store_name}}`,
+        order_packed: `Hi {{customer_name}},\n\nGreat news! Your order #{{order_id}} has been packed and is ready for dispatch.\n\nYou will receive another update once it is out for delivery.\n\nWarm regards,\n{{store_name}}`,
+        out_for_delivery: `Hi {{customer_name}},\n\nYour order #{{order_id}} is out for delivery! Expect it soon.\n\nTracking: {{tracking_number}}\n\nWarm regards,\n{{store_name}}`,
+        delivered: `Hi {{customer_name}},\n\nYour order #{{order_id}} has been delivered. We hope you love your purchase!\n\nThank you for shopping with {{store_name}}.`,
+        cancelled: `Hi {{customer_name}},\n\nYour order #{{order_id}} has been cancelled as requested.\n\nIf you have any questions, please contact us.\n\nWarm regards,\n{{store_name}}`,
+        return_requested: `Hi {{customer_name}},\n\nWe have received your return request for order #{{order_id}}.\n\nOur team will review it and get back to you within 24-48 hours.\n\nWarm regards,\n{{store_name}}`,
+    };
+
+    const TEMPLATE_VARIABLES = ['{{customer_name}}', '{{order_id}}', '{{order_total}}', '{{store_name}}', '{{delivery_date}}'];
+
+    const loadTemplates = async (storeId) => {
+        setTemplateLoading(true);
+        try {
+            const res = await fetch(`${API_URL}/api/email-templates/${storeId}`, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            const data = await res.json();
+            if (data.success) {
+                const map = {};
+                data.templates.forEach(t => { map[t.status_key] = t; });
+                setTemplates(map);
+            }
+        } catch (e) { console.error('Failed to load templates', e); }
+        finally { setTemplateLoading(false); }
+    };
+
+    const saveTemplate = async () => {
+        setTemplateSaving(true);
+        const t = templates[activeTemplateTab] || {};
+        try {
+            const res = await fetch(`${API_URL}/api/email-templates/${notifModal}/${activeTemplateTab}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
+                body: JSON.stringify({
+                    subject: t.subject || DEFAULT_SUBJECTS[activeTemplateTab],
+                    body: t.body || DEFAULT_BODIES[activeTemplateTab],
+                    is_active: t.is_active !== false,
+                })
+            });
+            const data = await res.json();
+            if (data.success) showSuccess('Template saved!');
+            else showError('Save failed');
+        } catch (e) { showError('Save failed'); }
+        finally { setTemplateSaving(false); }
+    };
+
+    const openTemplates = (storeId) => {
+        setShowTemplates(true);
+        setActiveTemplateTab('order_confirmed');
+        setTemplatePreview(false);
+        loadTemplates(storeId);
+    };
+
+    const getCurrentTemplate = (key) => templates[key] || {
+        subject: DEFAULT_SUBJECTS[key] || '',
+        body: DEFAULT_BODIES[key] || '',
+        is_active: true,
+    };
+
+    const updateTemplateField = (key, field, value) => {
+        setTemplates(prev => ({
+            ...prev,
+            [key]: { ...(prev[key] || {}), [field]: value }
+        }));
+    };
+
+    const insertVariable = (v) => {
+        const key = activeTemplateTab;
+        const current = (templates[key] || {}).body || DEFAULT_BODIES[key] || '';
+        updateTemplateField(key, 'body', current + v);
+    };
 
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002';
+
+    // Handle Gmail OAuth return
+    React.useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const gmail = params.get('gmail');
+        const email = params.get('email');
+        if (gmail === 'connected' && email) {
+            showSuccess(`Gmail connected: ${email}`);
+            window.history.replaceState({}, '', '/dashboard');
+        } else if (gmail === 'error') {
+            showError('Gmail connection failed. Please try again.');
+            window.history.replaceState({}, '', '/dashboard');
+        }
+    }, []);
 
     // ✅ Get tenant name from localStorage
     const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -328,13 +440,6 @@ const DashboardReturnUser = ({ stores = [], subscriptions = {}, onStoreUpdate })
                     <p className="text-[#3c4a3d] mt-1">Manage and scale your digital business.</p>
                 </div>
 
-                {/* Error Message */}
-                {error && (
-                    <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-600">
-                        ❌ {error}
-                    </div>
-                )}
-
                 {/* Stats Row - All Statuses */}
                 <div className="grid grid-cols-4 gap-4 mb-8">
                     <div className="bg-white p-4 rounded-xl border border-[#bbcbb9] shadow-sm hover:shadow-md transition-shadow text-center">
@@ -604,6 +709,26 @@ const DashboardReturnUser = ({ stores = [], subscriptions = {}, onStoreUpdate })
                                         </p>
                                     </div>
 
+                                    {/* Gmail Notifications */}
+                                    {(() => {
+                                        const sub = subscriptions[store.id];
+                                        const isPaid = sub && sub.payment_status === 'paid' && sub.is_trial === false;
+                                        if (!isPaid) return null;
+                                        return (
+                                            <div className="mt-3 pt-3 border-t border-dashed border-[#e0e3e6] flex items-center justify-between">
+                                                <span className="text-xs font-semibold text-[#3c4a3d] flex items-center gap-1">
+                                                    <span style={{fontSize:'13px'}}>📧</span> Order Notifications
+                                                </span>
+                                                <button
+                                                    onClick={() => setNotifModal(store.store_id)}
+                                                    className="px-3 py-1 text-xs font-semibold text-[#4f46e5] hover:bg-[#eef2ff] rounded-lg border border-[#c7d2fe] flex items-center gap-1"
+                                                >
+                                                    <span className="material-symbols-outlined text-sm">mail</span>Connect Gmail
+                                                </button>
+                                            </div>
+                                        );
+                                    })()}
+
                                     {/* Bottom: Delete */}
                                     <div className="mt-4 pt-3 border-t border-[#eceef1]">
                                         <button
@@ -688,7 +813,100 @@ const DashboardReturnUser = ({ stores = [], subscriptions = {}, onStoreUpdate })
                 */}
             </main>
 
+            {/* Gmail Notifications Modal */}
+            {notifModal && (
+                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" onClick={() => { setNotifModal(null); setShowTemplates(false); }}>
+                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+                    <div className="relative bg-white rounded-t-3xl sm:rounded-2xl w-full sm:max-w-md shadow-xl overflow-hidden flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-[#eceef1]">
+                            {showTemplates ? (
+                                <div className="flex items-center gap-2">
+                                    <button onClick={() => setShowTemplates(false)} className="text-[#6c7b6b] hover:text-[#191c1e] mr-1">
+                                        <span className="material-symbols-outlined text-xl">arrow_back</span>
+                                    </button>
+                                    <h2 className="text-base font-bold text-[#191c1e]">Email Templates</h2>
+                                </div>
+                            ) : (
+                                <h2 className="text-base font-bold text-[#191c1e]">Order Notifications</h2>
+                            )}
+                            <button onClick={() => { setNotifModal(null); setShowTemplates(false); }} className="text-[#6c7b6b] hover:text-[#191c1e]">
+                                <span className="material-symbols-outlined">close</span>
+                            </button>
+                        </div>
+                        {!showTemplates ? (
+                            <div className="p-5 space-y-4">
+                                <p className="text-sm text-[#6c7b6b]">Connect your Gmail to send order confirmations and status updates from your own email address.</p>
+                                <div className="flex items-center gap-3 border border-[#e0e3e6] rounded-2xl p-4">
+                                    <div className="w-10 h-10 rounded-xl bg-[#fef2f2] flex items-center justify-center text-xl">📧</div>
+                                    <div className="flex-1"><p className="text-sm font-semibold text-[#191c1e]">Gmail</p><p className="text-xs text-[#6c7b6b]">Not connected</p></div>
+                                    <button onClick={() => { const token = localStorage.getItem('token'); window.location.href = 'https://api.aapnaestore.com/api/auth/gmail-notify/connect?storeId=' + notifModal + '&token=' + token; }} className="px-4 py-2 bg-[#4f46e5] text-white text-sm font-semibold rounded-xl hover:bg-[#4338ca] transition-colors">Connect</button>
+                                </div>
+                                <button onClick={() => openTemplates(notifModal)} className="w-full flex items-center justify-between px-4 py-3 bg-[#f5f3ff] text-[#4f46e5] font-semibold text-sm rounded-2xl border border-[#e0e7ff] hover:bg-[#ede9fe] transition-colors">
+                                    <span className="flex items-center gap-2"><span className="material-symbols-outlined text-base">mail_outline</span> Email Templates</span>
+                                    <span className="material-symbols-outlined text-base">chevron_right</span>
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="flex flex-col flex-1 overflow-hidden">
+                                <div className="flex gap-1 px-4 pt-3 pb-2 overflow-x-auto" style={{scrollbarWidth:'none'}}>
+                                    {TEMPLATE_TABS.map(tab => (
+                                        <button key={tab.key} onClick={() => setActiveTemplateTab(tab.key)}
+                                            className={"flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors " + (activeTemplateTab === tab.key ? "bg-[#4f46e5] text-white" : "bg-[#f3f4f6] text-[#6c7b6b] hover:bg-[#e5e7eb]")}>
+                                            <span>{tab.icon}</span> {tab.label}
+                                        </button>
+                                    ))}
+                                </div>
+                                {templateLoading ? (
+                                    <div className="flex-1 flex items-center justify-center py-10 text-[#6c7b6b] text-sm">Loading templates…</div>
+                                ) : (
+                                    <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm font-semibold text-[#191c1e]">Enable this template</span>
+                                            <label className="relative inline-flex items-center cursor-pointer">
+                                                <input type="checkbox" className="sr-only peer"
+                                                    checked={getCurrentTemplate(activeTemplateTab).is_active !== false}
+                                                    onChange={e => updateTemplateField(activeTemplateTab, 'is_active', e.target.checked)} />
+                                                <div className="w-10 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#4f46e5]"></div>
+                                            </label>
+                                        </div>
+                                        <div>
+                                            <label className="text-xs font-semibold text-[#3c4a3d] mb-1 block">Subject</label>
+                                            <input type="text" value={getCurrentTemplate(activeTemplateTab).subject}
+                                                onChange={e => updateTemplateField(activeTemplateTab, 'subject', e.target.value)}
+                                                className="w-full border border-[#e0e3e6] rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4f46e5]/40"
+                                                placeholder="Email subject…" />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs font-semibold text-[#3c4a3d] mb-1 block">Body</label>
+                                            <textarea id="template-body-ta" value={getCurrentTemplate(activeTemplateTab).body}
+                                                onChange={e => updateTemplateField(activeTemplateTab, 'body', e.target.value)}
+                                                rows={7} className="w-full border border-[#e0e3e6] rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4f46e5]/40 resize-none font-mono"
+                                                placeholder="Email body…" />
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-[#6c7b6b] mb-2">Insert variable (click to add at cursor):</p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {TEMPLATE_VARIABLES.map(v => (
+                                                    <button key={v} onClick={() => insertVariable(v)}
+                                                        className="px-2 py-1 bg-[#f0fdf4] text-[#15803d] text-xs font-mono rounded-lg border border-[#bbf7d0] hover:bg-[#dcfce7] transition-colors">{v}</button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                                <div className="px-5 py-4 border-t border-[#eceef1]">
+                                    <button onClick={saveTemplate} disabled={templateSaving}
+                                        className="w-full py-3 bg-[#4f46e5] text-white font-semibold text-sm rounded-2xl hover:bg-[#4338ca] disabled:opacity-60 transition-colors flex items-center justify-center gap-2">
+                                        {templateSaving ? (<><span className="material-symbols-outlined text-base" style={{animation:'spin 1s linear infinite'}}>progress_activity</span> Saving…</>) : (<><span className="material-symbols-outlined text-base">save</span> Save Template</>)}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
             <BottomNav />
+
         </div>
     );
 };

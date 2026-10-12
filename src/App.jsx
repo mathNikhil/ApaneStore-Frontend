@@ -30,6 +30,8 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminTenants from './pages/admin/AdminTenants';
 import AdminStores from './pages/admin/AdminStores';
 import AdminProtectedRoute from './components/admin/AdminProtectedRoute';
+import NotificationsSettings from './components/settings/NotificationsSettings';
+import EmailTemplatesPage from './components/settings/EmailTemplatesPage';
 
 import './styles/globals.css';
 
@@ -94,6 +96,8 @@ function App() {
             <Route path="/admin/dashboard" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
             <Route path="/admin/tenants" element={<AdminProtectedRoute><AdminTenants /></AdminProtectedRoute>} />
             <Route path="/admin/stores" element={<AdminProtectedRoute><AdminStores /></AdminProtectedRoute>} />
+            <Route path="/store/:storeId/settings/notifications" element={<ProtectedRoute><NotificationsSettings /></ProtectedRoute>} />
+                <Route path="/store/:storeId/settings/email-templates" element={<ProtectedRoute><EmailTemplatesPage /></ProtectedRoute>} />
           </Routes>
         </BrowserRouter>
       </StoreBuilderProvider>
