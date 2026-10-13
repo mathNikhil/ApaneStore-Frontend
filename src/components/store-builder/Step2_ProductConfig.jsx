@@ -455,6 +455,7 @@ const Step2_ProductConfig = () => {
           size: String(row['size'] || '').trim(),
           unit: String(row['unit'] || '').trim(),
           price: String(row['price'] || '').trim(),
+          gstRate: row['gst_rate'] !== undefined && row['gst_rate'] !== '' ? Number(row['gst_rate']) : null,
           inStock: row['InStock'] !== undefined && row['InStock'] !== '' ? String(row['InStock']) : '',
           csvSizeId: String(row['size_id'] || '').trim()
         })).filter(r => r.catName && r.prodName);
@@ -468,6 +469,7 @@ const Step2_ProductConfig = () => {
         const sizeIdx = headers.indexOf('size');
         const unitIdx = headers.indexOf('unit');
         const priceIdx = headers.indexOf('price');
+        const gstRateIdx = headers.indexOf('gst_rate');
         const inStockIdx = headers.indexOf('instock');
         const sizeIdCsvIdx = headers.indexOf('size_id');
         if (catIdx === -1 || prodIdx === -1) {
@@ -485,6 +487,7 @@ const Step2_ProductConfig = () => {
             size: cols[sizeIdx] || '',
             unit: cols[unitIdx] || '',
             price: cols[priceIdx] || '',
+            gstRate: gstRateIdx !== -1 && cols[gstRateIdx] !== '' ? Number(cols[gstRateIdx]) : null,
             inStock: inStockIdx !== -1 ? cols[inStockIdx] : '',
             csvSizeId: sizeIdCsvIdx !== -1 ? (() => {
               const raw = (cols[sizeIdCsvIdx] || '').trim();
@@ -542,8 +545,10 @@ Continue?`;
 
           let prod = cat.products.find(p => p.name.toLowerCase() === prodName.toLowerCase());
           if (!prod) {
-            prod = { id: generateId(), name: prodName, description: '', images: [], bulkPricing: false, discount: 0, gstRate: null, variations: [] };
+            prod = { id: generateId(), name: prodName, description: '', images: [], bulkPricing: false, discount: 0, gstRate: row.gstRate ?? null, variations: [] };
             cat.products.push(prod);
+          } else if (row.gstRate !== null && row.gstRate !== undefined) {
+            prod.gstRate = row.gstRate;
           }
 
           let vari = prod.variations.find(v => v.name.toLowerCase() === varName.toLowerCase());
@@ -613,13 +618,13 @@ Continue?`;
       }
     } catch(err) { console.warn('Could not fetch inventory:', err); }
 
-    const rows = [['category_name','product_name','variation_name','size','unit','price','InStock','size_id']];
+    const rows = [['category_name','product_name','variation_name','size','unit','price','gst_rate','InStock','size_id']];
     categories.forEach(cat => {
       (cat.products || []).filter(p => !p._archived).forEach(prod => {
         (prod.variations || []).forEach(vari => {
           (vari.sizes || []).forEach(sz => {
             const currentStock = stockMap[String(sz.id)] !== undefined ? stockMap[String(sz.id)] : 0;
-            rows.push([cat.name||'', prod.name||'', vari.name||'', sz.size||'', sz.unit||'', sz.price||'', currentStock, String(sz.id||'')]);
+            rows.push([cat.name||'', prod.name||'', vari.name||'', sz.size||'', sz.unit||'', sz.price||'', prod.gstRate !== null && prod.gstRate !== undefined ? prod.gstRate : '', currentStock, String(sz.id||'')]);
           });
         });
       });
@@ -629,7 +634,7 @@ Continue?`;
     // Force size_id column (H=index 7) as text to prevent Excel scientific notation
     const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
     for (let r = 1; r <= range.e.r; r++) {
-      const cellAddr = XLSX.utils.encode_cell({ r, c: 7 });
+      const cellAddr = XLSX.utils.encode_cell({ r, c: 8 });
       if (ws[cellAddr]) { ws[cellAddr].t = 's'; ws[cellAddr].v = String(ws[cellAddr].v); }
     }
     const wb = XLSX.utils.book_new();
@@ -639,7 +644,7 @@ Continue?`;
 
   const downloadCSVTemplate = () => {
     const rows = [
-      ['category_name','product_name','variation_name','size','unit','price','InStock'],
+      ['category_name','product_name','variation_name','size','unit','price','gst_rate','InStock'],
       ['Shoes','Leather Shoes','Black','7','UK','654','50'],
       ['Shoes','Leather Shoes','Black','8','UK','654','30'],
       ['Shoes','Leather Shoes','Black','9','UK','654','20'],

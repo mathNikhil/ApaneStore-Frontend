@@ -8,7 +8,7 @@ import Slider from '../Common/Slider';
 
 const Step3_CartConfig = () => {
   const { cartData, setCartData, profileData, currentStoreId, productData } = useStoreBuilder();
-  const hasPerProductGST = (productData?.categories || []).some(cat => (cat.products || []).some(p => p.gstRate != null));
+  const hasPerProductGST = (productData?.categories || []).some(cat => (cat.products || []).some(p => p.gstRate != null && p.gstRate > 0));
 
   const [settings, setSettings] = useState({
     enableDineIn: cartData.enableDineIn || false,
