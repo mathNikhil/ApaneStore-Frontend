@@ -21,6 +21,8 @@ const Step4_PaymentConfig = () => {
       showQRCode: paymentData.showQRCode !== undefined ? paymentData.showQRCode : true,
       showUPIId: paymentData.showUPIId !== undefined ? paymentData.showUPIId : true,
       codEnabled: true,
+      partialPaymentEnabled: paymentData.partialPaymentEnabled || false,
+      partialPaymentPercent: paymentData.partialPaymentPercent || 10,
       cardEnabled: false,
       netBankingEnabled: false,
       cashfreeEnabled: paymentData.cashfreeEnabled || false,
@@ -38,6 +40,8 @@ const Step4_PaymentConfig = () => {
     showQRCode: paymentData.showQRCode !== undefined ? paymentData.showQRCode : true,
     showUPIId: paymentData.showUPIId !== undefined ? paymentData.showUPIId : true,
     codEnabled: true,
+    partialPaymentEnabled: paymentData.partialPaymentEnabled || false,
+    partialPaymentPercent: paymentData.partialPaymentPercent || 10,
     cardEnabled: false,
     netBankingEnabled: false,
     cashfreeEnabled: paymentData.cashfreeEnabled || false,
@@ -256,6 +260,48 @@ const Step4_PaymentConfig = () => {
         </div>
       </Card>
 
+
+      {/* Partial Payment (COD Advance) */}
+      <Card className="mb-6">
+        <div className="flex items-center gap-2 mb-4">
+          <span className="material-symbols-outlined text-[#006d2f]">percent</span>
+          <h2 className="font-label-md text-label-md text-[#556067] uppercase tracking-wider text-xs">Partial Payment (COD Advance)</h2>
+        </div>
+        <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+          <p className="text-sm text-amber-800"><span className="font-semibold">💡 Reduce COD risk</span><br />Customer pays a small % advance via UPI at checkout. Balance collected on delivery. You verify the UPI payment before confirming the order.</p>
+        </div>
+        <Toggle
+          label="Enable Partial Payment"
+          description="Customer pays advance % via UPI when selecting COD"
+          checked={settings.partialPaymentEnabled}
+          onChange={() => {
+            const enabling = !settings.partialPaymentEnabled;
+            setSettings(prev => ({
+              ...prev,
+              partialPaymentEnabled: enabling,
+              upiEnabled: enabling ? true : false,
+              upiAppName: enabling && !prev.upiAppName ? 'GPay/PhonePe' : prev.upiAppName,
+            }));
+          }}
+        />
+        {settings.partialPaymentEnabled && (
+          <div className="mt-4 space-y-1">
+            <label className="font-label-md text-label-md text-[#3c4a3d] text-xs uppercase tracking-wider">Advance % <span className="text-red-500">*</span></label>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min="1"
+                max="99"
+                value={settings.partialPaymentPercent}
+                onChange={(e) => setSettings(prev => ({ ...prev, partialPaymentPercent: Math.min(99, Math.max(1, Number(e.target.value))) }))}
+                className="w-24 px-3 py-2 rounded-lg border border-[#bbcbb9] bg-[#f2f4f7] text-sm text-[#3c4a3d]"
+              />
+              <span className="text-sm text-[#556067]">% of order total — balance paid on delivery</span>
+            </div>
+            {!settings.upiId && <p className="text-xs text-red-500 mt-1">⚠️ Enter your UPI ID below to enable partial payment</p>}
+          </div>
+        )}
+      </Card>
       {settings.upiEnabled && (
         <Card className="mb-6">
           <div className="flex items-center gap-2 mb-4">
