@@ -11,8 +11,11 @@ const QRActivationModal = ({ storeId, onClose, onActivated }) => {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    setError('');
+    setCharge(null);
+    setLoading(true);
     fetchPricing();
-  }, []);
+  }, [storeId]);
 
   const fetchPricing = async () => {
     try {
@@ -62,7 +65,7 @@ const QRActivationModal = ({ storeId, onClose, onActivated }) => {
         });
       }
 
-      const cashfree = window.Cashfree({ mode: 'production' });
+      const cashfree = await window.Cashfree({ mode: 'production' });
       cashfree.checkout({
         paymentSessionId: data.payment_session_id,
         redirectTarget: '_self',
