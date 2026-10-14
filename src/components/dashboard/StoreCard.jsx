@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API_BASE_URL from '../../config/api';
+import QRActivationModal from './QRActivationModal';
 
 const StoreCard = ({ store, onNavigate }) => {
     const navigate = useNavigate();
@@ -9,10 +10,18 @@ const StoreCard = ({ store, onNavigate }) => {
         production: false,
         delivery: false
     });
+    const [qrActive, setQrActive] = useState(false);
+    const [showQRModal, setShowQRModal] = useState(false);
 
     useEffect(() => {
-        // Fetch panel settings for this store
         fetchStorePanels();
+        // Only check QR status for published stores
+        if (store.status === 'published') {
+            fetch(`${API_BASE_URL}/api/qr/status/${store.id}`)
+                .then(r => r.json())
+                .then(d => setQrActive(d.active === true))
+                .catch(() => {});
+        }
     }, [store.id]);
 
     const fetchStorePanels = async () => {
@@ -129,7 +138,7 @@ const StoreCard = ({ store, onNavigate }) => {
                 
                 {/* Delivery Panel - Only if enabled, else Phase 3 placeholder */}
                 {panels.delivery ? (
-                    <button 
+                    <button
                         style={styles.deliveryBtn}
                         onClick={openDeliveryPanel}
                     >
@@ -140,7 +149,26 @@ const StoreCard = ({ store, onNavigate }) => {
                         🚚 Delivery (Phase 3)
                     </button>
                 )}
+
+                {/* QR Scanner — only for published stores */}
+                {store.status === 'published' && (
+                    qrActive ? (
+                        <span style={styles.qrActiveBadge}>📱 QR Active</span>
+                    ) : (
+                        <button style={styles.qrBtn} onClick={() => setShowQRModal(true)}>
+                            📱 Activate QR
+                        </button>
+                    )
+                )}
             </div>
+
+            {showQRModal && (
+                <QRActivationModal
+                    storeId={store.id}
+                    onClose={() => setShowQRModal(false)}
+                    onActivated={() => { setQrActive(true); setShowQRModal(false); }}
+                />
+            )}
         </div>
     );
 };
@@ -272,6 +300,28 @@ const styles = {
         fontSize: '13px',
         cursor: 'pointer',
         transition: 'all 0.3s',
+    },
+    qrBtn: {
+        padding: '8px 16px',
+        background: '#7c3aed',
+        color: '#fff',
+        border: 'none',
+        borderRadius: '8px',
+        fontWeight: '600',
+        fontSize: '13px',
+        cursor: 'pointer',
+        transition: 'all 0.3s',
+    },
+    qrActiveBadge: {
+        padding: '8px 16px',
+        background: '#f0fdf4',
+        color: '#15803d',
+        border: '1px solid #bbf7d0',
+        borderRadius: '8px',
+        fontWeight: '600',
+        fontSize: '13px',
+        display: 'inline-flex',
+        alignItems: 'center',
     },
 };
 
