@@ -1,5 +1,5 @@
 import { showSuccess, showError } from '../../utils/toast';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import TopAppBar from '../Common/TopAppBar';
@@ -7,6 +7,9 @@ import Button from '../Common/Button';
 import BottomNav from '../Common/BottomNav';
 import logo from '../../assets/images/Apnaestore-Logo.png';
 import { storeAPI } from '../../services/api';
+import QRActivationModal from './QRActivationModal';
+
+const API = import.meta.env.VITE_API_URL || 'https://api.aapnaestore.com';
 
 const DashboardReturnUser = ({ stores = [], subscriptions = {}, onStoreUpdate }) => {
     const navigate = useNavigate();
@@ -23,6 +26,18 @@ const DashboardReturnUser = ({ stores = [], subscriptions = {}, onStoreUpdate })
     const [templates, setTemplates] = useState({});
     const [templateLoading, setTemplateLoading] = useState(false);
     const [templateSaving, setTemplateSaving] = useState(false);
+    const [qrStatusMap, setQrStatusMap] = useState({}); // storeId -> bool
+    const [qrModal, setQrModal] = useState(null); // storeId of open QR modal
+
+    useEffect(() => {
+        const publishedStores = stores.filter(s => s.status === 'published' || s.status === 'active');
+        publishedStores.forEach(store => {
+            fetch(`${API}/api/qr/status/${store.id}`)
+                .then(r => r.json())
+                .then(d => setQrStatusMap(prev => ({ ...prev, [store.id]: d.active === true })))
+                .catch(() => {});
+        });
+    }, [stores]);
     const [templatePreview, setTemplatePreview] = useState(false);
 
     const TEMPLATE_TABS = [
@@ -729,6 +744,27 @@ const DashboardReturnUser = ({ stores = [], subscriptions = {}, onStoreUpdate })
                                         );
                                     })()}
 
+                                    {/* QR Scanner activation — published stores only */}
+                                    {(store.status === 'published' || store.status === 'active') && (
+                                        <div className="mt-3 pt-3 border-t border-dashed border-[#e0e3e6] flex items-center justify-between">
+                                            <span className="text-xs font-semibold text-[#3c4a3d] flex items-center gap-1">
+                                                <span style={{fontSize:'13px'}}>📱</span> QR Scanner
+                                            </span>
+                                            {qrStatusMap[store.id] ? (
+                                                <span className="px-3 py-1 text-xs font-semibold text-[#15803d] bg-[#f0fdf4] rounded-lg border border-[#bbf7d0]">
+                                                    ✅ Active
+                                                </span>
+                                            ) : (
+                                                <button
+                                                    onClick={() => setQrModal(store.id)}
+                                                    className="px-3 py-1 text-xs font-semibold text-white bg-[#7c3aed] hover:bg-[#6d28d9] rounded-lg flex items-center gap-1"
+                                                >
+                                                    Activate
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
+
                                     {/* Bottom: Delete */}
                                     <div className="mt-4 pt-3 border-t border-[#eceef1]">
                                         <button
@@ -749,6 +785,18 @@ const DashboardReturnUser = ({ stores = [], subscriptions = {}, onStoreUpdate })
                                 </div>
                             );
                         })}
+
+                        {/* QR Activation Modal */}
+                        {qrModal && (
+                            <QRActivationModal
+                                storeId={qrModal}
+                                onClose={() => setQrModal(null)}
+                                onActivated={() => {
+                                    setQrStatusMap(prev => ({ ...prev, [qrModal]: true }));
+                                    setQrModal(null);
+                                }}
+                            />
+                        )}
                     </div>
                 ) : (
                     <div className="text-center py-12 bg-white rounded-2xl border border-[#bbcbb9]">
