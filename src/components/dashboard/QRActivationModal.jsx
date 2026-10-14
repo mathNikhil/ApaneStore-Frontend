@@ -47,10 +47,17 @@ const QRActivationModal = ({ storeId, onClose, onActivated }) => {
 
       if (!window.Cashfree) {
         await new Promise((resolve, reject) => {
+          // check if script already added (avoids duplicate)
+          if (document.querySelector('script[src*="cashfree"]')) {
+            const poll = setInterval(() => {
+              if (window.Cashfree) { clearInterval(poll); resolve(); }
+            }, 100);
+            return;
+          }
           const script = document.createElement('script');
           script.src = 'https://sdk.cashfree.com/js/v3/cashfree.js';
           script.onload = resolve;
-          script.onerror = reject;
+          script.onerror = () => reject(new Error('Failed to load Cashfree SDK'));
           document.head.appendChild(script);
         });
       }
@@ -58,9 +65,8 @@ const QRActivationModal = ({ storeId, onClose, onActivated }) => {
       const cashfree = window.Cashfree({ mode: 'production' });
       cashfree.checkout({
         paymentSessionId: data.payment_session_id,
+        redirectTarget: '_self',
         returnUrl: `${window.location.origin}/qr-payment-return?order_id=${data.order_id}`,
-        onSuccess: () => { onActivated(); },
-        onFailure: () => { setError('Payment failed. Please try again.'); setPaying(false); }
       });
     } catch (err) {
       setError(err.message || 'Something went wrong');
