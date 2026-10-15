@@ -18,6 +18,11 @@ const QRActivationModal = ({ storeId, onClose, onActivated }) => {
   }, [storeId]);
 
   const fetchPricing = async () => {
+    if (!storeId) {
+      setError('Invalid store — please try again.');
+      setLoading(false);
+      return;
+    }
     try {
       const res = await fetch(`${API_BASE_URL}/api/qr/pricing/${storeId}`);
       const data = await res.json();

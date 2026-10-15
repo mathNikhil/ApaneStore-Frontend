@@ -756,7 +756,7 @@ const DashboardReturnUser = ({ stores = [], subscriptions = {}, onStoreUpdate })
                                                 </span>
                                             ) : (
                                                 <button
-                                                    onClick={() => setQrModal(store.id)}
+                                                    onClick={() => store.id && setQrModal(store.id)}
                                                     className="px-3 py-1 text-xs font-semibold text-white bg-[#7c3aed] hover:bg-[#6d28d9] rounded-lg flex items-center gap-1"
                                                 >
                                                     Activate
