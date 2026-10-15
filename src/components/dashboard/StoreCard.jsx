@@ -374,7 +374,7 @@ const StoreCard = ({ store, subscriptions = {}, onStoreUpdate }) => {
             <div style={s.addonsSection}>
                 {/* Always-visible header row with tabs */}
                 <div style={s.tabBar}>
-                    <span style={s.accordionLabel}>⚡ Add-ons</span>
+                    <button style={s.accordionLabelBtn} onClick={() => setAddonsOpen(v => !v)}>⚡ Add-ons</button>
                     <div style={s.tabDivider} />
                     <button style={{ ...s.tabBtn, ...(activeTab === 'notif' ? s.tabBtnActive : {}) }}
                         onClick={() => { setActiveTab('notif'); setAddonsOpen(v => activeTab === 'notif' ? !v : true); }}>
@@ -385,7 +385,9 @@ const StoreCard = ({ store, subscriptions = {}, onStoreUpdate }) => {
                         onClick={() => { setActiveTab('qr'); setAddonsOpen(v => activeTab === 'qr' ? !v : true); }}>
                         📱 QR Scanner
                     </button>
-                    <span style={{ ...s.accordionChevron, marginLeft: 'auto', transform: addonsOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>▾</span>
+                    <button style={s.accordionChevronBtn} onClick={() => setAddonsOpen(v => !v)}>
+                        <span style={{ ...s.accordionChevron, transform: addonsOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>▾</span>
+                    </button>
                 </div>
 
                 {addonsOpen && (
@@ -674,8 +676,9 @@ const s = {
     adminHint: { fontSize: '12px', color: '#9ca3af', margin: '8px 0 0', lineHeight: 1.5 },
 
     addonsSection: { borderTop: '1px solid #f0f2f5' },
-    accordionLabel: { fontSize: '12px', fontWeight: 700, color: '#9ca3af', letterSpacing: '.4px', textTransform: 'uppercase', whiteSpace: 'nowrap', padding: '8px 4px 8px 0' },
-    accordionChevron: { fontSize: '14px', color: '#9ca3af', transition: 'transform .2s', display: 'inline-block', padding: '8px 0' },
+    accordionLabelBtn: { fontSize: '12px', fontWeight: 700, color: '#9ca3af', letterSpacing: '.4px', textTransform: 'uppercase', whiteSpace: 'nowrap', padding: '8px 4px 8px 0', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' },
+    accordionChevronBtn: { marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' },
+    accordionChevron: { fontSize: '14px', color: '#9ca3af', transition: 'transform .2s', display: 'inline-block' },
     tabBar: { padding: '0 16px', display: 'flex', alignItems: 'center', gap: '2px', borderTop: '1px solid #f0f2f5' },
     tabBtn: { display: 'flex', alignItems: 'center', gap: '7px', padding: '8px 14px', fontSize: '13px', fontWeight: 600, color: '#9ca3af', background: 'none', border: 'none', borderBottom: '2px solid transparent', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' },
     tabBtnActive: { color: '#111827', borderBottomColor: '#111827' },
