@@ -379,7 +379,7 @@ const StoreCard = ({ store, subscriptions = {}, onStoreUpdate }) => {
                 </button>
 
                 {addonsOpen && (
-                <>
+                <div>
                 <div style={s.tabBar}>
                     <button style={{ ...s.tabBtn, ...(activeTab === 'notif' ? s.tabBtnActive : {}) }} onClick={() => setActiveTab('notif')}>
                         🔔 Order Notifications
@@ -461,7 +461,7 @@ const StoreCard = ({ store, subscriptions = {}, onStoreUpdate }) => {
                         )}
                     </div>
                 )}
-                </>
+                </div>
                 )}
             </div>
 
