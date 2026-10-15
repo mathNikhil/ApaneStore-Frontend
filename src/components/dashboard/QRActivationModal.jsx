@@ -101,32 +101,40 @@ const QRActivationModal = ({ storeId, onClose, onActivated }) => {
 
         {charge && !loading && (
           <>
-            <div style={priceBreakdown}>
-              <div style={breakdownTitle}>Pricing Breakdown</div>
-              <div style={breakdownRow}>
-                <span>Annual price</span>
-                <span>₹{fmt(charge.annual_price)}</span>
+            {charge.is_test_user ? (
+              <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: 20, marginBottom: 20, textAlign: 'center' }}>
+                <div style={{ fontSize: 32, marginBottom: 8 }}>🎁</div>
+                <div style={{ fontWeight: 700, fontSize: 16, color: '#15803d', marginBottom: 4 }}>Free for Test Account</div>
+                <div style={{ fontSize: 13, color: '#166534' }}>QR Scanner is complimentary on your test store.</div>
               </div>
-              <div style={breakdownRow}>
-                <span>Days remaining in your plan</span>
-                <span>{charge.remaining_days} days</span>
+            ) : (
+              <div style={priceBreakdown}>
+                <div style={breakdownTitle}>Pricing Breakdown</div>
+                <div style={breakdownRow}>
+                  <span>Annual price</span>
+                  <span>₹{fmt(charge.annual_price)}</span>
+                </div>
+                <div style={breakdownRow}>
+                  <span>Days remaining in your plan</span>
+                  <span>{charge.remaining_days} days</span>
+                </div>
+                <div style={breakdownRow}>
+                  <span>Prorated base charge</span>
+                  <span>₹{fmt(charge.base_charge)}</span>
+                </div>
+                <div style={breakdownRow}>
+                  <span>GST ({charge.gst_rate}%)</span>
+                  <span>₹{fmt(charge.gst_amount)}</span>
+                </div>
+                <div style={{ ...breakdownRow, fontWeight: 700, borderTop: '1px solid #e5e7eb', paddingTop: 10, marginTop: 4, fontSize: 16 }}>
+                  <span>Total</span>
+                  <span style={{ color: '#1a56db' }}>₹{fmt(charge.total)}</span>
+                </div>
+                <div style={{ fontSize: 12, color: '#888', marginTop: 8 }}>
+                  Active until: {new Date(charge.expires_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+                </div>
               </div>
-              <div style={breakdownRow}>
-                <span>Prorated base charge</span>
-                <span>₹{fmt(charge.base_charge)}</span>
-              </div>
-              <div style={breakdownRow}>
-                <span>GST ({charge.gst_rate}%)</span>
-                <span>₹{fmt(charge.gst_amount)}</span>
-              </div>
-              <div style={{ ...breakdownRow, fontWeight: 700, borderTop: '1px solid #e5e7eb', paddingTop: 10, marginTop: 4, fontSize: 16 }}>
-                <span>Total</span>
-                <span style={{ color: '#1a56db' }}>₹{fmt(charge.total)}</span>
-              </div>
-              <div style={{ fontSize: 12, color: '#888', marginTop: 8 }}>
-                Active until: {new Date(charge.expires_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
-              </div>
-            </div>
+            )}
 
             <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: 12, marginBottom: 20, fontSize: 13, color: '#15803d' }}>
               ✅ No extra charges on your storefront. Customers scan for free.
@@ -137,7 +145,7 @@ const QRActivationModal = ({ storeId, onClose, onActivated }) => {
               disabled={paying}
               style={{ ...btnPrimary, opacity: paying ? 0.7 : 1, width: '100%' }}
             >
-              {paying ? 'Processing...' : `Pay ₹${fmt(charge.total)} & Activate`}
+              {paying ? 'Processing...' : charge.is_test_user ? 'Activate for Free' : `Pay ₹${fmt(charge.total)} & Activate`}
             </button>
           </>
         )}
