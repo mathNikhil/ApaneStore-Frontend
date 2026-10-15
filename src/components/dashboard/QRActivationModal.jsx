@@ -46,7 +46,7 @@ const QRActivationModal = ({ storeId, onClose, onActivated }) => {
       });
       const data = await res.json();
 
-      if (data.is_test_user && data.active) {
+      if ((data.is_test_user || data.is_trial) && data.active) {
         onActivated();
         return;
       }
@@ -101,11 +101,12 @@ const QRActivationModal = ({ storeId, onClose, onActivated }) => {
 
         {charge && !loading && (
           <>
-            {charge.is_test_user ? (
+            {(charge.is_test_user || charge.is_trial) ? (
               <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: 20, marginBottom: 20, textAlign: 'center' }}>
                 <div style={{ fontSize: 32, marginBottom: 8 }}>🎁</div>
-                <div style={{ fontWeight: 700, fontSize: 16, color: '#15803d', marginBottom: 4 }}>Free for Test Account</div>
-                <div style={{ fontSize: 13, color: '#166534' }}>QR Scanner is complimentary on your test store.</div>
+                <div style={{ fontWeight: 700, fontSize: 16, color: '#15803d', marginBottom: 4 }}>{charge.is_trial ? 'Free during Trial Period' : 'Free for Test Account'}</div>
+                <div style={{ fontSize: 13, color: '#166534' }}>{charge.is_trial ? 'QR Scanner is included free while your store is on trial. After trial ends and you renew, a prorated charge applies.' : 'QR Scanner is complimentary on your test store.'}</div>
+                {charge.is_trial && <div style={{ fontSize: 12, color: '#888', marginTop: 8 }}>Trial expires: {new Date(charge.expires_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</div>}
               </div>
             ) : (
               <div style={priceBreakdown}>
@@ -145,7 +146,7 @@ const QRActivationModal = ({ storeId, onClose, onActivated }) => {
               disabled={paying}
               style={{ ...btnPrimary, opacity: paying ? 0.7 : 1, width: '100%' }}
             >
-              {paying ? 'Processing...' : charge.is_test_user ? 'Activate for Free' : `Pay ₹${fmt(charge.total)} & Activate`}
+              {paying ? 'Processing...' : (charge.is_test_user || charge.is_trial) ? 'Activate for Free' : `Pay ₹${fmt(charge.total)} & Activate`}
             </button>
           </>
         )}
