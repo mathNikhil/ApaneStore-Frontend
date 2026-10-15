@@ -1,13 +1,122 @@
 import { showSuccess, showError } from '../../utils/toast';
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import TopAppBar from '../Common/TopAppBar';
 import Button from '../Common/Button';
 import BottomNav from '../Common/BottomNav';
-import StoreCard from './StoreCard';
+import logo from '../../assets/images/Apnaestore-Logo.png';
+import { storeAPI } from '../../services/api';
 
 const DashboardReturnUser = ({ stores = [], subscriptions = {}, onStoreUpdate }) => {
     const navigate = useNavigate();
+    const [editDropdown, setEditDropdown] = React.useState(null); // storeId of open dropdown
+    const [updating, setUpdating] = useState(null);
+    const [error, setError] = useState(null);
+    const [deleting, setDeleting] = useState(null);
+    const [adminPasswords, setAdminPasswords] = useState({});
+    const [passwordVisible, setPasswordVisible] = useState({});
+    const [passwordLoading, setPasswordLoading] = useState({});
+    const [notifModal, setNotifModal] = useState(null); // storeId
+    const [showTemplates, setShowTemplates] = useState(false);
+    const [activeTemplateTab, setActiveTemplateTab] = useState('order_confirmed');
+    const [templates, setTemplates] = useState({});
+    const [templateLoading, setTemplateLoading] = useState(false);
+    const [templateSaving, setTemplateSaving] = useState(false);
+    const [templatePreview, setTemplatePreview] = useState(false);
+
+    const TEMPLATE_TABS = [
+        { key: 'order_confirmed', label: 'Order Confirmed', icon: '🎉' },
+        { key: 'order_packed', label: 'Order Packed', icon: '📦' },
+        { key: 'out_for_delivery', label: 'Out for Delivery', icon: '🚚' },
+        { key: 'delivered', label: 'Delivered', icon: '✅' },
+        { key: 'cancelled', label: 'Cancelled', icon: '❌' },
+        { key: 'return_requested', label: 'Return Requested', icon: '↩️' },
+    ];
+
+    const DEFAULT_SUBJECTS = {
+        order_confirmed: 'Your order has been confirmed! 🎉',
+        order_packed: 'Your order is packed and ready 📦',
+        out_for_delivery: 'Your order is on its way! 🚚',
+        delivered: 'Your order has been delivered ✅',
+        cancelled: 'Your order has been cancelled',
+        return_requested: 'Return request received ↩️',
+    };
+
+    const DEFAULT_BODIES = {
+        order_confirmed: `Hi {{customer_name}},\n\nThank you for your order! We have received your order #{{order_id}} and it is being processed.\n\nItems: {{item_list}}\nTotal: {{total_amount}}\n\nWe will notify you once your order is packed.\n\nWarm regards,\n{{store_name}}`,
+        order_packed: `Hi {{customer_name}},\n\nGreat news! Your order #{{order_id}} has been packed and is ready for dispatch.\n\nYou will receive another update once it is out for delivery.\n\nWarm regards,\n{{store_name}}`,
+        out_for_delivery: `Hi {{customer_name}},\n\nYour order #{{order_id}} is out for delivery! Expect it soon.\n\nTracking: {{tracking_number}}\n\nWarm regards,\n{{store_name}}`,
+        delivered: `Hi {{customer_name}},\n\nYour order #{{order_id}} has been delivered. We hope you love your purchase!\n\nThank you for shopping with {{store_name}}.`,
+        cancelled: `Hi {{customer_name}},\n\nYour order #{{order_id}} has been cancelled as requested.\n\nIf you have any questions, please contact us.\n\nWarm regards,\n{{store_name}}`,
+        return_requested: `Hi {{customer_name}},\n\nWe have received your return request for order #{{order_id}}.\n\nOur team will review it and get back to you within 24-48 hours.\n\nWarm regards,\n{{store_name}}`,
+    };
+
+    const TEMPLATE_VARIABLES = ['{{customer_name}}', '{{order_id}}', '{{order_total}}', '{{store_name}}', '{{delivery_date}}'];
+
+    const loadTemplates = async (storeId) => {
+        setTemplateLoading(true);
+        try {
+            const res = await fetch(`${API_URL}/api/email-templates/${storeId}`, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            const data = await res.json();
+            if (data.success) {
+                const map = {};
+                data.templates.forEach(t => { map[t.status_key] = t; });
+                setTemplates(map);
+            }
+        } catch (e) { console.error('Failed to load templates', e); }
+        finally { setTemplateLoading(false); }
+    };
+
+    const saveTemplate = async () => {
+        setTemplateSaving(true);
+        const t = templates[activeTemplateTab] || {};
+        try {
+            const res = await fetch(`${API_URL}/api/email-templates/${notifModal}/${activeTemplateTab}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
+                body: JSON.stringify({
+                    subject: t.subject || DEFAULT_SUBJECTS[activeTemplateTab],
+                    body: t.body || DEFAULT_BODIES[activeTemplateTab],
+                    is_active: t.is_active !== false,
+                })
+            });
+            const data = await res.json();
+            if (data.success) showSuccess('Template saved!');
+            else showError('Save failed');
+        } catch (e) { showError('Save failed'); }
+        finally { setTemplateSaving(false); }
+    };
+
+    const openTemplates = (storeId) => {
+        setShowTemplates(true);
+        setActiveTemplateTab('order_confirmed');
+        setTemplatePreview(false);
+        loadTemplates(storeId);
+    };
+
+    const getCurrentTemplate = (key) => templates[key] || {
+        subject: DEFAULT_SUBJECTS[key] || '',
+        body: DEFAULT_BODIES[key] || '',
+        is_active: true,
+    };
+
+    const updateTemplateField = (key, field, value) => {
+        setTemplates(prev => ({
+            ...prev,
+            [key]: { ...(prev[key] || {}), [field]: value }
+        }));
+    };
+
+    const insertVariable = (v) => {
+        const key = activeTemplateTab;
+        const current = (templates[key] || {}).body || DEFAULT_BODIES[key] || '';
+        updateTemplateField(key, 'body', current + v);
+    };
+
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002';
 
     // Handle Gmail OAuth return
     React.useEffect(() => {
@@ -26,6 +135,285 @@ const DashboardReturnUser = ({ stores = [], subscriptions = {}, onStoreUpdate })
     // ✅ Get tenant name from localStorage
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     const tenantName = user?.company_name || user?.full_name || user?.name || 'Tenant';
+
+    // ✅ Get store config helper
+    const getStoreConfig = (store) => {
+        if (store.config && typeof store.config === 'object') {
+            return store.config;
+        }
+        try {
+            return JSON.parse(store.config || '{}');
+        } catch {
+            return {};
+        }
+    };
+
+    // ✅ Helper to get store expiry info
+    const getStoreExpiryInfo = (store) => {
+        if (store.status !== 'draft') return null;
+        
+        const createdAt = new Date(store.created_at);
+        const expiryDays = 120;
+        const expiryDate = new Date(createdAt);
+        expiryDate.setDate(expiryDate.getDate() + expiryDays);
+        
+        const now = new Date();
+        const daysRemaining = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
+        
+        return {
+            daysRemaining,
+            isExpired: daysRemaining <= 0,
+            isWarning: daysRemaining <= 7 && daysRemaining > 0,
+            expiryDate: expiryDate
+        };
+    };
+
+    // ✅ Handle Publish/Unpublish status change
+    const handleStatusChange = async (storeId, newStatus) => {
+        try {
+            setUpdating(storeId);
+            setError(null);
+
+            const token = localStorage.getItem('token');
+            
+            const response = await axios.put(
+                `${API_URL}/api/stores/${storeId}`,
+                { status: newStatus },
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+
+            if (response.data?.success) {
+                if (onStoreUpdate) {
+                    onStoreUpdate(storeId, newStatus);
+                }
+                
+                const statusMessages = {
+                    'active': 'Store published successfully! 🎉',
+                    'draft': 'Store moved to draft',
+                    'inactive': 'Store unpublished'
+                };
+                alert(statusMessages[newStatus] || 'Status updated successfully');
+            }
+        } catch (error) {
+            console.error('❌ Status update error:', error);
+            setError(error.response?.data?.error || 'Failed to update store status');
+        } finally {
+            setUpdating(null);
+        }
+    };
+
+    // ✅ Delete Store with auto-refresh
+    const handleDeleteStore = async (storeId, storeName) => {
+        const confirmMessage = `⚠️ Are you sure you want to delete "${storeName}"?\n\nThis action cannot be undone. All products, images, and settings will be permanently removed.`;
+        
+        if (!window.confirm(confirmMessage)) return;
+
+        setDeleting(storeId);
+        try {
+            const token = localStorage.getItem('token');
+            
+            const response = await axios.delete(
+                `${API_URL}/api/stores/${storeId}`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                }
+            );
+
+            if (response.data?.success) {
+                // ✅ Call onStoreUpdate with null to trigger refresh
+                if (onStoreUpdate) {
+                    onStoreUpdate(storeId, null);
+                }
+                alert(response.data.message || 'Store deleted successfully');
+                // ✅ No manual refresh needed - parent will refresh
+            } else {
+                alert(response.data?.error || 'Failed to delete store');
+            }
+        } catch (error) {
+            console.error('❌ Delete store error:', error);
+            alert(error.response?.data?.error || 'Failed to delete store');
+        } finally {
+            setDeleting(null);
+        }
+    };
+
+    // ✅ Get status badge styling
+    const getSubscriptionBadge = (store) => {
+        const sub = subscriptions[store.id];
+        if (!sub) return null;
+        
+        if (sub.displayStatus === 'grace') {
+            return { 
+                label: `🚨 Grace period: ${sub.graceDaysRemaining} days left to renew`,
+                style: 'bg-red-100 text-red-700 border border-red-300'
+            };
+        } else if (sub.displayStatus === 'expiring_soon') {
+            return {
+                label: `🔴 ${sub.daysRemaining} days remaining — renew now!`,
+                style: 'bg-orange-100 text-orange-700 border border-orange-300'
+            };
+        } else if (sub.displayStatus === 'expiring') {
+            return {
+                label: `⚠️ ${sub.daysRemaining} days remaining`,
+                style: 'bg-yellow-100 text-yellow-700 border border-yellow-300'
+            };
+        } else {
+            return {
+                label: `✅ Active — expires ${sub.validUntilFormatted}`,
+                style: 'bg-green-100 text-green-700 border border-green-300'
+            };
+        }
+    };
+
+    const getStatusBadge = (status) => {
+        const statuses = {
+            'published': {
+                label: 'Published ✅',
+                className: 'bg-green-100 text-green-700',
+                icon: 'check_circle'
+            },
+            'active': {
+                label: 'Published ✅',
+                className: 'bg-green-100 text-green-700',
+                icon: 'check_circle'
+            },
+            'draft': {
+                label: 'Draft 📝',
+                className: 'bg-yellow-100 text-yellow-700',
+                icon: 'edit_note'
+            },
+            'inactive': {
+                label: 'Unpublished ⛔',
+                className: 'bg-gray-100 text-gray-600',
+                icon: 'visibility_off'
+            },
+            'pending': {
+                label: 'Pending ⏳',
+                className: 'bg-blue-100 text-blue-700',
+                icon: 'pending'
+            }
+        };
+        return statuses[status] || statuses['draft'];
+    };
+
+    // ✅ Get status actions
+    // ✅ Get status actions
+    const getStatusActions = (store) => {
+        const actions = [];
+        
+        if (store.status === 'draft') {
+            actions.push({
+                label: 'Publish',
+                action: () => navigate(`/store-builder/publish/domain?storeId=${store.id}`),
+                className: 'bg-[#25D366] text-[#005523] hover:brightness-105'
+            });
+        } else if (store.status === 'published' || store.status === 'active') {
+            actions.push({
+                label: 'Unpublish',
+                action: async () => {
+                    const sub = subscriptions[store.id];
+                    const warningMsg = sub 
+                        ? `⚠️ Unpublishing takes your store offline immediately.\n\nYou have ${sub.daysRemaining} days remaining (expires ${sub.validUntilFormatted}).\n\nRemaining subscription days are non-refundable and will not be credited.\n\nAre you sure you want to unpublish?`
+                        : 'Unpublish your store? It will go offline immediately. Remaining subscription days are non-refundable.';
+                    if (!window.confirm(warningMsg)) return;
+                    try {
+                        const token = localStorage.getItem('token');
+                        const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.aapnaestore.com'}/api/stores/${store.id}/unpublish`, {
+                            method: 'POST',
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        const result = await res.json();
+                        if (result.success) {
+                            showError('Store unpublished successfully.');
+                            window.location.reload();
+                        } else {
+                            alert(result.error || 'Failed to unpublish store');
+                        }
+                    } catch (e) {
+                        showError('Failed to unpublish store. Please try again.');
+                    }
+                },
+                className: 'bg-orange-100 text-orange-700 hover:bg-orange-200'
+            });
+        } else if (store.status === 'inactive' || store.status === 'draft') {
+            actions.push({
+                label: 'Publish',
+                action: () => navigate(`/store-builder/publish/domain?storeId=${store.id}`),
+                className: 'bg-[#25D366] text-[#005523] hover:brightness-105'
+            });
+        }
+        
+        return actions;
+    };
+
+    // ✅ Navigate to Store Admin Panel (separate app)
+    const STORE_ADMIN_URL = import.meta.env.VITE_STORE_ADMIN_URL || 'http://localhost:3006';
+
+    // ✅ FIX: this used to open http://localhost:3001?storeId=<id> — port
+    // 3001 is the Super Admin panel, not Store Admin (which runs on 3006),
+    // and storeId alone doesn't match what Store Admin's login actually
+    // expects (?store=<subdomain>, matching the Storefront's own pattern).
+    const goToStoreAdmin = (subdomain) => {
+        if (!subdomain) {
+            showError('This store needs a subdomain before its admin panel can be opened.');
+            return;
+        }
+        window.open(`${STORE_ADMIN_URL}/login?store=${subdomain}`, '_blank');
+    };
+
+    const handleTogglePassword = async (storeId) => {
+        const isCurrentlyVisible = passwordVisible[storeId];
+        if (isCurrentlyVisible) {
+            setPasswordVisible(prev => ({ ...prev, [storeId]: false }));
+            return;
+        }
+        if (adminPasswords[storeId]) {
+            setPasswordVisible(prev => ({ ...prev, [storeId]: true }));
+            return;
+        }
+        setPasswordLoading(prev => ({ ...prev, [storeId]: true }));
+        try {
+            const result = await storeAPI.getAdminPassword(storeId);
+            if (result.success) {
+                setAdminPasswords(prev => ({ ...prev, [storeId]: result.data.password }));
+                setPasswordVisible(prev => ({ ...prev, [storeId]: true }));
+            }
+        } catch (err) {
+            console.error('Failed to fetch admin password:', err);
+        } finally {
+            setPasswordLoading(prev => ({ ...prev, [storeId]: false }));
+        }
+    };
+
+    const handleGeneratePassword = async (storeId) => {
+        if (!window.confirm('Generate a new Store Admin password? The current password will stop working immediately — anyone using it (including any active session) will need the new one.')) {
+            return;
+        }
+        setPasswordLoading(prev => ({ ...prev, [storeId]: true }));
+        try {
+            const result = await storeAPI.generateAdminPassword(storeId);
+            if (result.success) {
+                setAdminPasswords(prev => ({ ...prev, [storeId]: result.data.password }));
+                setPasswordVisible(prev => ({ ...prev, [storeId]: true }));
+            }
+        } catch (err) {
+            console.error('Failed to generate admin password:', err);
+            showError('Failed to generate password. Please try again.');
+        } finally {
+            setPasswordLoading(prev => ({ ...prev, [storeId]: false }));
+        }
+    };
+
+    const handleCopyPassword = (password) => {
+        navigator.clipboard.writeText(password);
+    };
 
     // ✅ Stats based on all stores
     const stats = {
@@ -106,14 +494,261 @@ const DashboardReturnUser = ({ stores = [], subscriptions = {}, onStoreUpdate })
                 {/* Store Cards - All Stores */}
                 {stores.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                        {stores.map((store) => (
-                            <StoreCard
-                                key={store.id}
-                                store={store}
-                                subscriptions={subscriptions}
-                                onStoreUpdate={onStoreUpdate}
-                            />
-                        ))}
+                        {stores.map((store) => {
+                            const config = getStoreConfig(store);
+                            const brand = config.brand || {};
+                            const statusBadge = getStatusBadge(store.status);
+                            const actions = getStatusActions(store);
+                            const expiryInfo = getStoreExpiryInfo(store);
+                            
+                            const subBadge = getSubscriptionBadge(store);
+                            const isExpiringSoon = subBadge && (subBadge.style.includes('orange') || subBadge.style.includes('red'));
+                            return (
+                                <div key={store.id} className={`bg-white rounded-2xl border shadow-sm p-6 hover:shadow-md transition-shadow ${isExpiringSoon ? 'border-orange-400' : 'border-[#bbcbb9]'}`}>
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div className="flex items-center gap-3">
+                                            {brand.logoUrl ? (
+                                                <img 
+                                                    src={brand.logoUrl} 
+                                                    alt={store.store_name} 
+                                                    className="w-12 h-12 rounded-full object-cover border-2 border-[#25D366]"
+                                                />
+                                            ) : (
+                                                <div className="w-12 h-12 rounded-full bg-[#25D366]/20 flex items-center justify-center">
+                                                    <span className="material-symbols-outlined text-[#006d2f] text-2xl">storefront</span>
+                                                </div>
+                                            )}
+                                            <div>
+                                                <h3 className="font-bold text-lg text-[#191c1e]">{store.store_name}</h3>
+                                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full mt-1 ${statusBadge.className}`}>
+                                                    <span className="material-symbols-outlined text-xs">{statusBadge.icon}</span>
+                                                    {statusBadge.label}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="text-xs text-gray-400">
+                                            {store.created_at && new Date(store.created_at).toLocaleDateString()}
+                                        </div>
+                                    </div>
+                                    
+                                    <p className="text-sm text-[#3c4a3d]">{brand.tagline || 'No tagline set'}</p>
+                                    <p className="text-xs text-[#6c7b6b] mt-1">
+                                        🔗 {store.subdomain ? `${store.subdomain}.aapnaestore.com` : 'No domain set'}
+                                    </p>
+                                    {subBadge && (
+                                        <div className={`mt-2 px-3 py-1.5 rounded-lg text-xs font-medium ${subBadge.style}`}>
+                                            {subBadge.label}
+                                        </div>
+                                    )}
+                                    
+                                    {/* ✅ Expiry Indicator - Only for draft stores with note */}
+                                    {store.status === 'draft' && expiryInfo && (
+                                        <div className="mt-3 pt-3 border-t border-[#e0e3e6]">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`material-symbols-outlined text-sm ${
+                                                        expiryInfo.isWarning ? 'text-red-500' : 'text-yellow-500'
+                                                    }`}>
+                                                        {expiryInfo.isWarning ? 'warning' : 'hourglass_empty'}
+                                                    </span>
+                                                    <span className={`text-xs ${
+                                                        expiryInfo.isWarning ? 'text-red-600 font-semibold' : 'text-gray-500'
+                                                    }`}>
+                                                    
+                                                        Auto delete in <span className="font-bold">{expiryInfo.daysRemaining}</span> days
+                                                    </span>
+                                                </div>
+                                            </div>
+                                           
+                                        </div>
+                                    )}
+                                    
+                                    {/* Row 1: Edit, Preview, Publish/Unpublish */}
+                                    <div className="flex flex-wrap gap-3 mt-4 pt-4 border-t border-[#eceef1]">
+                                        <div className="relative">
+                                            <button
+                                                onClick={() => setEditDropdown(editDropdown === store.id ? null : store.id)}
+                                                className="px-4 py-2 bg-[#eceef1] text-[#006d2f] font-semibold text-sm rounded-xl hover:bg-[#d9e4ec] active:scale-[0.98] transition-all flex items-center gap-2"
+                                            >
+                                                <span className="material-symbols-outlined text-base">edit</span>
+                                                Edit Store
+                                                <span className="material-symbols-outlined text-sm">{editDropdown === store.id ? 'expand_less' : 'expand_more'}</span>
+                                            </button>
+                                            {editDropdown === store.id && (
+                                                <>
+                                                    {/* Overlay to close on outside click */}
+                                                    <div className="fixed inset-0 z-[998]" onClick={() => setEditDropdown(null)} />
+                                                    <div className="absolute left-0 top-full mt-1 bg-white border border-[#e0e3e6] rounded-xl shadow-lg z-[999] overflow-hidden w-72">
+                                                        <div className="px-3 py-2 border-b border-[#f0f0f0]">
+                                                            <span className="text-xs text-[#8e9eab] font-medium">Select step to edit</span>
+                                                        </div>
+                                                        <div className="grid grid-cols-4 gap-1 p-2">
+                                                            {[
+                                                                { step: 1, label: 'Brand', icon: 'palette' },
+                                                                { step: 2, label: 'Products', icon: 'inventory_2' },
+                                                                { step: 3, label: 'Cart', icon: 'shopping_cart' },
+                                                                { step: 4, label: 'Payment', icon: 'payments' },
+                                                                { step: 5, label: 'Delivery', icon: 'local_shipping' },
+                                                                { step: 6, label: 'Orders', icon: 'receipt_long' },
+                                                                { step: 7, label: 'Profile', icon: 'store' },
+                                                                { step: 8, label: 'Returns', icon: 'assignment_return' },
+                                                            ].map(({ step, label, icon }) => (
+                                                                <button key={step}
+                                                                    onClick={() => { setEditDropdown(null); navigate(`/store-builder/step/${step}?storeId=${store.id}`); }}
+                                                                    className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-[#f2f4f7] transition-colors">
+                                                                    <div className="w-8 h-8 rounded-lg bg-[#e8f5e2] flex items-center justify-center">
+                                                                        <span className="material-symbols-outlined text-sm text-[#006d2f]">{icon}</span>
+                                                                    </div>
+                                                                    <span className="text-[9px] font-medium text-[#191c1e] text-center leading-tight">{label}</span>
+                                                                    <span className="text-[8px] text-[#8e9eab]">{step}</span>
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
+                                        
+                                        <button 
+                                            onClick={() => store.status === 'published' ? window.open(`https://${store.subdomain}.aapnaestore.com`, '_blank') : navigate(`/store-builder/preview?storeId=${store.id}`)}
+                                            className="px-4 py-2 bg-[#eceef1] text-[#006d2f] font-semibold text-sm rounded-xl hover:bg-[#d9e4ec] active:scale-[0.98] transition-all flex items-center gap-2"
+                                        >
+                                            <span className="material-symbols-outlined text-base">visibility</span>
+                                            Preview
+                                        </button>
+                                        
+                                        {actions.map((action, idx) => (
+                                            <button
+                                                key={idx}
+                                                onClick={action.action}
+                                                disabled={updating === store.id}
+                                                className={`px-4 py-2 font-semibold text-sm rounded-xl active:scale-[0.98] transition-all disabled:opacity-50 flex items-center gap-2 ${action.className}`}
+                                            >
+                                                {updating === store.id ? (
+                                                    <span className="material-symbols-outlined animate-spin text-base">progress_activity</span>
+                                                ) : (
+                                                    action.label
+                                                )}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    {/* Row 2: Store Admin Panel */}
+                                    {(() => {
+                                        const isPublished = store.status === 'active' || store.status === 'published';
+                                        const daysSince = Math.floor((Date.now() - new Date(store.created_at).getTime()) / (1000 * 60 * 60 * 24));
+                                        const trialDaysLeft = 7 - daysSince;
+                                        return (
+                                            <div className="mt-3">
+                                                {!isPublished && trialDaysLeft > 0 && (
+                                                    <div className="mb-2 px-3 py-2 bg-[#fff8e1] border border-[#ffd54f] rounded-lg text-xs text-[#856404]">
+                                                        ⚠️ Store Admin trial expires in <strong>{trialDaysLeft} day{trialDaysLeft !== 1 ? 's' : ''}</strong> — publish your store to keep access
+                                                    </div>
+                                                )}
+                                                {!isPublished && trialDaysLeft <= 0 && (
+                                                    <div className="mb-2 px-3 py-2 bg-[#fef2f2] border border-[#fca5a5] rounded-lg text-xs text-[#dc2626]">
+                                                        🔒 Store Admin trial expired — publish your store to restore access
+                                                    </div>
+                                                )}
+                                                <button 
+                                                    onClick={() => goToStoreAdmin(store.subdomain)}
+                                                    className="w-full px-4 py-2 bg-[#006d2f] text-white font-semibold text-sm rounded-xl hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                                                >
+                                                    <span className="material-symbols-outlined text-base">dashboard</span>
+                                                    Store Admin Panel
+                                                </button>
+                                            </div>
+                                        );
+                                    })()}
+                                    <div className="mt-3 pt-3 border-t border-dashed border-[#e0e3e6]">
+                                        <p className="text-xs font-semibold text-[#3c4a3d] mb-2 flex items-center gap-1">
+                                            <span className="material-symbols-outlined text-sm">lock</span>
+                                            Store Admin Access
+                                        </p>
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            {passwordVisible[store.id] && adminPasswords[store.id] ? (
+                                                <>
+                                                    <code className="px-3 py-1.5 bg-[#f2f4f7] rounded-lg text-sm font-mono text-[#191c1e] border border-[#e0e3e6]">
+                                                        {adminPasswords[store.id]}
+                                                    </code>
+                                                    <button
+                                                        onClick={() => handleCopyPassword(adminPasswords[store.id])}
+                                                        className="px-3 py-1.5 text-xs font-semibold text-[#006d2f] hover:bg-[#eceef1] rounded-lg transition-colors flex items-center gap-1"
+                                                    >
+                                                        <span className="material-symbols-outlined text-sm">content_copy</span>
+                                                        Copy
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleTogglePassword(store.id)}
+                                                        className="px-3 py-1.5 text-xs font-semibold text-[#6c7b6b] hover:bg-[#eceef1] rounded-lg transition-colors"
+                                                    >
+                                                        Hide
+                                                    </button>
+                                                </>
+                                            ) : (
+                                                <button
+                                                    onClick={() => handleTogglePassword(store.id)}
+                                                    disabled={passwordLoading[store.id]}
+                                                    className="px-3 py-1.5 text-xs font-semibold text-[#006d2f] hover:bg-[#eceef1] rounded-lg transition-colors flex items-center gap-1 disabled:opacity-50"
+                                                >
+                                                    <span className="material-symbols-outlined text-sm">visibility</span>
+                                                    {passwordLoading[store.id] ? 'Loading...' : 'Show Password'}
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={() => handleGeneratePassword(store.id)}
+                                                disabled={passwordLoading[store.id]}
+                                                className="px-3 py-1.5 text-xs font-semibold text-[#556067] hover:bg-[#eceef1] rounded-lg transition-colors flex items-center gap-1 disabled:opacity-50"
+                                            >
+                                                <span className="material-symbols-outlined text-sm">refresh</span>
+                                                Generate New
+                                            </button>
+                                        </div>
+                                        <p className="text-xs text-[#6c7b6b] mt-2">
+                                            Share this password with staff to let them manage this store's orders and customers. Only one person can be logged in at a time.
+                                        </p>
+                                    </div>
+
+                                    {/* Gmail Notifications */}
+                                    {(() => {
+                                        const sub = subscriptions[store.id];
+                                        const isPaid = sub && sub.payment_status === 'paid' && sub.is_trial === false;
+                                        if (!isPaid) return null;
+                                        return (
+                                            <div className="mt-3 pt-3 border-t border-dashed border-[#e0e3e6] flex items-center justify-between">
+                                                <span className="text-xs font-semibold text-[#3c4a3d] flex items-center gap-1">
+                                                    <span style={{fontSize:'13px'}}>📧</span> Order Notifications
+                                                </span>
+                                                <button
+                                                    onClick={() => setNotifModal(store.store_id)}
+                                                    className="px-3 py-1 text-xs font-semibold text-[#4f46e5] hover:bg-[#eef2ff] rounded-lg border border-[#c7d2fe] flex items-center gap-1"
+                                                >
+                                                    <span className="material-symbols-outlined text-sm">mail</span>Connect Gmail
+                                                </button>
+                                            </div>
+                                        );
+                                    })()}
+
+                                    {/* Bottom: Delete */}
+                                    <div className="mt-4 pt-3 border-t border-[#eceef1]">
+                                        <button
+                                            onClick={() => handleDeleteStore(store.id, store.store_name)}
+                                            disabled={deleting === store.id}
+                                            className="w-full px-4 py-2 bg-red-100 text-red-700 font-semibold text-sm rounded-xl hover:bg-red-200 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                                        >
+                                            {deleting === store.id ? (
+                                                <span className="material-symbols-outlined animate-spin text-base">progress_activity</span>
+                                            ) : (
+                                                <>
+                                                    <span className="material-symbols-outlined text-base">delete</span>
+                                                    Delete Store
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
                 ) : (
                     <div className="text-center py-12 bg-white rounded-2xl border border-[#bbcbb9]">
@@ -123,7 +758,153 @@ const DashboardReturnUser = ({ stores = [], subscriptions = {}, onStoreUpdate })
                     </div>
                 )}
 
+                {/* Quick Actions 
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-white rounded-2xl border border-[#bbcbb9] shadow-sm p-6">
+                        <h3 className="font-bold text-[#191c1e] mb-4">Quick Actions</h3>
+                        <div className="space-y-2">
+                            <button className="w-full text-left px-4 py-2 rounded-lg hover:bg-[#eceef1] transition-colors flex items-center gap-2">
+                                <span className="material-symbols-outlined text-[#006d2f]">inventory_2</span>
+                                <span className="text-sm">Manage Inventory</span>
+                            </button>
+                            <button className="w-full text-left px-4 py-2 rounded-lg hover:bg-[#eceef1] transition-colors flex items-center gap-2">
+                                <span className="material-symbols-outlined text-[#006d2f]">add</span>
+                                <span className="text-sm">Add New Product</span>
+                            </button>
+                            <button className="w-full text-left px-4 py-2 rounded-lg hover:bg-[#eceef1] transition-colors flex items-center gap-2">
+                                <span className="material-symbols-outlined text-[#006d2f]">shopping_cart</span>
+                                <span className="text-sm">View Orders</span>
+                            </button>
+                            <button className="w-full text-left px-4 py-2 rounded-lg hover:bg-[#eceef1] transition-colors flex items-center gap-2">
+                                <span className="material-symbols-outlined text-[#006d2f]">analytics</span>
+                                <span className="text-sm">View Reports</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="bg-white rounded-2xl border border-[#bbcbb9] shadow-sm p-6">
+                        <h3 className="font-bold text-[#191c1e] mb-4">Store Status Guide</h3>
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
+                                <span className="material-symbols-outlined text-green-600">check_circle</span>
+                                <div>
+                                    <p className="text-sm font-medium text-green-700">Published ✅</p>
+                                    <p className="text-xs text-green-600">Store is live and visible to customers</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3 p-3 bg-yellow-50 rounded-lg">
+                                <span className="material-symbols-outlined text-yellow-600">edit_note</span>
+                                <div>
+                                    <p className="text-sm font-medium text-yellow-700">Draft 📝</p>
+                                    <p className="text-xs text-yellow-600">Store is being built, not visible to customers</p>
+                                    <p className="text-[10px] text-yellow-500 mt-0.5">⚠️ Drafts are automatically removed after 120 days</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                                <span className="material-symbols-outlined text-gray-600">visibility_off</span>
+                                <div>
+                                    <p className="text-sm font-medium text-gray-700">Unpublished ⛔</p>
+                                    <p className="text-xs text-gray-600">Store was published but now hidden</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                */}
             </main>
+
+            {/* Gmail Notifications Modal */}
+            {notifModal && (
+                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" onClick={() => { setNotifModal(null); setShowTemplates(false); }}>
+                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+                    <div className="relative bg-white rounded-t-3xl sm:rounded-2xl w-full sm:max-w-md shadow-xl overflow-hidden flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-[#eceef1]">
+                            {showTemplates ? (
+                                <div className="flex items-center gap-2">
+                                    <button onClick={() => setShowTemplates(false)} className="text-[#6c7b6b] hover:text-[#191c1e] mr-1">
+                                        <span className="material-symbols-outlined text-xl">arrow_back</span>
+                                    </button>
+                                    <h2 className="text-base font-bold text-[#191c1e]">Email Templates</h2>
+                                </div>
+                            ) : (
+                                <h2 className="text-base font-bold text-[#191c1e]">Order Notifications</h2>
+                            )}
+                            <button onClick={() => { setNotifModal(null); setShowTemplates(false); }} className="text-[#6c7b6b] hover:text-[#191c1e]">
+                                <span className="material-symbols-outlined">close</span>
+                            </button>
+                        </div>
+                        {!showTemplates ? (
+                            <div className="p-5 space-y-4">
+                                <p className="text-sm text-[#6c7b6b]">Connect your Gmail to send order confirmations and status updates from your own email address.</p>
+                                <div className="flex items-center gap-3 border border-[#e0e3e6] rounded-2xl p-4">
+                                    <div className="w-10 h-10 rounded-xl bg-[#fef2f2] flex items-center justify-center text-xl">📧</div>
+                                    <div className="flex-1"><p className="text-sm font-semibold text-[#191c1e]">Gmail</p><p className="text-xs text-[#6c7b6b]">Not connected</p></div>
+                                    <button onClick={() => { const token = localStorage.getItem('token'); window.location.href = 'https://api.aapnaestore.com/api/auth/gmail-notify/connect?storeId=' + notifModal + '&token=' + token; }} className="px-4 py-2 bg-[#4f46e5] text-white text-sm font-semibold rounded-xl hover:bg-[#4338ca] transition-colors">Connect</button>
+                                </div>
+                                <button onClick={() => openTemplates(notifModal)} className="w-full flex items-center justify-between px-4 py-3 bg-[#f5f3ff] text-[#4f46e5] font-semibold text-sm rounded-2xl border border-[#e0e7ff] hover:bg-[#ede9fe] transition-colors">
+                                    <span className="flex items-center gap-2"><span className="material-symbols-outlined text-base">mail_outline</span> Email Templates</span>
+                                    <span className="material-symbols-outlined text-base">chevron_right</span>
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="flex flex-col flex-1 overflow-hidden">
+                                <div className="flex gap-1 px-4 pt-3 pb-2 overflow-x-auto" style={{scrollbarWidth:'none'}}>
+                                    {TEMPLATE_TABS.map(tab => (
+                                        <button key={tab.key} onClick={() => setActiveTemplateTab(tab.key)}
+                                            className={"flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors " + (activeTemplateTab === tab.key ? "bg-[#4f46e5] text-white" : "bg-[#f3f4f6] text-[#6c7b6b] hover:bg-[#e5e7eb]")}>
+                                            <span>{tab.icon}</span> {tab.label}
+                                        </button>
+                                    ))}
+                                </div>
+                                {templateLoading ? (
+                                    <div className="flex-1 flex items-center justify-center py-10 text-[#6c7b6b] text-sm">Loading templates…</div>
+                                ) : (
+                                    <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm font-semibold text-[#191c1e]">Enable this template</span>
+                                            <label className="relative inline-flex items-center cursor-pointer">
+                                                <input type="checkbox" className="sr-only peer"
+                                                    checked={getCurrentTemplate(activeTemplateTab).is_active !== false}
+                                                    onChange={e => updateTemplateField(activeTemplateTab, 'is_active', e.target.checked)} />
+                                                <div className="w-10 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#4f46e5]"></div>
+                                            </label>
+                                        </div>
+                                        <div>
+                                            <label className="text-xs font-semibold text-[#3c4a3d] mb-1 block">Subject</label>
+                                            <input type="text" value={getCurrentTemplate(activeTemplateTab).subject}
+                                                onChange={e => updateTemplateField(activeTemplateTab, 'subject', e.target.value)}
+                                                className="w-full border border-[#e0e3e6] rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4f46e5]/40"
+                                                placeholder="Email subject…" />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs font-semibold text-[#3c4a3d] mb-1 block">Body</label>
+                                            <textarea id="template-body-ta" value={getCurrentTemplate(activeTemplateTab).body}
+                                                onChange={e => updateTemplateField(activeTemplateTab, 'body', e.target.value)}
+                                                rows={7} className="w-full border border-[#e0e3e6] rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4f46e5]/40 resize-none font-mono"
+                                                placeholder="Email body…" />
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-[#6c7b6b] mb-2">Insert variable (click to add at cursor):</p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {TEMPLATE_VARIABLES.map(v => (
+                                                    <button key={v} onClick={() => insertVariable(v)}
+                                                        className="px-2 py-1 bg-[#f0fdf4] text-[#15803d] text-xs font-mono rounded-lg border border-[#bbf7d0] hover:bg-[#dcfce7] transition-colors">{v}</button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                                <div className="px-5 py-4 border-t border-[#eceef1]">
+                                    <button onClick={saveTemplate} disabled={templateSaving}
+                                        className="w-full py-3 bg-[#4f46e5] text-white font-semibold text-sm rounded-2xl hover:bg-[#4338ca] disabled:opacity-60 transition-colors flex items-center justify-center gap-2">
+                                        {templateSaving ? (<><span className="material-symbols-outlined text-base" style={{animation:'spin 1s linear infinite'}}>progress_activity</span> Saving…</>) : (<><span className="material-symbols-outlined text-base">save</span> Save Template</>)}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
             <BottomNav />
 
         </div>

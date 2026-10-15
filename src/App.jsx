@@ -23,7 +23,6 @@ import PublishPayment from './components/publish-flow/PublishPayment';
 import PublishCongratulations from './components/publish-flow/PublishCongratulations';
 import PublishAlreadyLive from './components/publish-flow/PublishAlreadyLive';
 import PublishQuickConfirm from './components/publish-flow/PublishQuickConfirm';
-import QRPaymentReturn from './pages/QRPaymentReturn';
 
 // Super Admin Imports
 import AdminLogin from './pages/admin/AdminLogin';
@@ -90,7 +89,6 @@ function App() {
             {/* ✅ FIX: Add /* to match any nested routes */}
             <Route path="/store-builder/*" element={<ProtectedRoute><StoreBuilderRouter /></ProtectedRoute>} />
             
-            <Route path="/qr-payment-return" element={<ProtectedRoute><QRPaymentReturn /></ProtectedRoute>} />
             <Route path="/auth/google-popup" element={<GoogleAuthPopup />} />
             <Route path="/auth/facebook-popup" element={<FacebookAuthPopup />} />
             {/* Super Admin Routes */}
