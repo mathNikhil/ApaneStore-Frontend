@@ -372,10 +372,21 @@ const StoreCard = ({ store, subscriptions = {}, onStoreUpdate }) => {
 
             {/* ── Add-ons accordion ── */}
             <div style={s.addonsSection}>
-                {/* Always-visible header row with accordion toggle */}
-                <div style={{ display: 'flex', alignItems: 'center', padding: '8px 16px', borderTop: '1px solid #f0f2f5' }}>
-                    <button style={s.accordionLabelBtn} onClick={() => setAddonsOpen(o => !o)}>
-                        ADD-ONS
+                {/* Always-visible header row: label + tab pills + chevron */}
+                <div style={{ display: 'flex', alignItems: 'center', padding: '8px 16px', gap: '8px' }}>
+                    <span style={s.accordionLabelBtn}>ADD-ONS</span>
+                    {/* Tab pills always visible so tenant can see what's inside */}
+                    <button
+                        style={{ ...s.addonPill, ...(activeTab === 'notif' ? s.addonPillActive : {}) }}
+                        onClick={() => { setActiveTab('notif'); setAddonsOpen(true); }}
+                    >
+                        🔔 Notifications
+                    </button>
+                    <button
+                        style={{ ...s.addonPill, ...(activeTab === 'qr' ? s.addonPillActive : {}) }}
+                        onClick={() => { setActiveTab('qr'); setAddonsOpen(true); }}
+                    >
+                        📱 QR Scanner
                     </button>
                     <button style={s.accordionChevronBtn} onClick={() => setAddonsOpen(o => !o)}>
                         <span style={{ ...s.accordionChevron, transform: addonsOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>▾</span>
@@ -384,17 +395,6 @@ const StoreCard = ({ store, subscriptions = {}, onStoreUpdate }) => {
 
                 {addonsOpen && (
                 <div>
-                {/* Tabs inside accordion */}
-                <div style={s.tabBar}>
-                    <button style={{ ...s.tabBtn, ...(activeTab === 'notif' ? s.tabBtnActive : {}) }} onClick={() => setActiveTab('notif')}>
-                        🔔 Order Notifications
-                    </button>
-                    <div style={s.tabDivider} />
-                    <button style={{ ...s.tabBtn, ...(activeTab === 'qr' ? s.tabBtnActive : {}) }} onClick={() => setActiveTab('qr')}>
-                        📱 QR Scanner
-                    </button>
-                </div>
-
                 {/* Order Notifications panel */}
                 {activeTab === 'notif' && (
                     <div style={s.tabPanel}>
@@ -678,7 +678,9 @@ const s = {
     adminHint: { fontSize: '12px', color: '#9ca3af', margin: '8px 0 0', lineHeight: 1.5 },
 
     addonsSection: { borderTop: '1px solid #f0f2f5' },
-    accordionLabelBtn: { fontSize: '12px', fontWeight: 700, color: '#9ca3af', letterSpacing: '.4px', textTransform: 'uppercase', whiteSpace: 'nowrap', padding: '8px 4px 8px 0', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' },
+    accordionLabelBtn: { fontSize: '12px', fontWeight: 700, color: '#9ca3af', letterSpacing: '.4px', textTransform: 'uppercase', whiteSpace: 'nowrap', padding: '0', background: 'none', border: 'none', fontFamily: 'inherit' },
+    addonPill: { fontSize: '11px', fontWeight: 600, color: '#6b7280', background: '#f3f4f6', border: '1px solid #e4e7ec', borderRadius: '20px', padding: '3px 10px', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' },
+    addonPillActive: { color: '#006d2f', background: '#e6f4ec', borderColor: '#bbdfc8' },
     accordionChevronBtn: { marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' },
     accordionChevron: { fontSize: '14px', color: '#9ca3af', transition: 'transform .2s', display: 'inline-block' },
     tabBar: { padding: '0 16px', display: 'flex', alignItems: 'center', gap: '2px', borderTop: '1px solid #f0f2f5' },
