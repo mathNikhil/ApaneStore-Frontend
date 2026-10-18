@@ -1,10 +1,11 @@
 import React from 'react';
 
-const PreviewFooter = ({ activeTab, onChange, brandColors, brandFonts = { heading: 'Inter', body: 'Inter' }, cartTabName = 'Cart', ordersTabName = 'Orders', device = 'desktop' }) => {
+const PreviewFooter = ({ activeTab, onChange, brandColors, brandFonts = { heading: 'Inter', body: 'Inter' }, cartTabName = 'Cart', ordersTabName = 'Orders', storeType = 'product', device = 'desktop' }) => {
+  const isService = storeType === 'service';
   const tabs = [
     { id: 'home', label: 'Home', icon: 'home' },
-    { id: 'cart', label: cartTabName || 'Cart', icon: 'shopping_cart' },
-    { id: 'orders', label: ordersTabName || 'Orders', icon: 'receipt_long' },
+    { id: 'cart', label: isService ? 'Service' : (cartTabName || 'Cart'), icon: isService ? 'spa' : 'shopping_cart' },
+    { id: 'orders', label: isService ? 'Booking' : (ordersTabName || 'Orders'), icon: isService ? 'event_note' : 'receipt_long' },
     { id: 'profile', label: 'Profile', icon: 'person' },
   ];
 

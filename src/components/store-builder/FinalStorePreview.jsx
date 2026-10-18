@@ -10,19 +10,20 @@ const FinalStorePreview = () => {
     const [searchParams] = useSearchParams();
     const storeId = searchParams.get('storeId');
     
-    const { 
-        brandData, 
-        productData, 
-        cartData, 
-        paymentData, 
-        addressData, 
+    const {
+        brandData,
+        productData,
+        cartData,
+        paymentData,
+        addressData,
         orderData,
         profileData,
         returnData,
         uploadedImages,
         currentStoreId,
         loadStore,
-        saveStore 
+        saveStore,
+        storeType,
     } = useStoreBuilder();
 
     // ✅ Build complete builderData object - THIS IS THE ONLY PLACE DATA IS MAPPED
@@ -82,10 +83,12 @@ const FinalStorePreview = () => {
             profile: profileData || {},
             return: returnData || {},
             images: uploadedImages || {},
+            storeType: storeType || 'product',
+            booking: productData.bookingSettings || {},
         };
     };
 
-    const builderData = React.useMemo(() => getAllBuilderData(), [productData, brandData, cartData, paymentData, addressData, orderData, profileData, returnData, uploadedImages]);
+    const builderData = React.useMemo(() => getAllBuilderData(), [productData, brandData, cartData, paymentData, addressData, orderData, profileData, returnData, uploadedImages, storeType]);
 
     const [device, setDevice] = useState('desktop');
     const [publishing, setPublishing] = useState(false);

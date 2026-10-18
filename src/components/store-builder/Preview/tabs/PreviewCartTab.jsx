@@ -7,7 +7,45 @@ import { QRCodeSVG } from 'qrcode.react';
 // used to double as muted text color; that job moved entirely to fontBody.
 // Secondary is now purely a UI-state color (e.g. the free-delivery
 // progress bar's track, quantity-stepper borders).
-const PreviewCartTab = ({ data, updateQuantity, removeFromCart, placeOrder, onGoToProfile, isAuthenticated, onRequireAuth }) => {
+// Day abbreviation → JS Date.getDay() index (0=Sun)
+const DAY_INDEX = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+
+// Generate time slots between workStart and workEnd, excluding break, with gapBetween minutes
+function generateSlots(workStart, workEnd, breakStart, breakEnd, gapMinutes) {
+  const slots = [];
+  const toMin = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+  const toLabel = (m) => { const h = Math.floor(m / 60); const mn = m % 60; const ampm = h >= 12 ? 'PM' : 'AM'; return `${h % 12 || 12}:${mn.toString().padStart(2, '0')} ${ampm}`; };
+  const start = toMin(workStart || '10:00');
+  const end = toMin(workEnd || '19:00');
+  const bStart = breakStart ? toMin(breakStart) : null;
+  const bEnd = breakEnd ? toMin(breakEnd) : null;
+  const gap = gapMinutes || 30;
+  for (let t = start; t + gap <= end; t += gap) {
+    if (bStart !== null && t >= bStart && t < bEnd) continue;
+    slots.push({ value: `${Math.floor(t/60).toString().padStart(2,'0')}:${(t%60).toString().padStart(2,'0')}`, label: toLabel(t) });
+  }
+  return slots;
+}
+
+// Generate next N available dates based on workingDays
+function getAvailableDates(workingDays, advanceDays) {
+  const days = workingDays || ['Mon','Tue','Wed','Thu','Fri','Sat'];
+  const maxDays = advanceDays || 7;
+  const available = [];
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  for (let i = 1; i <= maxDays + 14; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    const dayName = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];
+    if (days.includes(dayName)) available.push(d);
+    if (available.length >= maxDays) break;
+  }
+  return available;
+}
+
+const PreviewCartTab = ({ data, updateQuantity, removeFromCart, placeOrder, onGoToProfile, isAuthenticated, onRequireAuth, storeType, booking }) => {
+  const isService = storeType === 'service';
   const { cart, brand, payment, profile } = data;
   const [showCheckout, setShowCheckout] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState(payment?.defaultPayment || 'cod');
@@ -22,6 +60,12 @@ const PreviewCartTab = ({ data, updateQuantity, removeFromCart, placeOrder, onGo
   const [customerUpiId, setCustomerUpiId] = useState('');
   const [upiIdConfirmed, setUpiIdConfirmed] = useState(false);
   const [cashfreeLoading, setCashfreeLoading] = useState(false);
+  const [bookingDate, setBookingDate] = useState('');
+  const [bookingTime, setBookingTime] = useState('');
+
+  // Derived booking helpers (only used when isService)
+  const availableDates = isService ? getAvailableDates(booking.workingDays, booking.advanceDays) : [];
+  const availableSlots = isService && bookingDate ? generateSlots(booking.workStart, booking.workEnd, booking.breakStart, booking.breakEnd, booking.gapBetween) : [];
 
   const { items, freeDelivery, freeDeliveryThreshold, deliveryCharge, showProgressBar, enableGST, gstRate, taxLabel, showGSTBreakdownCart, showGSTBreakdownCheckout, gstNumber, enableDineIn, dineInLabel } = cart;
   const [orderType, setOrderType] = useState('delivery');
@@ -64,7 +108,7 @@ const PreviewCartTab = ({ data, updateQuantity, removeFromCart, placeOrder, onGo
       onRequireAuth?.();
       return;
     }
-    if (orderType !== 'dine_in' && !currentAddress) {
+    if (!isService && orderType !== 'dine_in' && !currentAddress) {
       alert('Please add a delivery address from the Profile tab before checking out');
       return;
     }
@@ -118,7 +162,11 @@ const PreviewCartTab = ({ data, updateQuantity, removeFromCart, placeOrder, onGo
   };
 
   const handlePlaceOrder = async () => {
-    if (orderType !== 'dine_in' && !currentAddress) {
+    if (isService && (!bookingDate || !bookingTime)) {
+      alert('Please select an appointment date and time');
+      return;
+    }
+    if (!isService && orderType !== 'dine_in' && !currentAddress) {
       alert('Please select a delivery address');
       return;
     }
@@ -150,6 +198,7 @@ const PreviewCartTab = ({ data, updateQuantity, removeFromCart, placeOrder, onGo
       paymentMethodLabel: methodLabel,
       customerUpiId: selectedPayment === 'upi' ? customerUpiId.trim() : undefined,
       orderType: orderType,
+      ...(isService && { bookingDate, bookingTime }),
     });
     setPlacingOrder(false);
 
@@ -471,8 +520,62 @@ const PreviewCartTab = ({ data, updateQuantity, removeFromCart, placeOrder, onGo
             })}
           </div>
 
+          {/* Booking date/time picker — service stores only */}
+          {isService && (
+            <div className="rounded-lg border p-4 mb-4" style={{ backgroundColor: brand.colors.background || '#FFFFFF', borderColor: brand.colors.secondary || '#e0e3e6' }}>
+              <p className="text-sm font-semibold mb-3" style={{ color: brand.colors.fontHeader, fontFamily: brand.fonts?.body || 'Inter' }}>
+                📅 Select Appointment Date & Time
+              </p>
+              {/* Date picker */}
+              <div className="mb-3">
+                <p className="text-xs font-medium mb-2" style={{ color: brand.colors.fontBody, fontFamily: brand.fonts?.body || 'Inter' }}>Date</p>
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                  {availableDates.map((d) => {
+                    const iso = d.toISOString().split('T')[0];
+                    const dayName = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];
+                    const dateNum = d.getDate();
+                    const mon = d.toLocaleString('default', { month: 'short' });
+                    const isSelected = bookingDate === iso;
+                    return (
+                      <button key={iso} onClick={() => { setBookingDate(iso); setBookingTime(''); }}
+                        className="flex flex-col items-center px-3 py-2 rounded-xl border-2 flex-shrink-0 transition-all"
+                        style={{ borderColor: isSelected ? brand.colors.primary : brand.colors.secondary || '#e0e3e6', background: isSelected ? brand.colors.primary : 'transparent', minWidth: '52px' }}>
+                        <span className="text-[10px] font-semibold" style={{ color: isSelected ? '#fff' : brand.colors.fontBody }}>{dayName}</span>
+                        <span className="text-base font-bold" style={{ color: isSelected ? '#fff' : brand.colors.fontHeader }}>{dateNum}</span>
+                        <span className="text-[10px]" style={{ color: isSelected ? '#fff' : brand.colors.fontBody }}>{mon}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              {/* Time slot picker */}
+              {bookingDate && (
+                <div>
+                  <p className="text-xs font-medium mb-2" style={{ color: brand.colors.fontBody, fontFamily: brand.fonts?.body || 'Inter' }}>Time</p>
+                  <div className="flex flex-wrap gap-2">
+                    {availableSlots.map((slot) => {
+                      const isSelected = bookingTime === slot.value;
+                      return (
+                        <button key={slot.value} onClick={() => setBookingTime(slot.value)}
+                          className="px-3 py-1.5 rounded-lg border-2 text-xs font-semibold transition-all"
+                          style={{ borderColor: isSelected ? brand.colors.primary : brand.colors.secondary || '#e0e3e6', background: isSelected ? brand.colors.primary : 'transparent', color: isSelected ? '#fff' : brand.colors.fontBody }}>
+                          {slot.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              {bookingDate && bookingTime && (
+                <p className="text-xs mt-3 font-medium" style={{ color: brand.colors.primary }}>
+                  ✓ Appointment: {new Date(bookingDate).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })} at {availableSlots.find(s => s.value === bookingTime)?.label}
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Dine-In / Delivery selector */}
-          {enableDineIn && (
+          {!isService && enableDineIn && (
             <div className="rounded-lg border p-4 mb-4" style={{ backgroundColor: brand.colors.background || '#FFFFFF' }}>
               <p className="text-sm font-semibold mb-3" style={{ color: brand.colors.fontHeader, fontFamily: brand.fonts?.body || 'Inter' }}>
                 How would you like your order?
@@ -497,7 +600,7 @@ const PreviewCartTab = ({ data, updateQuantity, removeFromCart, placeOrder, onGo
           )}
 
           {/* Delivery Address - From the shared address book (Step 5 config) */}
-          {orderType !== 'dine_in' && <div className="rounded-lg border p-4 mb-4" style={{ backgroundColor: brand.colors.background || '#FFFFFF' }}>
+          {!isService && orderType !== 'dine_in' && <div className="rounded-lg border p-4 mb-4" style={{ backgroundColor: brand.colors.background || '#FFFFFF' }}>
             <div className="flex items-center justify-between mb-2">
               <p className="text-sm font-semibold" style={{ color: brand.colors.fontHeader, fontFamily: brand.fonts?.heading || 'Inter' }}>
                 Deliver to {currentAddress?.label || 'Address'}

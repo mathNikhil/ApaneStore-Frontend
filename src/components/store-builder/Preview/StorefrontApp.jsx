@@ -193,6 +193,8 @@ const StorefrontApp = ({ builderData, storeId, device = 'desktop', className = '
     // with it. This is why every store showed the same hardcoded default
     // (returns always enabled, 7-day window) no matter what a tenant set.
     return: builderData.return,
+    storeType: builderData.storeType || 'product',
+    booking: builderData.booking || {},
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [builderData]);
 
@@ -263,10 +265,12 @@ const StorefrontApp = ({ builderData, storeId, device = 'desktop', className = '
             onGoToProfile={() => setActiveTab('profile')}
             isAuthenticated={!!customer}
             onRequireAuth={() => setCheckoutNeedsAuth(true)}
+            storeType={storeData.storeType || 'product'}
+            booking={storeData.booking || {}}
           />
         );
       case 'orders':
-        return <PreviewOrdersTab data={storeData} cancelOrder={cancelOrder} addToCart={addToCart} onGoToCart={() => setActiveTab('cart')} storeId={storeId} customerToken={customerToken} />;
+        return <PreviewOrdersTab data={storeData} cancelOrder={cancelOrder} addToCart={addToCart} onGoToCart={() => setActiveTab('cart')} storeId={storeId} customerToken={customerToken} storeType={storeData.storeType || 'product'} />;
       case 'profile':
         return (
           <PreviewProfileTab
@@ -306,6 +310,7 @@ const StorefrontApp = ({ builderData, storeId, device = 'desktop', className = '
             brandFonts={storeData.brand?.fonts || { heading: 'Inter', body: 'Inter' }}
             cartTabName={storeData.cart?.tabName || 'Cart'}
             ordersTabName={storeData.cart?.ordersTabName || 'Orders'}
+            storeType={storeData.storeType || 'product'}
             device={device}
           />
         </div>

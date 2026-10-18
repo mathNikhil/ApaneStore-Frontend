@@ -11,7 +11,8 @@ const RETURN_STATUS_LABELS = {
   refunded: 'Refunded',
 };
 
-const PreviewOrdersTab = ({ data, cancelOrder, addToCart, onGoToCart, storeId, customerToken }) => {
+const PreviewOrdersTab = ({ data, cancelOrder, addToCart, onGoToCart, storeId, customerToken, storeType }) => {
+  const isService = storeType === 'service';
   const [filter, setFilter] = useState('all');
   const [showReturnModal, setShowReturnModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -206,7 +207,13 @@ const PreviewOrdersTab = ({ data, cancelOrder, addToCart, onGoToCart, storeId, c
     }
   };
 
-  const filters = [
+  const filters = isService ? [
+    { id: 'all', label: 'All Bookings' },
+    { id: 'pending', label: 'Pending' },
+    { id: 'confirmed', label: 'Confirmed' },
+    { id: 'processing', label: 'In Progress' },
+    { id: 'delivered', label: 'Completed' },
+  ] : [
     { id: 'all', label: 'All Orders' },
     { id: 'pending', label: 'Pending' },
     { id: 'processing', label: 'Processing' },
@@ -248,10 +255,10 @@ const PreviewOrdersTab = ({ data, cancelOrder, addToCart, onGoToCart, storeId, c
   return (
     <div className="p-4 max-w-3xl mx-auto pb-24">
       <h2 className="text-xl font-bold mb-2" style={{ color: getFontHeaderColor() }}>
-        My Orders
+        {isService ? 'My Bookings' : 'My Orders'}
       </h2>
       <p className="text-sm mb-4" style={{ color: getFontBodyColor() }}>
-        Track and manage your customer fulfillments.
+        {isService ? 'View and manage your appointments.' : 'Track and manage your customer fulfillments.'}
       </p>
 
       {/* Filter Tabs */}
@@ -276,8 +283,8 @@ const PreviewOrdersTab = ({ data, cancelOrder, addToCart, onGoToCart, storeId, c
 
       {filteredOrders.length === 0 ? (
         <div className="text-center py-12" style={{ color: getFontBodyColor() }}>
-          <span className="material-symbols-outlined text-6xl block mb-4 opacity-30">receipt_long</span>
-          <p>{filter !== 'all' ? filter : ''} orders found</p>
+          <span className="material-symbols-outlined text-6xl block mb-4 opacity-30">{isService ? 'event_note' : 'receipt_long'}</span>
+          <p>No {filter !== 'all' ? filter : ''} {isService ? 'bookings' : 'orders'} found</p>
         </div>
       ) : (
         <div className="space-y-4">
