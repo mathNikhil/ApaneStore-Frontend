@@ -267,10 +267,11 @@ const StorefrontApp = ({ builderData, storeId, device = 'desktop', className = '
             onRequireAuth={() => setCheckoutNeedsAuth(true)}
             storeType={storeData.storeType || 'product'}
             booking={storeData.booking || {}}
+            tabName={storeData.cart?.tabName || ''}
           />
         );
       case 'orders':
-        return <PreviewOrdersTab data={storeData} cancelOrder={cancelOrder} addToCart={addToCart} onGoToCart={() => setActiveTab('cart')} storeId={storeId} customerToken={customerToken} storeType={storeData.storeType || 'product'} />;
+        return <PreviewOrdersTab data={storeData} cancelOrder={cancelOrder} addToCart={addToCart} onGoToCart={() => setActiveTab('cart')} storeId={storeId} customerToken={customerToken} storeType={storeData.storeType || 'product'} ordersTabName={storeData.cart?.ordersTabName || ''} />;
       case 'profile':
         return (
           <PreviewProfileTab

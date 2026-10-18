@@ -44,7 +44,7 @@ function getAvailableDates(workingDays, advanceDays) {
   return available;
 }
 
-const PreviewCartTab = ({ data, updateQuantity, removeFromCart, placeOrder, onGoToProfile, isAuthenticated, onRequireAuth, storeType, booking }) => {
+const PreviewCartTab = ({ data, updateQuantity, removeFromCart, placeOrder, onGoToProfile, isAuthenticated, onRequireAuth, storeType, booking, tabName }) => {
   const isService = storeType === 'service';
   const { cart, brand, payment, profile } = data;
   const [showCheckout, setShowCheckout] = useState(false);
@@ -440,7 +440,7 @@ const PreviewCartTab = ({ data, updateQuantity, removeFromCart, placeOrder, onGo
   return (
     <div className="p-4 max-w-3xl mx-auto">
       <h2 className="text-xl font-bold mb-4" style={{ color: brand.colors.fontHeader, fontFamily: brand.fonts?.heading || 'Inter' }}>
-        My Cart ({items.length} {items.length === 1 ? 'item' : 'items'})
+        {tabName || (isService ? 'Services' : 'My Cart')} ({items.length} {items.length === 1 ? 'item' : 'items'})
       </h2>
 
       {items.length > 0 && freeDelivery && showProgressBar && remainingForFree > 0 && (
