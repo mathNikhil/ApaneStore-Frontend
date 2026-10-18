@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStoreBuilder } from '../../Context/StoreBuilderContext';
 import TopAppBar from '../Common/TopAppBar';
-import ProgressBar from '../Common/ProgressBar';
 
 const StoreBuilderLayout = ({
     children,
@@ -139,20 +138,9 @@ const StoreBuilderLayout = ({
                 title="Store Builder"
                 showBack={false}
                 actions={actions}
+                currentStep={currentStep}
+                totalSteps={totalSteps}
             />
-
-            {/* Progress Bar */}
-            <div className="max-w-3xl mx-auto px-4 pt-4">
-                <div className="flex justify-between items-center mb-2">
-                    <span className="text-xs text-gray-500 font-medium">
-                        Step {currentStep} of {totalSteps}
-                    </span>
-                    <span className="text-xs text-gray-500 font-medium">
-                        {Math.round(((currentStep - 1) / (totalSteps - 1)) * 100)}%
-                    </span>
-                </div>
-                <ProgressBar currentStep={currentStep} totalSteps={totalSteps} />
-            </div>
 
             <main className="max-w-3xl mx-auto px-4 py-6">
                 {/* Header - NO close button here anymore */}

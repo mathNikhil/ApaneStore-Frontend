@@ -171,8 +171,25 @@ const Step4_PaymentConfig = () => {
   };
 
   const handleGatewaySelect = (selectedKey) => {
-    // If switching away from payment gateway, delete all gateway keys
-    console.log('Gateway select:', selectedKey, 'cashfreeEnabled:', settings.cashfreeEnabled, 'configuredGateways:', configuredGateways);
+    // Allow toggling off — if the method is already on, clicking its toggle disables it
+    const isCurrentlyOn = settings[selectedKey];
+    if (isCurrentlyOn) {
+      // Turning this method OFF — fall back to COD only
+      if (selectedKey === 'cashfreeEnabled') {
+        if (configuredGateways.cashfree) deleteGatewayKeys('cashfree');
+        if (configuredGateways.razorpay) deleteGatewayKeys('razorpay');
+        if (configuredGateways.stripe) deleteGatewayKeys('stripe');
+      }
+      setSettings(prev => ({
+        ...prev,
+        upiEnabled: false,
+        cashfreeEnabled: false,
+        stripeEnabled: false,
+        defaultPayment: 'cod',
+      }));
+      return;
+    }
+    // Turning this method ON — switch away from any active gateway first
     if (selectedKey !== 'cashfreeEnabled' && settings.cashfreeEnabled) {
       if (configuredGateways.cashfree) deleteGatewayKeys('cashfree');
       if (configuredGateways.razorpay) deleteGatewayKeys('razorpay');

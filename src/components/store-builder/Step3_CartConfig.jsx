@@ -131,7 +131,7 @@ const Step3_CartConfig = () => {
           <h2 className="font-label-md text-label-md text-[#556067] uppercase tracking-wider text-xs">Delivery Settings</h2>
         </div>
 
-        <Toggle label="Enable Dine-In Option" description="Allow customers to choose between Dine In or Delivery at checkout (ideal for restaurants)" checked={settings.enableDineIn} onChange={() => handleToggle('enableDineIn')} className="mb-4" />
+        <Toggle label="Enable Store-in Option" description="Allow customers to choose between Store In or Delivery at checkout (ideal for restaurants)" checked={settings.enableDineIn} onChange={() => handleToggle('enableDineIn')} className="mb-4" />
         {settings.enableDineIn && (
           <div className="mb-4 ml-1">
             <label className="block text-xs font-semibold text-[#3c4a3d] uppercase tracking-wider mb-1">Dine-In Button Label</label>

@@ -330,33 +330,7 @@ const Step7_ProfileConfig = () => {
         </div>
       </Card>
 
-      <Card className="mb-6">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-10 h-10 rounded-lg bg-[#e0e3e6] text-[#556067] flex items-center justify-center">
-            <span className="material-symbols-outlined">reviews</span>
-          </div>
-          <h2 className="font-headline-md text-headline-md text-[#191c1e] uppercase text-base">Feedback Links</h2>
-        </div>
-
-        <div className="space-y-3">
-          <div className="space-y-1">
-            <label className="block text-label-md font-label-md text-[#3c4a3d] uppercase tracking-wider text-xs">Facebook Reviews URL</label>
-            <Input 
-              value={profile.facebookReviews} 
-              onChange={function(e) { handleChange('facebookReviews', e.target.value); }} 
-              placeholder="Paste link here" 
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="block text-label-md font-label-md text-[#3c4a3d] uppercase tracking-wider text-xs">Instagram Feedback URL</label>
-            <Input 
-              value={profile.instagramFeedback} 
-              onChange={function(e) { handleChange('instagramFeedback', e.target.value); }} 
-              placeholder="Paste link here" 
-            />
-          </div>
-        </div>
-      </Card>
+      {/* Feedback Links — hidden for now */}
 
 
       <Card className="mb-6">

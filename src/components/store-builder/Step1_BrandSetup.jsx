@@ -522,7 +522,7 @@ const Step1_BrandSetup = () => {
           name="brandName" 
           value={formData.brandName} 
           onChange={handleChange} 
-          placeholder="Enter brand name" 
+          placeholder="Enter store name"
           className={`bg-white border ${validationError ? 'border-red-500' : 'border-[#bbcbb9]'} rounded-lg`}
           required
         />

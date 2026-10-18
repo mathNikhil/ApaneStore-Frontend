@@ -172,7 +172,7 @@ export const StoreBuilderProvider = ({ children }) => {
 
     // Step 8: Return Data
     const [returnData, setReturnData] = useState({
-        isEnabled: true,
+        isEnabled: false,
         returnWindowDays: 7,
         restockingFeePercent: 0,
         returnShippingMethod: 'customer-pays',

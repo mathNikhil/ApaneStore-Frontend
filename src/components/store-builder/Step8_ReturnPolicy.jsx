@@ -128,7 +128,7 @@ const Step8_ReturnPolicy = () => {
                         step="1"
                         value={windowDays.indexOf(settings.returnWindowDays) === -1 ? 0 : windowDays.indexOf(settings.returnWindowDays)}
                         onChange={(e) => handleSliderChange('returnWindowDays', windowDays[parseInt(e.target.value)])}
-                        className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-green-600"
+                        className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#006d2f]"
                     />
                     <div className="flex justify-between mt-2">
                         {windowDays.map((days) => (
@@ -160,7 +160,7 @@ const Step8_ReturnPolicy = () => {
                         step="1"
                         value={feePercentages.indexOf(settings.restockingFeePercent) === -1 ? 0 : feePercentages.indexOf(settings.restockingFeePercent)}
                         onChange={(e) => handleSliderChange('restockingFeePercent', feePercentages[parseInt(e.target.value)])}
-                        className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-green-600"
+                        className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#006d2f]"
                     />
                     <div className="flex justify-between mt-2">
                         {feePercentages.map((fee) => (
@@ -189,7 +189,7 @@ const Step8_ReturnPolicy = () => {
                             value="customer-pays"
                             checked={settings.returnShippingMethod === 'customer-pays'}
                             onChange={(e) => update({ returnShippingMethod: e.target.value })}
-                            className="w-4 h-4 text-green-600 focus:ring-green-500"
+                            className="w-4 h-4 accent-[#006d2f] focus:ring-[#25D366]"
                         />
                         <div>
                             <span className="font-medium text-sm text-gray-800">Customer Arranges Return</span>
@@ -203,7 +203,7 @@ const Step8_ReturnPolicy = () => {
                             value="merchant-pays"
                             checked={settings.returnShippingMethod === 'merchant-pays'}
                             onChange={(e) => update({ returnShippingMethod: e.target.value })}
-                            className="w-4 h-4 text-green-600 focus:ring-green-500"
+                            className="w-4 h-4 accent-[#006d2f] focus:ring-[#25D366]"
                         />
                         <div>
                             <span className="font-medium text-sm text-gray-800">You Arrange Pickup</span>
@@ -224,7 +224,7 @@ const Step8_ReturnPolicy = () => {
                                 type="checkbox"
                                 checked={settings.allowedReasons.includes(reason.id)}
                                 onChange={() => handleReasonToggle(reason.id)}
-                                className="w-4 h-4 text-green-600 rounded border-gray-300 focus:ring-green-500"
+                                className="w-4 h-4 accent-[#006d2f] rounded border-gray-300 focus:ring-[#25D366]"
                             />
                             <span className="text-sm text-gray-700">{reason.label}</span>
                         </label>
