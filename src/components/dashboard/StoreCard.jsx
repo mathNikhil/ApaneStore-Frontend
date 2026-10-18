@@ -525,7 +525,26 @@ const StoreCard = ({ store, subscriptions = {}, onStoreUpdate }) => {
                                     )}
                                 </div>
                                 {gmailConnectedEmail ? (
-                                    <div style={s.btnConnected}>✓ Connected</div>
+                                    <div style={{ display: 'flex', gap: '6px' }}>
+                                        <div style={s.btnConnected}>✓ Connected</div>
+                                        <button style={s.btnDisconnect}
+                                            onClick={async () => {
+                                                if (!window.confirm('Disconnect Gmail? Order notification emails will stop being sent.')) return;
+                                                try {
+                                                    const token = localStorage.getItem('token');
+                                                    await fetch(`${API_URL}/api/auth/gmail-notify/disconnect?storeId=${store.id}`, {
+                                                        method: 'POST',
+                                                        headers: { Authorization: `Bearer ${token}` },
+                                                    });
+                                                } catch {}
+                                                try { localStorage.removeItem(`gmail_connected_${store.id}`); } catch {}
+                                                if (onStoreUpdate) onStoreUpdate();
+                                                // Force re-render by navigating same page
+                                                window.location.reload();
+                                            }}>
+                                            Disconnect
+                                        </button>
+                                    </div>
                                 ) : (
                                     <button style={s.btnConnect}
                                         onClick={() => {
@@ -735,6 +754,7 @@ const s = {
     gmailIcon: { width: '40px', height: '40px', borderRadius: '12px', background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', flexShrink: 0 },
     btnConnect: { padding: '8px 16px', background: '#4f46e5', color: '#fff', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' },
     btnConnected: { padding: '8px 16px', background: '#e6f4ec', color: '#006d2f', border: '1px solid #bbdfc8', borderRadius: '10px', fontSize: '13px', fontWeight: 600, fontFamily: 'inherit' },
+    btnDisconnect: { padding: '8px 12px', background: '#fff', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: '10px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' },
     templateRowBtn: { width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: '#f5f3ff', color: '#4f46e5', border: '1px solid #e0e7ff', borderRadius: '14px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' },
     templateTabBtn: { flexShrink: 0, padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 600, border: 'none', background: '#f3f4f6', color: '#6b7280', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' },
     templateTabBtnActive: { background: '#4f46e5', color: '#fff' },
