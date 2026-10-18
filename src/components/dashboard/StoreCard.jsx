@@ -80,6 +80,11 @@ const StoreCard = ({ store, subscriptions = {}, onStoreUpdate }) => {
     const [templateLoading, setTemplateLoading] = useState(false);
     const [templateSaving,  setTemplateSaving]  = useState(false);
 
+    // Gmail connected state — prefer store.notify_email from API, fall back to localStorage cache
+    const gmailConnectedEmail = store.notify_email || (() => {
+        try { return localStorage.getItem(`gmail_connected_${store.id}`) || null; } catch { return null; }
+    })();
+
     // delete
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deleteInput,     setDeleteInput]     = useState('');
@@ -513,15 +518,23 @@ const StoreCard = ({ store, subscriptions = {}, onStoreUpdate }) => {
                                 <div style={s.gmailIcon}>📧</div>
                                 <div style={{ flex: 1 }}>
                                     <p style={{ fontWeight: 600, fontSize: '14px', color: '#111827', margin: 0 }}>Gmail</p>
-                                    <p style={{ fontSize: '12px', color: '#9ca3af', margin: '2px 0 0' }}>Not connected</p>
+                                    {gmailConnectedEmail ? (
+                                        <p style={{ fontSize: '12px', color: '#006d2f', margin: '2px 0 0', fontWeight: 600 }}>✓ {gmailConnectedEmail}</p>
+                                    ) : (
+                                        <p style={{ fontSize: '12px', color: '#9ca3af', margin: '2px 0 0' }}>Not connected</p>
+                                    )}
                                 </div>
-                                <button style={s.btnConnect}
-                                    onClick={() => {
-                                        const token = localStorage.getItem('token');
-                                        window.location.href = `${API_URL}/api/auth/gmail-notify/connect?storeId=${store.id}&token=${token}`;
-                                    }}>
-                                    Connect
-                                </button>
+                                {gmailConnectedEmail ? (
+                                    <div style={s.btnConnected}>✓ Connected</div>
+                                ) : (
+                                    <button style={s.btnConnect}
+                                        onClick={() => {
+                                            const token = localStorage.getItem('token');
+                                            window.location.href = `${API_URL}/api/auth/gmail-notify/connect?storeId=${store.id}&token=${token}`;
+                                        }}>
+                                        Connect
+                                    </button>
+                                )}
                             </div>
                             <button style={s.templateRowBtn} onClick={openTemplates}>
                                 <span>📄 Email Templates</span>
@@ -721,6 +734,7 @@ const s = {
     gmailConnectRow: { display: 'flex', alignItems: 'center', gap: '12px', border: '1px solid #e4e7ec', borderRadius: '14px', padding: '14px', marginBottom: '12px' },
     gmailIcon: { width: '40px', height: '40px', borderRadius: '12px', background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', flexShrink: 0 },
     btnConnect: { padding: '8px 16px', background: '#4f46e5', color: '#fff', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' },
+    btnConnected: { padding: '8px 16px', background: '#e6f4ec', color: '#006d2f', border: '1px solid #bbdfc8', borderRadius: '10px', fontSize: '13px', fontWeight: 600, fontFamily: 'inherit' },
     templateRowBtn: { width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: '#f5f3ff', color: '#4f46e5', border: '1px solid #e0e7ff', borderRadius: '14px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' },
     templateTabBtn: { flexShrink: 0, padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 600, border: 'none', background: '#f3f4f6', color: '#6b7280', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' },
     templateTabBtnActive: { background: '#4f46e5', color: '#fff' },

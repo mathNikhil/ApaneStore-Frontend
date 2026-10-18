@@ -16,6 +16,11 @@ const DashboardReturnUser = ({ stores = [], subscriptions = {}, onStoreUpdate })
         const email = params.get('email');
         if (gmail === 'connected' && email) {
             showSuccess(`Gmail connected: ${email}`);
+            // Cache per store so StoreCard can show connected state immediately
+            const storeId = params.get('storeId');
+            if (storeId) {
+                try { localStorage.setItem(`gmail_connected_${storeId}`, email); } catch {}
+            }
             window.history.replaceState({}, '', '/dashboard');
         } else if (gmail === 'error') {
             showError('Gmail connection failed. Please try again.');
