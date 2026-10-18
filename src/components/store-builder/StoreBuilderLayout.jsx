@@ -20,7 +20,8 @@ const StoreBuilderLayout = ({
     closeLabel = 'Save & Close',
 }) => {
     const navigate = useNavigate();
-    const { saveStore, currentStoreId } = useStoreBuilder();
+    const { saveStore, currentStoreId, storeType } = useStoreBuilder();
+    const effectiveTotalSteps = storeType === 'service' ? 7 : totalSteps;
     const [saving, setSaving] = useState(false);
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
@@ -50,7 +51,7 @@ const StoreBuilderLayout = ({
     const handleContinue = async () => {
         if (onContinue) {
             onContinue();
-        } else if (currentStep < totalSteps) {
+        } else if (currentStep < effectiveTotalSteps) {
             setSaving(true);
             const result = await saveStore();
             setSaving(false);
@@ -139,7 +140,7 @@ const StoreBuilderLayout = ({
                 showBack={false}
                 actions={actions}
                 currentStep={currentStep}
-                totalSteps={totalSteps}
+                totalSteps={effectiveTotalSteps}
             />
 
             <main className="max-w-3xl mx-auto px-4 py-6">
@@ -196,10 +197,10 @@ const StoreBuilderLayout = ({
                                 ) : (
                                     <>
                                         <span>{saving ? 'Saving...' : continueLabel}</span>
-                                        {currentStep < totalSteps && (
+                                        {currentStep < effectiveTotalSteps && (
                                             <span className="material-symbols-outlined text-xl">arrow_forward</span>
                                         )}
-                                        {currentStep === totalSteps && (
+                                        {currentStep === effectiveTotalSteps && (
                                             <span className="material-symbols-outlined text-xl">visibility</span>
                                         )}
                                     </>

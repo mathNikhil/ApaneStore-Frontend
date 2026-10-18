@@ -8,7 +8,7 @@ import Input from '../Common/Input';
 
 const Step7_ProfileConfig = () => {
   const navigate = useNavigate();
-  const { profileData, setProfileData, productData, brandData, currentStoreId, saveStore } = useStoreBuilder();
+  const { profileData, setProfileData, productData, brandData, currentStoreId, saveStore, storeType } = useStoreBuilder();
   const profileDataRef = React.useRef(false);
 
   var hasProducts = false;
@@ -125,8 +125,13 @@ const Step7_ProfileConfig = () => {
   };
 
   var handleSaveAndContinue = async function() {
-    if (saveStore) await saveStore().catch(console.error);
-    navigate('/store-builder/step/8');
+    const result = saveStore ? await saveStore().catch(console.error) : null;
+    if (storeType === 'service') {
+      const storeId = currentStoreId || result?.data?.data?.id || localStorage.getItem('currentStoreId');
+      navigate(storeId ? `/store-builder/preview?storeId=${storeId}` : '/store-builder/preview');
+    } else {
+      navigate('/store-builder/step/8');
+    }
   };
 
   var handleCloseAndSaveDraft = function() {

@@ -513,6 +513,28 @@ const Step1_BrandSetup = () => {
     >
 
 
+      {/* Store Type */}
+      <div className="mb-6">
+        <label className="font-label-md text-label-md text-[#3c4a3d] uppercase tracking-wider text-xs block mb-3">Store Type</label>
+        <div className="grid grid-cols-2 gap-3">
+          {[
+            { value: 'product', icon: '🛍️', title: 'Product Store', desc: 'Sell physical goods with cart & delivery' },
+            { value: 'service', icon: '💆', title: 'Service Store', desc: 'Offer appointments, sessions or home visits' },
+          ].map(({ value, icon, title, desc }) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setStoreType(value)}
+              className={`p-4 rounded-xl border-2 text-left transition-all ${(storeType || 'product') === value ? 'border-[#006d2f] bg-[#f0faf4]' : 'border-[#e0e3e6] bg-white hover:border-[#bbcbb9]'}`}
+            >
+              <div className="text-2xl mb-2">{icon}</div>
+              <p className={`text-sm font-semibold mb-1 ${(storeType || 'product') === value ? 'text-[#006d2f]' : 'text-[#191c1e]'}`}>{title}</p>
+              <p className="text-xs text-[#556067] leading-relaxed">{desc}</p>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Brand Name */}
       <div className="space-y-4 mb-6">
         <label className="font-label-md text-label-md text-[#3c4a3d] uppercase tracking-wider text-xs">
