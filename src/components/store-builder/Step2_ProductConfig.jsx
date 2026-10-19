@@ -2242,7 +2242,7 @@ Continue?`;
                 <span className="material-symbols-outlined text-3xl mb-1">upload_file</span>
                 <span className="font-caption text-caption text-xs">Upload banner image</span>
                 <div className="flex gap-3 mt-1 text-[10px] text-gray-400">
-                  <span>📐 Any size</span><span>📄 PNG/JPG</span><span>📦 Max 500KB</span>
+                  <span>📐 1200×509</span><span>📄 PNG/JPG</span><span>📦 Max 500KB</span>
                 </div>
               </div>
             </div>
@@ -2300,7 +2300,7 @@ Continue?`;
           {errorStates['banner'] && (
             <p className="text-xs text-red-600">{errorStates['banner']}</p>
           )}
-          <ImageGuidelineBadge size="Any size" format="PNG/JPG" maxSize="500KB max" ratio="Any ratio" />
+          <ImageGuidelineBadge size="1200×509" format="PNG/JPG" maxSize="500KB max" ratio="Any ratio" />
         </div>
 
         {/* Banner height slider */}
