@@ -2512,43 +2512,16 @@ Continue?`;
                     const w = e.target.naturalWidth;
                     const h = e.target.naturalHeight;
                     setAdjNatural({ w, h });
-                    // Validate saved focal + scale — if they were set with old broken objectFit math
-                    // they may be way off. Detect and reset to sane defaults.
-                    const r = focalImageRef.current?.getBoundingClientRect();
-                    if (r && r.width > 0) {
-                      const cW = r.width, cH = r.height;
-                      const coverSc = Math.max(cW / w, cH / h);
-                      setBannerImages(prev => {
-                        const cur = prev[activeBannerIdx];
-                        if (!cur) return prev;
-                        let { focalX: fx = 50, focalY: fy = 50, scale: sc = 1 } = cur;
-                        let needReset = false;
-                        // Scale sanity: at zoom=sc the image must cover the container.
-                        // coverSc * sc < 1 means the image doesn't fill — was saved broken.
-                        if (sc < 0.9 || coverSc * sc < 0.95) {
-                          sc = 1;
-                          needReset = true;
-                          adjZoomRef.current = 1;
-                          setAdjZoom(1);
-                          setAdjPan({ x: 0, y: 0 });
-                          adjPanRef.current = { x: 0, y: 0 };
-                        }
-                        // Focal sanity: check overlap at the (possibly reset) scale
-                        const iW = w * coverSc * sc;
-                        const iH = h * coverSc * sc;
-                        const left = cW / 2 - (fx / 100) * iW;
-                        const top  = cH / 2 - (fy / 100) * iH;
-                        const overlapW = Math.min(left + iW, cW) - Math.max(left, 0);
-                        const overlapH = Math.min(top  + iH, cH) - Math.max(top,  0);
-                        const overlap  = (overlapW / cW) * (overlapH / cH);
-                        if (overlap < 0.3) {
-                          fx = 50; fy = 50;
-                          needReset = true;
-                        }
-                        if (!needReset) return prev;
-                        return prev.map((b, i) => i === activeBannerIdx ? { ...b, focalX: fx, focalY: fy, scale: sc } : b);
-                      });
-                    }
+                    // Always reset focal + scale to sane defaults on load.
+                    // Previously-saved values may have been written by the old broken objectFit math —
+                    // we can't trust them. Let the tenant re-adjust from a correct starting point.
+                    adjZoomRef.current = 1;
+                    setAdjZoom(1);
+                    setAdjPan({ x: 0, y: 0 });
+                    adjPanRef.current = { x: 0, y: 0 };
+                    setBannerImages(prev =>
+                      prev.map((b, i) => i === activeBannerIdx ? { ...b, focalX: 50, focalY: 50, scale: 1 } : b)
+                    );
                   }}
                   style={{
                     width:  adjNatural.w > 0 ? `${imgW}px` : '100%',
