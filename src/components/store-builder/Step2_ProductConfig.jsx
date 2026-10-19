@@ -51,7 +51,7 @@ const ImageError = ({ error }) => {
 // Tenant drags the frame to select which area to show. "Apply Crop" sends
 // the selection to the server (Sharp .extract), which overwrites the file.
 // FRAME_W mirrors the storefront banner container width.
-const CROP_FRAME_W = 1077;
+const CROP_FRAME_W = 1200;
 
 const BannerCropTool = ({ slide, frameH, onCropApplied, tenantId, storeId }) => {
   const wrapRef   = useRef(null);
