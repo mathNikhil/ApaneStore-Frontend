@@ -2303,6 +2303,17 @@ Continue?`;
           <ImageGuidelineBadge size="1200×509" format="PNG/JPG" maxSize="500KB max" ratio="Any ratio" />
         </div>
 
+        {/* Banner image preview */}
+        {bannerImages.length > 0 && bannerImages[activeBannerIdx] && (
+          <div className="mb-4 rounded-xl overflow-hidden border border-[#e0e3e6]" style={{ height: `${Math.min(bannerHeight, 220)}px` }}>
+            <img
+              src={bannerImages[activeBannerIdx].url}
+              alt="Banner preview"
+              className="w-full h-full object-cover"
+            />
+          </div>
+        )}
+
         {/* Banner height slider */}
         <div className="flex items-center gap-4 mb-4">
           <span className="font-label-md text-label-md text-[#3c4a3d] uppercase tracking-wider text-xs whitespace-nowrap">Height</span>
