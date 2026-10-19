@@ -114,12 +114,19 @@ const Step2_ProductConfig = () => {
   // Which banner is active in the adjuster panel (index into bannerImages)
   const [activeBannerIdx, setActiveBannerIdx] = useState(0);
   // Dragging state for the focal-point crosshair / pan
-  const [isDraggingFocal, setIsDraggingFocal] = useState(false);
-  const [isPanning, setIsPanning] = useState(false);
-  const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+  // Use refs (not state) for drag tracking — avoids stale-closure bugs in mousemove
+  const isDraggingFocalRef = useRef(false);
+  const isPanningRef = useRef(false);
+  const panStartRef = useRef({ x: 0, y: 0 });
   const [adjZoom, setAdjZoom] = useState(1); // 1–3x zoom for the adjuster view
+  const adjZoomRef = useRef(1); // mirror for use in event handlers
   const [adjPan, setAdjPan] = useState({ x: 0, y: 0 }); // px offset in adjuster
+  const adjPanRef = useRef({ x: 0, y: 0 }); // mirror for use in event handlers
   const focalImageRef = useRef(null);
+
+  // Keep refs in sync with state
+  useEffect(() => { adjZoomRef.current = adjZoom; }, [adjZoom]);
+  useEffect(() => { adjPanRef.current = adjPan; }, [adjPan]);
 
   const [bannerTagline, setBannerTagline] = useState(productData.banner?.tagline || '');
   const [bannerSubtitle, setBannerSubtitle] = useState(productData.banner?.subtitle || '');
@@ -2317,50 +2324,58 @@ Continue?`;
 
           // Clamp pan so image never drifts too far when zoomed
           const clampPan = (px, py, zoom) => {
-            const maxShift = ((zoom - 1) / zoom) * 50; // % of container
+            const maxShift = ((zoom - 1) / zoom) * 200;
             return {
-              x: Math.max(-maxShift * 2, Math.min(maxShift * 2, px)),
-              y: Math.max(-maxShift * 2, Math.min(maxShift * 2, py)),
+              x: Math.max(-maxShift, Math.min(maxShift, px)),
+              y: Math.max(-maxShift, Math.min(maxShift, py)),
             };
           };
 
-          // In focal mode (zoom=1): click/drag sets focal point
-          // In zoom mode (zoom>1): drag pans the view; click without drag still sets focal point
+                  // All handlers use refs — avoids stale closure in mousemove/touchmove
+          // dragMode is the only state piece used for cursor display
+          const [dragMode, setDragMode] = useState('idle'); // 'idle' | 'panning' | 'focal'
+
           const handlePointerDown = (clientX, clientY) => {
-            if (adjZoom > 1) {
-              setIsPanning(true);
-              setPanStart({ x: clientX - adjPan.x, y: clientY - adjPan.y });
+            if (adjZoomRef.current > 1) {
+              isPanningRef.current = true;
+              setDragMode('panning');
+              panStartRef.current = { x: clientX - adjPanRef.current.x, y: clientY - adjPanRef.current.y };
             } else {
-              setIsDraggingFocal(true);
+              isDraggingFocalRef.current = true;
+              setDragMode('focal');
               updateFocal(clientX, clientY);
             }
           };
 
           const handlePointerMove = (clientX, clientY) => {
-            if (isPanning) {
-              const raw = { x: clientX - panStart.x, y: clientY - panStart.y };
-              setAdjPan(clampPan(raw.x, raw.y, adjZoom));
-            } else if (isDraggingFocal) {
+            if (isPanningRef.current) {
+              const raw = { x: clientX - panStartRef.current.x, y: clientY - panStartRef.current.y };
+              const clamped = clampPan(raw.x, raw.y, adjZoomRef.current);
+              adjPanRef.current = clamped;
+              setAdjPan(clamped);
+            } else if (isDraggingFocalRef.current) {
               updateFocal(clientX, clientY);
             }
           };
 
           const handlePointerUp = () => {
-            setIsDraggingFocal(false);
-            setIsPanning(false);
+            isDraggingFocalRef.current = false;
+            isPanningRef.current = false;
+            setDragMode('idle');
           };
 
           const updateFocal = (clientX, clientY) => {
             const rect = focalImageRef.current?.getBoundingClientRect();
             if (!rect) return;
-            // Convert screen coords → image-content coords accounting for zoom+pan transform
+            const zoom = adjZoomRef.current;
+            const pan  = adjPanRef.current;
             const relX = clientX - rect.left;
             const relY = clientY - rect.top;
-            const cx = rect.width / 2 + adjPan.x;
-            const cy = rect.height / 2 + adjPan.y;
-            const imgX = (relX - cx) / adjZoom + cx;
-            const imgY = (relY - cy) / adjZoom + cy;
-            const x = Math.round(Math.min(100, Math.max(0, (imgX / rect.width) * 100)));
+            const cx = rect.width  / 2 + pan.x;
+            const cy = rect.height / 2 + pan.y;
+            const imgX = (relX - cx) / zoom + cx;
+            const imgY = (relY - cy) / zoom + cy;
+            const x = Math.round(Math.min(100, Math.max(0, (imgX / rect.width)  * 100)));
             const y = Math.round(Math.min(100, Math.max(0, (imgY / rect.height) * 100)));
             setBannerImages(prev => prev.map((b, i) => i === activeBannerIdx ? { ...b, focalX: x, focalY: y } : b));
           };
@@ -2368,10 +2383,11 @@ Continue?`;
           const handleWheel = (e) => {
             e.preventDefault();
             const delta = e.deltaY < 0 ? 0.15 : -0.15;
-            const next = Math.min(3, Math.max(1, adjZoom + delta));
-            if (next === 1) setAdjPan({ x: 0, y: 0 });
-            else setAdjPan(p => clampPan(p.x, p.y, next));
+            const next = Math.min(3, Math.max(1, adjZoomRef.current + delta));
+            adjZoomRef.current = next;
             setAdjZoom(next);
+            if (next === 1) { adjPanRef.current = { x: 0, y: 0 }; setAdjPan({ x: 0, y: 0 }); }
+            else { const c = clampPan(adjPanRef.current.x, adjPanRef.current.y, next); adjPanRef.current = c; setAdjPan(c); }
           };
 
           // Crosshair position in the adjuster view (adjusted for zoom+pan transform)
@@ -2403,7 +2419,7 @@ Continue?`;
                 style={{
                   height: `${Math.min(bannerHeight, 280)}px`,
                   backgroundColor: bannerBgColor,
-                  cursor: adjZoom > 1 ? (isPanning ? 'grabbing' : 'grab') : 'crosshair',
+                  cursor: adjZoom > 1 ? (dragMode === 'panning' ? 'grabbing' : 'grab') : 'crosshair',
                 }}
                 onMouseDown={(e) => handlePointerDown(e.clientX, e.clientY)}
                 onMouseMove={(e) => handlePointerMove(e.clientX, e.clientY)}
@@ -2425,7 +2441,7 @@ Continue?`;
                     objectPosition: `${focalX}% ${focalY}%`,
                     transform: `translate(${adjPan.x}px, ${adjPan.y}px) scale(${adjZoom})`,
                     transformOrigin: 'center center',
-                    transition: isPanning || isDraggingFocal ? 'none' : 'transform 0.15s ease',
+                    transition: dragMode !== 'idle' ? 'none' : 'transform 0.15s ease',
                   }}
                 />
 
@@ -2455,12 +2471,12 @@ Continue?`;
                 </div>
               </div>
 
-              {/* Zoom controls row */}
+              {/* Zoom + Pan controls */}
               <div className="flex items-center gap-2 mt-1">
                 {/* Zoom out */}
                 <button
                   onClick={() => { const z = Math.max(1, adjZoom - 0.25); setAdjZoom(z); if (z === 1) setAdjPan({ x: 0, y: 0 }); }}
-                  className="w-7 h-7 rounded-lg border border-[#bbcbb9] flex items-center justify-center hover:border-[#006d2f] hover:text-[#006d2f] transition-colors"
+                  className="w-7 h-7 rounded-lg border border-[#bbcbb9] flex items-center justify-center hover:border-[#006d2f] hover:text-[#006d2f] transition-colors flex-shrink-0"
                   title="Zoom out"
                 >
                   <span className="material-symbols-outlined text-base">zoom_out</span>
@@ -2482,7 +2498,7 @@ Continue?`;
                 {/* Zoom in */}
                 <button
                   onClick={() => { const z = Math.min(3, adjZoom + 0.25); setAdjZoom(z); }}
-                  className="w-7 h-7 rounded-lg border border-[#bbcbb9] flex items-center justify-center hover:border-[#006d2f] hover:text-[#006d2f] transition-colors"
+                  className="w-7 h-7 rounded-lg border border-[#bbcbb9] flex items-center justify-center hover:border-[#006d2f] hover:text-[#006d2f] transition-colors flex-shrink-0"
                   title="Zoom in"
                 >
                   <span className="material-symbols-outlined text-base">zoom_in</span>
@@ -2494,13 +2510,64 @@ Continue?`;
                 {(adjZoom !== 1 || adjPan.x !== 0 || adjPan.y !== 0) && (
                   <button
                     onClick={() => { setAdjZoom(1); setAdjPan({ x: 0, y: 0 }); }}
-                    className="text-[10px] text-[#556067] hover:text-[#006d2f] border border-[#bbcbb9] rounded px-2 py-1 transition-colors"
+                    className="text-[10px] text-[#556067] hover:text-[#006d2f] border border-[#bbcbb9] rounded px-2 py-1 transition-colors flex-shrink-0"
                     title="Reset zoom & pan"
                   >
                     Reset
                   </button>
                 )}
               </div>
+
+              {/* D-pad pan controls — visible only when zoomed */}
+              {adjZoom > 1 && (() => {
+                const step = 20;
+                const panBtn = (icon, title, dx, dy) => (
+                  <button
+                    key={title}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      const move = () => {
+                        const next = clampPan(adjPanRef.current.x + dx * step, adjPanRef.current.y + dy * step, adjZoomRef.current);
+                        adjPanRef.current = next;
+                        setAdjPan({ ...next });
+                      };
+                      move();
+                      const iv = setInterval(move, 80);
+                      const stop = () => { clearInterval(iv); window.removeEventListener('mouseup', stop); };
+                      window.addEventListener('mouseup', stop);
+                    }}
+                    onTouchStart={(e) => {
+                      e.preventDefault();
+                      const move = () => {
+                        const next = clampPan(adjPanRef.current.x + dx * step, adjPanRef.current.y + dy * step, adjZoomRef.current);
+                        adjPanRef.current = next;
+                        setAdjPan({ ...next });
+                      };
+                      move();
+                      const iv = setInterval(move, 80);
+                      const stop = () => { clearInterval(iv); window.removeEventListener('touchend', stop); };
+                      window.addEventListener('touchend', stop);
+                    }}
+                    className="w-8 h-8 rounded-lg border border-[#bbcbb9] flex items-center justify-center hover:border-[#006d2f] hover:text-[#006d2f] active:bg-[#006d2f]/10 transition-colors"
+                    title={title}
+                  >
+                    <span className="material-symbols-outlined text-base">{icon}</span>
+                  </button>
+                );
+                return (
+                  <div className="flex items-center justify-between mt-1">
+                    <span className="font-label-md text-label-md text-[#3c4a3d] uppercase tracking-wider text-xs">Pan</span>
+                    <div className="flex items-center gap-1">
+                      {panBtn('keyboard_arrow_left',  'Pan left',  -1,  0)}
+                      <div className="flex flex-col gap-1">
+                        {panBtn('keyboard_arrow_up',   'Pan up',    0, -1)}
+                        {panBtn('keyboard_arrow_down', 'Pan down',  0,  1)}
+                      </div>
+                      {panBtn('keyboard_arrow_right', 'Pan right',  1,  0)}
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Banner height slider */}
               <div className="flex items-center gap-4 mt-1">
