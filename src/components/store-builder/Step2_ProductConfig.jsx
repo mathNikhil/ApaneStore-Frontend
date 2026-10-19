@@ -2218,7 +2218,7 @@ Continue?`;
                 <div
                   key={bImg.url + idx}
                   className={`relative w-20 h-14 rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${activeBannerIdx === idx ? 'border-[#006d2f]' : 'border-transparent'}`}
-                  onClick={() => { setActiveBannerIdx(idx); setAdjZoom(1); setAdjPan({ x: 0, y: 0 }); }}
+                  onClick={() => { setActiveBannerIdx(idx); const s = bannerImages[idx]?.scale ?? 1; setAdjZoom(s); adjZoomRef.current = s; setAdjPan({ x: 0, y: 0 }); adjPanRef.current = { x: 0, y: 0 }; }}
                 >
                   <img src={bImg.url} alt={`Banner ${idx + 1}`} className="w-full h-full object-cover" />
                   {/* Remove button */}
@@ -2325,6 +2325,9 @@ Continue?`;
 
           // Clamp pan so image never drifts too far when zoomed
           const clampPan = (px, py, zoom) => {
+            // When zoom >= 1: pan is allowed up to the overflow edge
+            // When zoom < 1: image is smaller than container — no pan needed, lock to centre
+            if (zoom <= 1) return { x: 0, y: 0 };
             const r = focalImageRef.current?.getBoundingClientRect();
             const w = r?.width  || 300;
             const h = r?.height || 200;
@@ -2334,6 +2337,11 @@ Continue?`;
               x: Math.max(-maxX, Math.min(maxX, px)),
               y: Math.max(-maxY, Math.min(maxY, py)),
             };
+          };
+
+          // Save scale to the active image whenever adjZoom changes
+          const saveScale = (z) => {
+            setBannerImages(prev => prev.map((b, i) => i === activeBannerIdx ? { ...b, scale: z } : b));
           };
 
                   // All handlers use refs — avoids stale closure in mousemove/touchmove
@@ -2386,9 +2394,10 @@ Continue?`;
           const handleWheel = (e) => {
             e.preventDefault();
             const delta = e.deltaY < 0 ? 0.15 : -0.15;
-            const next = Math.min(3, Math.max(1, adjZoomRef.current + delta));
+            const next = Math.min(3, Math.max(0.5, adjZoomRef.current + delta));
             adjZoomRef.current = next;
             setAdjZoom(next);
+            saveScale(next);
             if (next === 1) { adjPanRef.current = { x: 0, y: 0 }; setAdjPan({ x: 0, y: 0 }); }
             else { const c = clampPan(adjPanRef.current.x, adjPanRef.current.y, next); adjPanRef.current = c; setAdjPan(c); }
           };
@@ -2478,7 +2487,7 @@ Continue?`;
               <div className="flex items-center gap-2 mt-1">
                 {/* Zoom out */}
                 <button
-                  onClick={() => { const z = Math.max(1, adjZoom - 0.25); setAdjZoom(z); if (z === 1) setAdjPan({ x: 0, y: 0 }); }}
+                  onClick={() => { const z = Math.max(0.5, adjZoom - 0.25); setAdjZoom(z); adjZoomRef.current = z; if (z <= 1) { setAdjPan({ x: 0, y: 0 }); adjPanRef.current = { x: 0, y: 0 }; } saveScale(z); }}
                   className="w-7 h-7 rounded-lg border border-[#bbcbb9] flex items-center justify-center hover:border-[#006d2f] hover:text-[#006d2f] transition-colors flex-shrink-0"
                   title="Zoom out"
                 >
@@ -2487,20 +2496,21 @@ Continue?`;
 
                 {/* Zoom slider */}
                 <input
-                  type="range" min="100" max="300" step="25"
+                  type="range" min="50" max="300" step="25"
                   value={Math.round(adjZoom * 100)}
                   onChange={(e) => {
                     const z = parseInt(e.target.value) / 100;
-                    setAdjZoom(z);
-                    if (z === 1) setAdjPan({ x: 0, y: 0 });
-                    else setAdjPan(p => clampPan(p.x, p.y, z));
+                    setAdjZoom(z); adjZoomRef.current = z;
+                    if (z <= 1) { setAdjPan({ x: 0, y: 0 }); adjPanRef.current = { x: 0, y: 0 }; }
+                    else setAdjPan(p => { const c = clampPan(p.x, p.y, z); adjPanRef.current = c; return c; });
+                    saveScale(z);
                   }}
                   className="flex-1 h-1.5 bg-[#e0e3e6] rounded-lg appearance-none cursor-pointer accent-[#006d2f]"
                 />
 
                 {/* Zoom in */}
                 <button
-                  onClick={() => { const z = Math.min(3, adjZoom + 0.25); setAdjZoom(z); }}
+                  onClick={() => { const z = Math.min(3, adjZoom + 0.25); setAdjZoom(z); adjZoomRef.current = z; setAdjPan(p => { const c = clampPan(p.x, p.y, z); adjPanRef.current = c; return c; }); saveScale(z); }}
                   className="w-7 h-7 rounded-lg border border-[#bbcbb9] flex items-center justify-center hover:border-[#006d2f] hover:text-[#006d2f] transition-colors flex-shrink-0"
                   title="Zoom in"
                 >
@@ -2512,7 +2522,7 @@ Continue?`;
                 {/* Reset button */}
                 {(adjZoom !== 1 || adjPan.x !== 0 || adjPan.y !== 0) && (
                   <button
-                    onClick={() => { setAdjZoom(1); setAdjPan({ x: 0, y: 0 }); }}
+                    onClick={() => { setAdjZoom(1); adjZoomRef.current = 1; setAdjPan({ x: 0, y: 0 }); adjPanRef.current = { x: 0, y: 0 }; saveScale(1); }}
                     className="text-[10px] text-[#556067] hover:text-[#006d2f] border border-[#bbcbb9] rounded px-2 py-1 transition-colors flex-shrink-0"
                     title="Reset zoom & pan"
                   >
