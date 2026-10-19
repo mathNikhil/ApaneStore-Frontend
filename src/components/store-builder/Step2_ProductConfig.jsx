@@ -2497,7 +2497,38 @@ Continue?`;
                   alt="Banner preview"
                   draggable={false}
                   className="absolute pointer-events-none"
-                  onLoad={(e) => setAdjNatural({ w: e.target.naturalWidth, h: e.target.naturalHeight })}
+                  onLoad={(e) => {
+                    const w = e.target.naturalWidth;
+                    const h = e.target.naturalHeight;
+                    setAdjNatural({ w, h });
+                    // Validate saved focal point — if it was set with the old broken objectFit math
+                    // it will be way off. Check whether the image would be ≥50% visible; if not, reset.
+                    const r = focalImageRef.current?.getBoundingClientRect();
+                    if (r && r.width > 0) {
+                      const cW = r.width, cH = r.height;
+                      const zoom = adjZoomRef.current;
+                      const coverSc = Math.max(cW / w, cH / h);
+                      const iW = w * coverSc * zoom;
+                      const iH = h * coverSc * zoom;
+                      setBannerImages(prev => {
+                        const cur = prev[activeBannerIdx];
+                        if (!cur) return prev;
+                        const fx = cur.focalX ?? 50;
+                        const fy = cur.focalY ?? 50;
+                        // Image left edge in container coords
+                        const left = cW / 2 - (fx / 100) * iW;
+                        const top  = cH / 2 - (fy / 100) * iH;
+                        // If less than 30% of the image overlaps the container, focal is broken — reset
+                        const overlapW = Math.min(left + iW, cW) - Math.max(left, 0);
+                        const overlapH = Math.min(top  + iH, cH) - Math.max(top,  0);
+                        const overlap  = (overlapW / cW) * (overlapH / cH);
+                        if (overlap < 0.3) {
+                          return prev.map((b, i) => i === activeBannerIdx ? { ...b, focalX: 50, focalY: 50 } : b);
+                        }
+                        return prev;
+                      });
+                    }
+                  }}
                   style={{
                     width:  adjNatural.w > 0 ? `${imgW}px` : '100%',
                     height: adjNatural.w > 0 ? `${imgH}px` : '100%',
