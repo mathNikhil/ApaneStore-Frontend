@@ -127,7 +127,7 @@ const BannerCropTool = ({ slide, frameH, onCropApplied, tenantId, storeId }) => 
     try {
       const crop = getNaturalCrop();
       const res = await fetch(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5002'}/api/images/${tenantId}/${storeId}/images/hero/${slide.id}/crop`,
+        `${import.meta.env.VITE_API_URL || 'http://localhost:5002'}/api/stores/${tenantId}/${storeId}/images/hero/${slide.id}/crop`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
