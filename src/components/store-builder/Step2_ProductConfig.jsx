@@ -125,11 +125,26 @@ const Step2_ProductConfig = () => {
   const adjPanRef = useRef({ x: 0, y: 0 }); // mirror for use in event handlers
   const [dragMode, setDragMode] = useState('idle'); // 'idle'|'panning'|'focal' — for cursor display only
   const [adjNatural, setAdjNatural] = useState({ w: 0, h: 0 }); // natural px size of active banner image
+  const [adjContainerSize, setAdjContainerSize] = useState({ w: 0, h: 0 }); // measured container px
   const focalImageRef = useRef(null);
 
   // Keep refs in sync with state
   useEffect(() => { adjZoomRef.current = adjZoom; }, [adjZoom]);
   useEffect(() => { adjPanRef.current = adjPan; }, [adjPan]);
+
+  // Measure adjuster container via ResizeObserver so layout math always has real dimensions
+  useEffect(() => {
+    const el = focalImageRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(entries => {
+      const { width, height } = entries[0].contentRect;
+      setAdjContainerSize({ w: width, h: height });
+    });
+    ro.observe(el);
+    const r = el.getBoundingClientRect();
+    setAdjContainerSize({ w: r.width, h: r.height });
+    return () => ro.disconnect();
+  }, [focalImageRef.current]);
 
   const [bannerTagline, setBannerTagline] = useState(productData.banner?.tagline || '');
   const [bannerSubtitle, setBannerSubtitle] = useState(productData.banner?.subtitle || '');
@@ -2220,7 +2235,7 @@ Continue?`;
                 <div
                   key={bImg.url + idx}
                   className={`relative w-20 h-14 rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${activeBannerIdx === idx ? 'border-[#006d2f]' : 'border-transparent'}`}
-                  onClick={() => { setActiveBannerIdx(idx); const s = bannerImages[idx]?.scale ?? 1; setAdjZoom(s); adjZoomRef.current = s; setAdjPan({ x: 0, y: 0 }); adjPanRef.current = { x: 0, y: 0 }; setAdjNatural({ w: 0, h: 0 }); }}
+                  onClick={() => { setActiveBannerIdx(idx); setAdjZoom(1); adjZoomRef.current = 1; setAdjPan({ x: 0, y: 0 }); adjPanRef.current = { x: 0, y: 0 }; setAdjNatural({ w: 0, h: 0 }); }}
                 >
                   <img src={bImg.url} alt={`Banner ${idx + 1}`} className="w-full h-full object-cover" />
                   {/* Remove button */}
@@ -2372,7 +2387,7 @@ Continue?`;
               const last = lastFocalPosRef.current;
               const dx = clientX - last.x;
               const dy = clientY - last.y;
-              if (Math.sqrt(dx * dx + dy * dy) >= 6) {
+              if (Math.sqrt(dx * dx + dy * dy) >= 16) {
                 lastFocalPosRef.current = { x: clientX, y: clientY };
                 updateFocal(clientX, clientY);
               }
@@ -2396,9 +2411,9 @@ Continue?`;
             const nat = adjNatural;
             const cW = rect.width;
             const cH = rect.height;
-            const nW = nat.w > 0 ? nat.w : cW;
-            const nH = nat.w > 0 ? nat.h : cH;
-            const coverSc = Math.max(cW / nW, cH / nH);
+            const nW = nat.w > 0 ? nat.w : 1;
+            const nH = nat.w > 0 ? nat.h : 1;
+            const coverSc = nat.w > 0 ? Math.max(cW / nW, cH / nH) : 1;
             const iW = nW * coverSc * zoom;
             const iH = nH * coverSc * zoom;
             // We don't know current focalX/focalY here (stale closure risk), but we can infer
@@ -2435,21 +2450,17 @@ Continue?`;
           // scale > 1 → image larger than container (crops at edges).
           // focalX/focalY pins which image point sits at container centre.
           // adjPan shifts that centre point.
-          const rect = focalImageRef.current?.getBoundingClientRect();
-          const containerW = rect?.width  || 1;
-          const containerH = rect?.height || 1;
-          const natW = adjNatural.w || containerW;
-          const natH = adjNatural.h || containerH;
-          // Base image size: object-fit:cover geometry — scale image up until it fills
-          // BOTH container dimensions, then user zoom multiplies on top of that.
-          const scaleByW = containerW / natW;
-          const scaleByH = containerH / natH;
-          const coverScale = Math.max(scaleByW, scaleByH); // cover = larger of the two
-          const baseW = natW * coverScale;
-          const baseH = natH * coverScale;
-          // Scaled image size (adjZoom=1 → fits container exactly like objectFit:cover)
-          const imgW = baseW * adjZoom;
-          const imgH = baseH * adjZoom;
+          // Use ResizeObserver-measured size — reliable even before first paint
+          const containerW = adjContainerSize.w || focalImageRef.current?.getBoundingClientRect().width  || 660;
+          const containerH = adjContainerSize.h || focalImageRef.current?.getBoundingClientRect().height || bannerHeight;
+          const natW = adjNatural.w || 1;
+          const natH = adjNatural.h || 1;
+          // Cover geometry: scale so image fills BOTH dimensions at adjZoom=1
+          const coverScale = adjNatural.w > 0
+            ? Math.max(containerW / natW, containerH / natH)
+            : 1;
+          const imgW = natW * coverScale * adjZoom;
+          const imgH = natH * coverScale * adjZoom;
           // Focal point in image px
           const focalPxX = (focalX / 100) * imgW;
           const focalPxY = (focalY / 100) * imgH;
@@ -2501,31 +2512,41 @@ Continue?`;
                     const w = e.target.naturalWidth;
                     const h = e.target.naturalHeight;
                     setAdjNatural({ w, h });
-                    // Validate saved focal point — if it was set with the old broken objectFit math
-                    // it will be way off. Check whether the image would be ≥50% visible; if not, reset.
+                    // Validate saved focal + scale — if they were set with old broken objectFit math
+                    // they may be way off. Detect and reset to sane defaults.
                     const r = focalImageRef.current?.getBoundingClientRect();
                     if (r && r.width > 0) {
                       const cW = r.width, cH = r.height;
-                      const zoom = adjZoomRef.current;
                       const coverSc = Math.max(cW / w, cH / h);
-                      const iW = w * coverSc * zoom;
-                      const iH = h * coverSc * zoom;
                       setBannerImages(prev => {
                         const cur = prev[activeBannerIdx];
                         if (!cur) return prev;
-                        const fx = cur.focalX ?? 50;
-                        const fy = cur.focalY ?? 50;
-                        // Image left edge in container coords
+                        let { focalX: fx = 50, focalY: fy = 50, scale: sc = 1 } = cur;
+                        let needReset = false;
+                        // Scale sanity: at zoom=sc the image must cover the container.
+                        // coverSc * sc < 1 means the image doesn't fill — was saved broken.
+                        if (sc < 0.9 || coverSc * sc < 0.95) {
+                          sc = 1;
+                          needReset = true;
+                          adjZoomRef.current = 1;
+                          setAdjZoom(1);
+                          setAdjPan({ x: 0, y: 0 });
+                          adjPanRef.current = { x: 0, y: 0 };
+                        }
+                        // Focal sanity: check overlap at the (possibly reset) scale
+                        const iW = w * coverSc * sc;
+                        const iH = h * coverSc * sc;
                         const left = cW / 2 - (fx / 100) * iW;
                         const top  = cH / 2 - (fy / 100) * iH;
-                        // If less than 30% of the image overlaps the container, focal is broken — reset
                         const overlapW = Math.min(left + iW, cW) - Math.max(left, 0);
                         const overlapH = Math.min(top  + iH, cH) - Math.max(top,  0);
                         const overlap  = (overlapW / cW) * (overlapH / cH);
                         if (overlap < 0.3) {
-                          return prev.map((b, i) => i === activeBannerIdx ? { ...b, focalX: 50, focalY: 50 } : b);
+                          fx = 50; fy = 50;
+                          needReset = true;
                         }
-                        return prev;
+                        if (!needReset) return prev;
+                        return prev.map((b, i) => i === activeBannerIdx ? { ...b, focalX: fx, focalY: fy, scale: sc } : b);
                       });
                     }
                   }}
