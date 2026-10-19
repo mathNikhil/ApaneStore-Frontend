@@ -106,15 +106,19 @@ const Step2_ProductConfig = () => {
   // is kept for backward-compat — new uploads always go into bannerImages.
   const [bannerImages, setBannerImages] = useState(
     productData.banner?.images?.length > 0
-      ? productData.banner.images
+      ? productData.banner.images.map(b => ({ focalX: 50, focalY: 50, scale: 1, ...b }))
       : productData.banner?.image
-        ? [{ url: productData.banner.image, focalX: productData.banner.focalX ?? 50, focalY: productData.banner.focalY ?? 50 }]
+        ? [{ url: productData.banner.image, focalX: productData.banner.focalX ?? 50, focalY: productData.banner.focalY ?? 50, scale: productData.banner.scale ?? 1 }]
         : []
   );
   // Which banner is active in the adjuster panel (index into bannerImages)
   const [activeBannerIdx, setActiveBannerIdx] = useState(0);
-  // Dragging state for the focal-point crosshair
+  // Dragging state for the focal-point crosshair / pan
   const [isDraggingFocal, setIsDraggingFocal] = useState(false);
+  const [isPanning, setIsPanning] = useState(false);
+  const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+  const [adjZoom, setAdjZoom] = useState(1); // 1–3x zoom for the adjuster view
+  const [adjPan, setAdjPan] = useState({ x: 0, y: 0 }); // px offset in adjuster
   const focalImageRef = useRef(null);
 
   const [bannerTagline, setBannerTagline] = useState(productData.banner?.tagline || '');
@@ -151,7 +155,11 @@ const Step2_ProductConfig = () => {
       if (productData.banner.images?.length > 0) {
         setBannerImages(productData.banner.images);
       } else if (productData.banner.image) {
-        setBannerImages([{ url: productData.banner.image, focalX: productData.banner.focalX ?? 50, focalY: productData.banner.focalY ?? 50 }]);
+        setBannerImages(
+          productData.banner.images?.length > 0
+            ? productData.banner.images.map(b => ({ focalX: 50, focalY: 50, scale: 1, ...b }))
+            : [{ url: productData.banner.image, focalX: productData.banner.focalX ?? 50, focalY: productData.banner.focalY ?? 50, scale: productData.banner.scale ?? 1 }]
+        );
       }
       setBannerTagline(productData.banner.tagline || '');
       setBannerSubtitle(productData.banner.subtitle || '');
@@ -2202,7 +2210,7 @@ Continue?`;
                 <div
                   key={bImg.url + idx}
                   className={`relative w-20 h-14 rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${activeBannerIdx === idx ? 'border-[#006d2f]' : 'border-transparent'}`}
-                  onClick={() => setActiveBannerIdx(idx)}
+                  onClick={() => { setActiveBannerIdx(idx); setAdjZoom(1); setAdjPan({ x: 0, y: 0 }); }}
                 >
                   <img src={bImg.url} alt={`Banner ${idx + 1}`} className="w-full h-full object-cover" />
                   {/* Remove button */}
@@ -2272,7 +2280,7 @@ Continue?`;
                 for (const file of files) {
                   const response = await imageService.uploadImage(currentStoreId, tenantId, 'HERO', file);
                   if (response.success) {
-                    uploaded.push({ url: response.data.url, focalX: 50, focalY: 50 });
+                    uploaded.push({ url: response.data.url, focalX: 50, focalY: 50, scale: 1 });
                   } else {
                     setElementError('banner', response.error || 'One or more banners failed to upload');
                   }
@@ -2301,22 +2309,83 @@ Continue?`;
           <ImageGuidelineBadge size="1200×375px" format="PNG/JPG" maxSize="300KB" ratio="16:5" />
         </div>
 
-        {/* ── Visual image adjuster (focal-point) ──────────────── */}
+        {/* ── Visual image adjuster (focal-point + zoom + pan) ─── */}
         {bannerImages.length > 0 && bannerImages[activeBannerIdx] && (() => {
           const activeBanner = bannerImages[activeBannerIdx];
           const focalX = activeBanner.focalX ?? 50;
           const focalY = activeBanner.focalY ?? 50;
 
+          // Clamp pan so image never drifts too far when zoomed
+          const clampPan = (px, py, zoom) => {
+            const maxShift = ((zoom - 1) / zoom) * 50; // % of container
+            return {
+              x: Math.max(-maxShift * 2, Math.min(maxShift * 2, px)),
+              y: Math.max(-maxShift * 2, Math.min(maxShift * 2, py)),
+            };
+          };
+
+          // In focal mode (zoom=1): click/drag sets focal point
+          // In zoom mode (zoom>1): drag pans the view; click without drag still sets focal point
+          const handlePointerDown = (clientX, clientY) => {
+            if (adjZoom > 1) {
+              setIsPanning(true);
+              setPanStart({ x: clientX - adjPan.x, y: clientY - adjPan.y });
+            } else {
+              setIsDraggingFocal(true);
+              updateFocal(clientX, clientY);
+            }
+          };
+
+          const handlePointerMove = (clientX, clientY) => {
+            if (isPanning) {
+              const raw = { x: clientX - panStart.x, y: clientY - panStart.y };
+              setAdjPan(clampPan(raw.x, raw.y, adjZoom));
+            } else if (isDraggingFocal) {
+              updateFocal(clientX, clientY);
+            }
+          };
+
+          const handlePointerUp = () => {
+            setIsDraggingFocal(false);
+            setIsPanning(false);
+          };
+
           const updateFocal = (clientX, clientY) => {
             const rect = focalImageRef.current?.getBoundingClientRect();
             if (!rect) return;
-            const x = Math.round(Math.min(100, Math.max(0, ((clientX - rect.left) / rect.width) * 100)));
-            const y = Math.round(Math.min(100, Math.max(0, ((clientY - rect.top) / rect.height) * 100)));
+            // Convert screen coords → image-content coords accounting for zoom+pan transform
+            const relX = clientX - rect.left;
+            const relY = clientY - rect.top;
+            const cx = rect.width / 2 + adjPan.x;
+            const cy = rect.height / 2 + adjPan.y;
+            const imgX = (relX - cx) / adjZoom + cx;
+            const imgY = (relY - cy) / adjZoom + cy;
+            const x = Math.round(Math.min(100, Math.max(0, (imgX / rect.width) * 100)));
+            const y = Math.round(Math.min(100, Math.max(0, (imgY / rect.height) * 100)));
             setBannerImages(prev => prev.map((b, i) => i === activeBannerIdx ? { ...b, focalX: x, focalY: y } : b));
           };
 
+          const handleWheel = (e) => {
+            e.preventDefault();
+            const delta = e.deltaY < 0 ? 0.15 : -0.15;
+            const next = Math.min(3, Math.max(1, adjZoom + delta));
+            if (next === 1) setAdjPan({ x: 0, y: 0 });
+            else setAdjPan(p => clampPan(p.x, p.y, next));
+            setAdjZoom(next);
+          };
+
+          // Crosshair position in the adjuster view (adjusted for zoom+pan transform)
+          const rect = focalImageRef.current?.getBoundingClientRect();
+          const containerW = rect?.width || 1;
+          const containerH = rect?.height || 1;
+          const cx = containerW / 2 + adjPan.x;
+          const cy = containerH / 2 + adjPan.y;
+          const crosshairLeft = cx + (focalX / 100 * containerW - cx) * adjZoom;
+          const crosshairTop  = cy + (focalY / 100 * containerH - cy) * adjZoom;
+
           return (
             <div className="space-y-2 mb-4">
+              {/* Header row */}
               <div className="flex items-center justify-between">
                 <label className="font-label-md text-label-md text-[#3c4a3d] block uppercase tracking-wider text-xs">
                   Image Placement
@@ -2324,28 +2393,40 @@ Continue?`;
                     <span className="ml-2 normal-case tracking-normal text-[10px] text-[#556067]">— Banner {activeBannerIdx + 1}</span>
                   )}
                 </label>
-                <span className="text-[10px] text-[#556067]">{focalX}% · {focalY}%</span>
+                <span className="text-[10px] text-[#556067]">{focalX}% · {focalY}% · {Math.round(adjZoom * 100)}%</span>
               </div>
 
-              {/* The interactive image with crosshair overlay */}
+              {/* Interactive viewport */}
               <div
                 ref={focalImageRef}
-                className="relative w-full rounded-xl overflow-hidden cursor-crosshair select-none"
-                style={{ height: `${Math.min(bannerHeight, 280)}px`, backgroundColor: bannerBgColor }}
-                onMouseDown={(e) => { setIsDraggingFocal(true); updateFocal(e.clientX, e.clientY); }}
-                onMouseMove={(e) => { if (isDraggingFocal) updateFocal(e.clientX, e.clientY); }}
-                onMouseUp={() => setIsDraggingFocal(false)}
-                onMouseLeave={() => setIsDraggingFocal(false)}
-                onTouchStart={(e) => { setIsDraggingFocal(true); updateFocal(e.touches[0].clientX, e.touches[0].clientY); }}
-                onTouchMove={(e) => { if (isDraggingFocal) updateFocal(e.touches[0].clientX, e.touches[0].clientY); }}
-                onTouchEnd={() => setIsDraggingFocal(false)}
+                className="relative w-full rounded-xl overflow-hidden select-none"
+                style={{
+                  height: `${Math.min(bannerHeight, 280)}px`,
+                  backgroundColor: bannerBgColor,
+                  cursor: adjZoom > 1 ? (isPanning ? 'grabbing' : 'grab') : 'crosshair',
+                }}
+                onMouseDown={(e) => handlePointerDown(e.clientX, e.clientY)}
+                onMouseMove={(e) => handlePointerMove(e.clientX, e.clientY)}
+                onMouseUp={handlePointerUp}
+                onMouseLeave={handlePointerUp}
+                onTouchStart={(e) => { e.preventDefault(); handlePointerDown(e.touches[0].clientX, e.touches[0].clientY); }}
+                onTouchMove={(e) => { e.preventDefault(); handlePointerMove(e.touches[0].clientX, e.touches[0].clientY); }}
+                onTouchEnd={handlePointerUp}
+                onWheel={handleWheel}
               >
+                {/* Zoomed + panned image */}
                 <img
                   src={activeBanner.url}
                   alt="Banner preview"
                   draggable={false}
-                  className="w-full h-full pointer-events-none"
-                  style={{ objectFit: 'cover', objectPosition: `${focalX}% ${focalY}%` }}
+                  className="absolute inset-0 w-full h-full pointer-events-none"
+                  style={{
+                    objectFit: 'cover',
+                    objectPosition: `${focalX}% ${focalY}%`,
+                    transform: `translate(${adjPan.x}px, ${adjPan.y}px) scale(${adjZoom})`,
+                    transformOrigin: 'center center',
+                    transition: isPanning || isDraggingFocal ? 'none' : 'transform 0.15s ease',
+                  }}
                 />
 
                 {/* Rule-of-thirds grid */}
@@ -2356,41 +2437,85 @@ Continue?`;
                   <div style={{ position: 'absolute', top: '66.66%', left: 0, right: 0, height: '1px', backgroundColor: 'rgba(255,255,255,0.25)' }} />
                 </div>
 
-                {/* Focal point crosshair */}
+                {/* Focal point crosshair — follows image content position */}
                 <div
                   className="absolute pointer-events-none"
-                  style={{ left: `${focalX}%`, top: `${focalY}%`, transform: 'translate(-50%,-50%)', zIndex: 2 }}
+                  style={{ left: crosshairLeft, top: crosshairTop, transform: 'translate(-50%,-50%)', zIndex: 2 }}
                 >
-                  {/* Outer ring */}
                   <div style={{ width: 28, height: 28, borderRadius: '50%', border: '2px solid white', boxShadow: '0 0 0 1px rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {/* Inner dot */}
                     <div style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: 'white', boxShadow: '0 0 0 1px rgba(0,0,0,0.5)' }} />
                   </div>
-                  {/* Cross lines */}
                   <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 40, height: 1, backgroundColor: 'white', boxShadow: '0 0 2px rgba(0,0,0,0.5)' }} />
                   <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 1, height: 40, backgroundColor: 'white', boxShadow: '0 0 2px rgba(0,0,0,0.5)' }} />
                 </div>
 
-                {/* Instruction hint */}
+                {/* Hint */}
                 <div className="absolute bottom-2 left-2 bg-black/50 text-white text-[10px] rounded px-2 py-1 pointer-events-none" style={{ zIndex: 2 }}>
-                  Drag to adjust focal point
+                  {adjZoom > 1 ? 'Drag to pan · click to set focal point' : 'Drag or click to set focal point'}
                 </div>
               </div>
 
-              {/* Banner height slider — kept here beside the adjuster */}
+              {/* Zoom controls row */}
+              <div className="flex items-center gap-2 mt-1">
+                {/* Zoom out */}
+                <button
+                  onClick={() => { const z = Math.max(1, adjZoom - 0.25); setAdjZoom(z); if (z === 1) setAdjPan({ x: 0, y: 0 }); }}
+                  className="w-7 h-7 rounded-lg border border-[#bbcbb9] flex items-center justify-center hover:border-[#006d2f] hover:text-[#006d2f] transition-colors"
+                  title="Zoom out"
+                >
+                  <span className="material-symbols-outlined text-base">zoom_out</span>
+                </button>
+
+                {/* Zoom slider */}
+                <input
+                  type="range" min="100" max="300" step="25"
+                  value={Math.round(adjZoom * 100)}
+                  onChange={(e) => {
+                    const z = parseInt(e.target.value) / 100;
+                    setAdjZoom(z);
+                    if (z === 1) setAdjPan({ x: 0, y: 0 });
+                    else setAdjPan(p => clampPan(p.x, p.y, z));
+                  }}
+                  className="flex-1 h-1.5 bg-[#e0e3e6] rounded-lg appearance-none cursor-pointer accent-[#006d2f]"
+                />
+
+                {/* Zoom in */}
+                <button
+                  onClick={() => { const z = Math.min(3, adjZoom + 0.25); setAdjZoom(z); }}
+                  className="w-7 h-7 rounded-lg border border-[#bbcbb9] flex items-center justify-center hover:border-[#006d2f] hover:text-[#006d2f] transition-colors"
+                  title="Zoom in"
+                >
+                  <span className="material-symbols-outlined text-base">zoom_in</span>
+                </button>
+
+                <span className="text-sm font-semibold text-[#006d2f] min-w-[42px] text-right">{Math.round(adjZoom * 100)}%</span>
+
+                {/* Reset button */}
+                {(adjZoom !== 1 || adjPan.x !== 0 || adjPan.y !== 0) && (
+                  <button
+                    onClick={() => { setAdjZoom(1); setAdjPan({ x: 0, y: 0 }); }}
+                    className="text-[10px] text-[#556067] hover:text-[#006d2f] border border-[#bbcbb9] rounded px-2 py-1 transition-colors"
+                    title="Reset zoom & pan"
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+
+              {/* Banner height slider */}
               <div className="flex items-center gap-4 mt-1">
                 <span className="font-label-md text-label-md text-[#3c4a3d] uppercase tracking-wider text-xs whitespace-nowrap">Height</span>
                 <input type="range" min="200" max="800" value={bannerHeight} onChange={(e) => setBannerHeight(parseInt(e.target.value))} className="flex-1 h-1.5 bg-[#e0e3e6] rounded-lg appearance-none cursor-pointer accent-[#006d2f]" />
                 <span className="text-sm font-semibold text-[#006d2f] min-w-[50px] text-right">{bannerHeight}px</span>
               </div>
 
-              {/* Multi-banner pagination dots (when > 1) */}
+              {/* Multi-banner pagination dots */}
               {bannerImages.length > 1 && (
                 <div className="flex gap-2 justify-center mt-2">
                   {bannerImages.map((_, i) => (
                     <button
                       key={i}
-                      onClick={() => setActiveBannerIdx(i)}
+                      onClick={() => { setActiveBannerIdx(i); setAdjZoom(1); setAdjPan({ x: 0, y: 0 }); }}
                       className="rounded-full transition-all"
                       style={{ width: i === activeBannerIdx ? 20 : 8, height: 8, backgroundColor: i === activeBannerIdx ? '#006d2f' : '#bbcbb9' }}
                       aria-label={`Edit banner ${i + 1}`}
