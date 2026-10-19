@@ -2382,12 +2382,13 @@ Continue?`;
             const pan  = adjPanRef.current;
             const relX = clientX - rect.left;
             const relY = clientY - rect.top;
-            const cx = rect.width  / 2 + pan.x;
-            const cy = rect.height / 2 + pan.y;
-            const imgX = (relX - cx) / zoom + cx;
-            const imgY = (relY - cy) / zoom + cy;
-            const x = Math.round(Math.min(100, Math.max(0, (imgX / rect.width)  * 100)));
-            const y = Math.round(Math.min(100, Math.max(0, (imgY / rect.height) * 100)));
+            // Image origin (top-left) in container coords
+            const imgLeft = (0.5 - zoom * 0.5) * rect.width  + pan.x;
+            const imgTop  = (0.5 - zoom * 0.5) * rect.height + pan.y;
+            const imgW = zoom * rect.width;
+            const imgH = zoom * rect.height;
+            const x = Math.round(Math.min(100, Math.max(0, ((relX - imgLeft) / imgW) * 100)));
+            const y = Math.round(Math.min(100, Math.max(0, ((relY - imgTop)  / imgH) * 100)));
             setBannerImages(prev => prev.map((b, i) => i === activeBannerIdx ? { ...b, focalX: x, focalY: y } : b));
           };
 
@@ -2402,14 +2403,16 @@ Continue?`;
             else { const c = clampPan(adjPanRef.current.x, adjPanRef.current.y, next); adjPanRef.current = c; setAdjPan(c); }
           };
 
-          // Crosshair position in the adjuster view (adjusted for zoom+pan transform)
+          // Crosshair position — image starts at (left, top) = ((50 - zoom*50)%, same) + pan offset
           const rect = focalImageRef.current?.getBoundingClientRect();
           const containerW = rect?.width || 1;
           const containerH = rect?.height || 1;
-          const cx = containerW / 2 + adjPan.x;
-          const cy = containerH / 2 + adjPan.y;
-          const crosshairLeft = cx + (focalX / 100 * containerW - cx) * adjZoom;
-          const crosshairTop  = cy + (focalY / 100 * containerH - cy) * adjZoom;
+          const imgLeft = (0.5 - adjZoom * 0.5) * containerW + adjPan.x;
+          const imgTop  = (0.5 - adjZoom * 0.5) * containerH + adjPan.y;
+          const imgW = adjZoom * containerW;
+          const imgH = adjZoom * containerH;
+          const crosshairLeft = imgLeft + (focalX / 100) * imgW;
+          const crosshairTop  = imgTop  + (focalY / 100) * imgH;
 
           return (
             <div className="space-y-2 mb-4">
@@ -2429,7 +2432,7 @@ Continue?`;
                 ref={focalImageRef}
                 className="relative w-full rounded-xl overflow-hidden select-none"
                 style={{
-                  height: `${Math.min(bannerHeight, 280)}px`,
+                  height: `${bannerHeight}px`,
                   backgroundColor: bannerBgColor,
                   cursor: adjZoom > 1 ? (dragMode === 'panning' ? 'grabbing' : 'grab') : 'crosshair',
                 }}
@@ -2447,13 +2450,17 @@ Continue?`;
                   src={activeBanner.url}
                   alt="Banner preview"
                   draggable={false}
-                  className="absolute inset-0 w-full h-full pointer-events-none"
+                  className="absolute pointer-events-none"
                   style={{
+                    width: `${adjZoom * 100}%`,
+                    height: `${adjZoom * 100}%`,
+                    left: `${50 - adjZoom * 50}% `,
+                    top: `${50 - adjZoom * 50}%`,
+                    marginLeft: adjPan.x,
+                    marginTop: adjPan.y,
                     objectFit: adjZoom < 1 ? 'contain' : 'cover',
                     objectPosition: `${focalX}% ${focalY}%`,
-                    transform: `translate(${adjPan.x}px, ${adjPan.y}px) scale(${adjZoom})`,
-                    transformOrigin: 'center center',
-                    transition: dragMode !== 'idle' ? 'none' : 'transform 0.15s ease',
+                    transition: dragMode !== 'idle' ? 'none' : 'all 0.15s ease',
                   }}
                 />
 
