@@ -313,7 +313,7 @@ const Step2_ProductConfig = () => {
   // is kept for backward-compat — new uploads always go into bannerImages.
   const [bannerImages, setBannerImages] = useState(
     productData.banner?.images?.length > 0
-      ? productData.banner.images.map(b => ({ id: b.id, url: b.url }))
+      ? productData.banner.images.filter(b => !!b.url).map(b => ({ id: b.id, url: b.url, crop: b.crop || null }))
       : productData.banner?.image
         ? [{ url: productData.banner.image }]
         : []
