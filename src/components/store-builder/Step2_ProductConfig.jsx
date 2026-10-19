@@ -46,10 +46,13 @@ const ImageError = ({ error }) => {
   );
 };
 
-// BannerCropTool removed — crop feature discontinued.
-// Banner images display with object-fit: cover on storefront.
+// ── BannerFrameTool ──────────────────────────────────────────────────────────
+// Tenant drags a frame over the full image to select what shows on the storefront.
+// NO file is touched — only the frame position (natural px) is saved in state.
+// Storefront CSS-positions the image to show exactly that region.
+const CROP_FRAME_W = 1200;
 
-const _UNUSED_BannerCropTool = ({ slide, frameH, onCropApplied }) => {
+const BannerFrameTool = ({ slide, frameH, onFrameSaved }) => {
   const wrapRef   = useRef(null);
   const [natural, setNatural] = useState({ w: 0, h: 0 });
   const [frameTop, setFrameTop]   = useState(0); // px from image top
@@ -116,14 +119,14 @@ const _UNUSED_BannerCropTool = ({ slide, frameH, onCropApplied }) => {
     };
   };
 
-  const handleApplyCrop = () => {
+  const handleSaveArea = () => {
     const crop = getNaturalCrop();
     setSaved(true);
-    if (onCropApplied) onCropApplied(slide.id, crop);
+    if (onFrameSaved) onFrameSaved(slide.id, crop);
   };
 
   const handleReset = () => {
-    // Re-centre the frame and clear crop from state
+    // Re-centre the frame and clear selection from state
     if (natural.w > 0 && wrapRef.current) {
       const ds = Math.min(1, wrapRef.current.offsetWidth / natural.w);
       const dW = natural.w * ds;
@@ -134,7 +137,7 @@ const _UNUSED_BannerCropTool = ({ slide, frameH, onCropApplied }) => {
       setFrameTop(Math.max(0, (dH - fH) / 2));
     }
     setSaved(false);
-    if (onCropApplied) onCropApplied(slide.id, null); // null = reset
+    if (onFrameSaved) onFrameSaved(slide.id, null); // null = show full image
   };
 
   return (
@@ -220,14 +223,14 @@ const _UNUSED_BannerCropTool = ({ slide, frameH, onCropApplied }) => {
         Drag the green frame to select what your store banner shows · Aspect ratio guide: 16:5
       </p>
 
-      {/* Apply / Reset buttons */}
+      {/* Save / Reset buttons */}
       {natural.w > 0 && (
         <div className="flex gap-2">
           <button
-            onClick={handleApplyCrop}
+            onClick={handleSaveArea}
             className="flex-1 py-2 rounded-lg text-sm font-medium transition-colors bg-[#006d2f] text-white hover:bg-[#005525]"
           >
-            {saved ? '✓ Applied — Update' : 'Apply Crop'}
+            {saved ? '✓ Saved — Update' : 'Save Display Area'}
           </button>
           {saved && (
             <button
@@ -2499,25 +2502,59 @@ Continue?`;
           <ImageGuidelineBadge size="Any size" format="PNG/JPG" maxSize="500KB max" ratio="Any ratio" />
         </div>
 
-        {/* Banner height slider */}
-        <div className="flex items-center gap-4 mb-4">
-          <span className="font-label-md text-label-md text-[#3c4a3d] uppercase tracking-wider text-xs whitespace-nowrap">Height</span>
-          <input type="range" min="200" max="800" value={bannerHeight} onChange={(e) => setBannerHeight(parseInt(e.target.value))} className="flex-1 h-1.5 bg-[#e0e3e6] rounded-lg appearance-none cursor-pointer accent-[#006d2f]" />
-          <span className="text-sm font-semibold text-[#006d2f] min-w-[50px] text-right">{bannerHeight}px</span>
-        </div>
+        {/* ── Display area selector ─── */}
+        {bannerImages.length > 0 && bannerImages[activeBannerIdx] && (
+          <div className="space-y-2 mb-4">
+            <div className="flex items-center justify-between">
+              <label className="font-label-md text-label-md text-[#3c4a3d] block uppercase tracking-wider text-xs">
+                Display Area
+                {bannerImages.length > 1 && (
+                  <span className="ml-2 normal-case tracking-normal text-[10px] text-[#556067]">— Banner {activeBannerIdx + 1}</span>
+                )}
+              </label>
+            </div>
 
-        {/* Multi-banner pagination dots */}
-        {bannerImages.length > 1 && (
-          <div className="flex gap-2 justify-center mb-4">
-            {bannerImages.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setActiveBannerIdx(i)}
-                className="rounded-full transition-all"
-                style={{ width: i === activeBannerIdx ? 20 : 8, height: 8, backgroundColor: i === activeBannerIdx ? '#006d2f' : '#bbcbb9' }}
-                aria-label={`Edit banner ${i + 1}`}
-              />
-            ))}
+            <BannerFrameTool
+              key={bannerImages[activeBannerIdx].url}
+              slide={bannerImages[activeBannerIdx]}
+              frameH={bannerHeight}
+              onFrameSaved={(imageId, crop) => {
+                setBannerImages(prev => prev.map(b =>
+                  b.id === imageId ? { ...b, crop: crop || null } : b
+                ));
+              }}
+            />
+
+            {/* Banner height slider */}
+            <div className="flex items-center gap-4 mt-1">
+              <span className="font-label-md text-label-md text-[#3c4a3d] uppercase tracking-wider text-xs whitespace-nowrap">Height</span>
+              <input type="range" min="200" max="800" value={bannerHeight} onChange={(e) => setBannerHeight(parseInt(e.target.value))} className="flex-1 h-1.5 bg-[#e0e3e6] rounded-lg appearance-none cursor-pointer accent-[#006d2f]" />
+              <span className="text-sm font-semibold text-[#006d2f] min-w-[50px] text-right">{bannerHeight}px</span>
+            </div>
+
+            {/* Multi-banner pagination dots */}
+            {bannerImages.length > 1 && (
+              <div className="flex gap-2 justify-center mt-2">
+                {bannerImages.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setActiveBannerIdx(i)}
+                    className="rounded-full transition-all"
+                    style={{ width: i === activeBannerIdx ? 20 : 8, height: 8, backgroundColor: i === activeBannerIdx ? '#006d2f' : '#bbcbb9' }}
+                    aria-label={`Banner ${i + 1}`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Height slider when no image yet */}
+        {bannerImages.length === 0 && (
+          <div className="flex items-center gap-4 mb-4">
+            <span className="font-label-md text-label-md text-[#3c4a3d] uppercase tracking-wider text-xs whitespace-nowrap">Height</span>
+            <input type="range" min="200" max="800" value={bannerHeight} onChange={(e) => setBannerHeight(parseInt(e.target.value))} className="flex-1 h-1.5 bg-[#e0e3e6] rounded-lg appearance-none cursor-pointer accent-[#006d2f]" />
+            <span className="text-sm font-semibold text-[#006d2f] min-w-[50px] text-right">{bannerHeight}px</span>
           </div>
         )}
 
