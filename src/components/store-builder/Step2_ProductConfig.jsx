@@ -118,6 +118,7 @@ const Step2_ProductConfig = () => {
   const isDraggingFocalRef = useRef(false);
   const isPanningRef = useRef(false);
   const panStartRef = useRef({ x: 0, y: 0 });
+  const lastFocalPosRef = useRef({ x: -999, y: -999 }); // throttle focal drag sensitivity
   const [adjZoom, setAdjZoom] = useState(1); // 1–3x zoom for the adjuster view
   const adjZoomRef = useRef(1); // mirror for use in event handlers
   const [adjPan, setAdjPan] = useState({ x: 0, y: 0 }); // px offset in adjuster
@@ -2354,6 +2355,7 @@ Continue?`;
               panStartRef.current = { x: clientX - adjPanRef.current.x, y: clientY - adjPanRef.current.y };
             } else {
               isDraggingFocalRef.current = true;
+              lastFocalPosRef.current = { x: clientX, y: clientY };
               setDragMode('focal');
               updateFocal(clientX, clientY);
             }
@@ -2366,7 +2368,14 @@ Continue?`;
               adjPanRef.current = clamped;
               setAdjPan(clamped);
             } else if (isDraggingFocalRef.current) {
-              updateFocal(clientX, clientY);
+              // Throttle: only update focal point when cursor moves >6px — reduces jitter
+              const last = lastFocalPosRef.current;
+              const dx = clientX - last.x;
+              const dy = clientY - last.y;
+              if (Math.sqrt(dx * dx + dy * dy) >= 6) {
+                lastFocalPosRef.current = { x: clientX, y: clientY };
+                updateFocal(clientX, clientY);
+              }
             }
           };
 
@@ -2387,10 +2396,11 @@ Continue?`;
             const nat = adjNatural;
             const cW = rect.width;
             const cH = rect.height;
-            const bW = cW;
-            const bH = nat.w > 0 ? cW * (nat.h / nat.w) : cH;
-            const iW = bW * zoom;
-            const iH = bH * zoom;
+            const nW = nat.w > 0 ? nat.w : cW;
+            const nH = nat.w > 0 ? nat.h : cH;
+            const coverSc = Math.max(cW / nW, cH / nH);
+            const iW = nW * coverSc * zoom;
+            const iH = nH * coverSc * zoom;
             // We don't know current focalX/focalY here (stale closure risk), but we can infer
             // the image left/top from what we know: the click itself tells us the new focal point.
             // Use the current bannerImages value via a functional update:
@@ -2430,10 +2440,14 @@ Continue?`;
           const containerH = rect?.height || 1;
           const natW = adjNatural.w || containerW;
           const natH = adjNatural.h || containerH;
-          // Base image size: fit-width (same as object-fit:cover baseline for wide images)
-          const baseW = containerW;
-          const baseH = containerW * (natH / natW);
-          // Scaled image size
+          // Base image size: object-fit:cover geometry — scale image up until it fills
+          // BOTH container dimensions, then user zoom multiplies on top of that.
+          const scaleByW = containerW / natW;
+          const scaleByH = containerH / natH;
+          const coverScale = Math.max(scaleByW, scaleByH); // cover = larger of the two
+          const baseW = natW * coverScale;
+          const baseH = natH * coverScale;
+          // Scaled image size (adjZoom=1 → fits container exactly like objectFit:cover)
           const imgW = baseW * adjZoom;
           const imgH = baseH * adjZoom;
           // Focal point in image px
