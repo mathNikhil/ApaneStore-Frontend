@@ -46,15 +46,10 @@ const ImageError = ({ error }) => {
   );
 };
 
-// ── BannerCropTool ───────────────────────────────────────────────────────────
-// Fixed-width crop frame dragged over the full image.
-// "Apply Crop" saves the frame position as natural-pixel coords in state —
-// NO server-side crop, original file is never touched.
-// Storefront uses those coords to CSS-clip the image to the framed area.
-// FRAME_W mirrors the storefront banner container width.
-const CROP_FRAME_W = 1200;
+// BannerCropTool removed — crop feature discontinued.
+// Banner images display with object-fit: cover on storefront.
 
-const BannerCropTool = ({ slide, frameH, onCropApplied }) => {
+const _UNUSED_BannerCropTool = ({ slide, frameH, onCropApplied }) => {
   const wrapRef   = useRef(null);
   const [natural, setNatural] = useState({ w: 0, h: 0 });
   const [frameTop, setFrameTop]   = useState(0); // px from image top
@@ -2504,64 +2499,25 @@ Continue?`;
           <ImageGuidelineBadge size="Any size" format="PNG/JPG" maxSize="500KB max" ratio="Any ratio" />
         </div>
 
-        {/* ── Banner crop tool ─── */}
-        {bannerImages.length > 0 && bannerImages[activeBannerIdx] && (
-          <div className="space-y-2 mb-4">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <label className="font-label-md text-label-md text-[#3c4a3d] block uppercase tracking-wider text-xs">
-                Crop Area
-                {bannerImages.length > 1 && (
-                  <span className="ml-2 normal-case tracking-normal text-[10px] text-[#556067]">— Banner {activeBannerIdx + 1}</span>
-                )}
-              </label>
-            </div>
+        {/* Banner height slider */}
+        <div className="flex items-center gap-4 mb-4">
+          <span className="font-label-md text-label-md text-[#3c4a3d] uppercase tracking-wider text-xs whitespace-nowrap">Height</span>
+          <input type="range" min="200" max="800" value={bannerHeight} onChange={(e) => setBannerHeight(parseInt(e.target.value))} className="flex-1 h-1.5 bg-[#e0e3e6] rounded-lg appearance-none cursor-pointer accent-[#006d2f]" />
+          <span className="text-sm font-semibold text-[#006d2f] min-w-[50px] text-right">{bannerHeight}px</span>
+        </div>
 
-            {/* Crop tool — frame over full image */}
-            <BannerCropTool
-              key={bannerImages[activeBannerIdx].url}
-              slide={bannerImages[activeBannerIdx]}
-              frameH={bannerHeight}
-              tenantId={tenantId}
-              storeId={currentStoreId}
-              onCropApplied={(imageId, crop) => {
-                // crop = { cropX, cropY, cropW, cropH } in natural px, or null to reset
-                setBannerImages(prev => prev.map(b =>
-                  b.id === imageId ? { ...b, crop: crop || null } : b
-                ));
-              }}
-            />
-
-            {/* Banner height slider */}
-            <div className="flex items-center gap-4 mt-1">
-              <span className="font-label-md text-label-md text-[#3c4a3d] uppercase tracking-wider text-xs whitespace-nowrap">Height</span>
-              <input type="range" min="200" max="800" value={bannerHeight} onChange={(e) => setBannerHeight(parseInt(e.target.value))} className="flex-1 h-1.5 bg-[#e0e3e6] rounded-lg appearance-none cursor-pointer accent-[#006d2f]" />
-              <span className="text-sm font-semibold text-[#006d2f] min-w-[50px] text-right">{bannerHeight}px</span>
-            </div>
-
-            {/* Multi-banner pagination dots */}
-            {bannerImages.length > 1 && (
-              <div className="flex gap-2 justify-center mt-2">
-                {bannerImages.map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setActiveBannerIdx(i)}
-                    className="rounded-full transition-all"
-                    style={{ width: i === activeBannerIdx ? 20 : 8, height: 8, backgroundColor: i === activeBannerIdx ? '#006d2f' : '#bbcbb9' }}
-                    aria-label={`Edit banner ${i + 1}`}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Height slider for when there's no image yet */}
-        {bannerImages.length === 0 && (
-          <div className="flex items-center gap-4 mb-4">
-            <span className="font-label-md text-label-md text-[#3c4a3d] uppercase tracking-wider text-xs whitespace-nowrap">Height</span>
-            <input type="range" min="200" max="800" value={bannerHeight} onChange={(e) => setBannerHeight(parseInt(e.target.value))} className="flex-1 h-1.5 bg-[#e0e3e6] rounded-lg appearance-none cursor-pointer accent-[#006d2f]" />
-            <span className="text-sm font-semibold text-[#006d2f] min-w-[50px] text-right">{bannerHeight}px</span>
+        {/* Multi-banner pagination dots */}
+        {bannerImages.length > 1 && (
+          <div className="flex gap-2 justify-center mb-4">
+            {bannerImages.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setActiveBannerIdx(i)}
+                className="rounded-full transition-all"
+                style={{ width: i === activeBannerIdx ? 20 : 8, height: 8, backgroundColor: i === activeBannerIdx ? '#006d2f' : '#bbcbb9' }}
+                aria-label={`Edit banner ${i + 1}`}
+              />
+            ))}
           </div>
         )}
 
