@@ -2325,10 +2325,14 @@ Continue?`;
 
           // Clamp pan so image never drifts too far when zoomed
           const clampPan = (px, py, zoom) => {
-            const maxShift = ((zoom - 1) / zoom) * 200;
+            const r = focalImageRef.current?.getBoundingClientRect();
+            const w = r?.width  || 300;
+            const h = r?.height || 200;
+            const maxX = ((zoom - 1) / zoom) * w / 2;
+            const maxY = ((zoom - 1) / zoom) * h / 2;
             return {
-              x: Math.max(-maxShift, Math.min(maxShift, px)),
-              y: Math.max(-maxShift, Math.min(maxShift, py)),
+              x: Math.max(-maxX, Math.min(maxX, px)),
+              y: Math.max(-maxY, Math.min(maxY, py)),
             };
           };
 
