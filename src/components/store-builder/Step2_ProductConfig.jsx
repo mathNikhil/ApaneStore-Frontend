@@ -73,7 +73,7 @@ const BannerFrameTool = ({ slide, frameH, onFrameSaved }) => {
   const clampLeft = (l) => Math.max(0, Math.min(dispW - frameDispW, l));
   const clampTop  = (t) => Math.max(0, Math.min(dispH - frameDispH, t));
 
-  // When natural size or frameH changes, re-centre the frame
+  // When natural size loads: restore saved frame position, or centre if none saved
   useEffect(() => {
     if (natural.w === 0) return;
     const ds = wrapRef.current ? Math.min(1, wrapRef.current.offsetWidth / natural.w) : 1;
@@ -81,9 +81,16 @@ const BannerFrameTool = ({ slide, frameH, onFrameSaved }) => {
     const dH = natural.h * ds;
     const fW = Math.min(CROP_FRAME_W * ds, dW);
     const fH = frameH * ds;
-    setFrameLeft(clamp(0, dW - fW, (dW - fW) / 2));
-    setFrameTop(clamp(0, dH - fH, (dH - fH) / 2));
-    setSaved(false);
+    if (slide.crop) {
+      // Restore frame to the saved position
+      setFrameLeft(clamp(0, dW - fW, slide.crop.cropX * ds));
+      setFrameTop(clamp(0, dH - fH, slide.crop.cropY * ds));
+      setSaved(true);
+    } else {
+      setFrameLeft(clamp(0, dW - fW, (dW - fW) / 2));
+      setFrameTop(clamp(0, dH - fH, (dH - fH) / 2));
+      setSaved(false);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [natural.w, natural.h, frameH]);
 
