@@ -49,10 +49,12 @@ const ImageError = ({ error }) => {
 // ── BannerAdjusterViewport ────────────────────────────────────────────────────
 // Self-contained component so it has its own mount lifecycle and ResizeObserver.
 // Same pattern as SlideImage in PreviewBanner — mounts fresh, measures itself cleanly.
+// containerSizeRef is passed as a ref (not a callback) so the closure in useEffect
+// always writes to the current ref object without stale-closure issues.
 const BannerAdjusterViewport = ({
   slide, bannerHeight, bannerBgColor, adjZoom, adjPan, dragMode,
   onPointerDown, onPointerMove, onPointerUp, onWheel,
-  onNaturalSize, onContainerSize,
+  onNaturalSize, naturalSizeRef, containerSizeRef,
 }) => {
   const containerRef = useRef(null);
   const [containerW, setContainerW] = useState(0);
@@ -66,7 +68,8 @@ const BannerAdjusterViewport = ({
       const r = el.getBoundingClientRect();
       setContainerW(r.width);
       setContainerH(r.height);
-      onContainerSize({ w: r.width, h: r.height });
+      // Write directly to ref — no stale closure issue
+      if (containerSizeRef) containerSizeRef.current = { w: r.width, h: r.height };
     };
     measure();
     const ro = new ResizeObserver(measure);
@@ -127,7 +130,8 @@ const BannerAdjusterViewport = ({
         onLoad={(e) => {
           const nat = { w: e.target.naturalWidth, h: e.target.naturalHeight };
           setNatural(nat);
-          onNaturalSize(nat);
+          if (naturalSizeRef) naturalSizeRef.current = nat;
+          if (onNaturalSize) onNaturalSize(nat);
         }}
         style={imgStyle}
       />
@@ -2628,8 +2632,8 @@ Continue?`;
                 onPointerMove={onAdjPointerMove}
                 onPointerUp={onAdjPointerUp}
                 onWheel={onAdjWheel}
-                onNaturalSize={(nat) => { setAdjNatural(nat); adjNaturalRef.current = nat; }}
-                onContainerSize={(s) => { setAdjContainerSize(s); adjContainerSizeRef.current = s; }}
+                naturalSizeRef={adjNaturalRef}
+                containerSizeRef={adjContainerSizeRef}
               />
 
               {/* Zoom controls + Reset */}
