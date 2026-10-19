@@ -47,51 +47,45 @@ const ImageError = ({ error }) => {
 };
 
 // ── BannerAdjusterViewport ────────────────────────────────────────────────────
-// Self-contained component so it has its own mount lifecycle and ResizeObserver.
-// Same pattern as SlideImage in PreviewBanner — mounts fresh, measures itself cleanly.
-// containerSizeRef is passed as a ref (not a callback) so the closure in useEffect
-// always writes to the current ref object without stale-closure issues.
+// Reads container size directly from DOM on every render — no stale refs.
 const BannerAdjusterViewport = ({
   slide, bannerHeight, bannerBgColor, adjZoom, adjPan, dragMode,
   onPointerDown, onPointerMove, onPointerUp, onWheel,
-  onNaturalSize, naturalSizeRef, containerSizeRef,
+  naturalSizeRef, containerSizeRef,
 }) => {
   const containerRef = useRef(null);
-  const [containerW, setContainerW] = useState(0);
-  const [containerH, setContainerH] = useState(0);
   const [natural, setNatural] = useState({ w: 0, h: 0 });
+  const [tick, setTick] = useState(0); // force re-render after mount so DOM is measured
 
   useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const measure = () => {
-      const r = el.getBoundingClientRect();
-      setContainerW(r.width);
-      setContainerH(r.height);
-      // Write directly to ref — no stale closure issue
-      if (containerSizeRef) containerSizeRef.current = { w: r.width, h: r.height };
-    };
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
+    // Fire once after mount so containerRef.current is available for measurement
+    setTick(1);
+    if (!containerRef.current) return;
+    const ro = new ResizeObserver(() => setTick(t => t + 1));
+    ro.observe(containerRef.current);
     return () => ro.disconnect();
   }, []);
+
+  // Read container size directly from DOM every render — no stale closure possible
+  const cW = containerRef.current ? containerRef.current.offsetWidth : 0;
+  const cH = bannerHeight;
+  if (containerSizeRef && cW > 0) containerSizeRef.current = { w: cW, h: cH };
 
   const focalX = slide.focalX ?? 50;
   const focalY = slide.focalY ?? 50;
 
   let imgStyle;
-  let crosshairLeft = containerW / 2;
-  let crosshairTop  = containerH / 2;
+  let crosshairLeft = cW / 2;
+  let crosshairTop  = cH / 2;
 
-  if (natural.w > 0 && containerW > 0 && containerH > 0) {
-    const coverSc = Math.max(containerW / natural.w, containerH / natural.h);
+  if (natural.w > 0 && cW > 0) {
+    const coverSc = Math.max(cW / natural.w, cH / natural.h);
     const imgW = natural.w * coverSc * adjZoom;
     const imgH = natural.h * coverSc * adjZoom;
     const focalPxX = (focalX / 100) * imgW;
     const focalPxY = (focalY / 100) * imgH;
-    const left = containerW / 2 - focalPxX + adjPan.x;
-    const top  = containerH / 2 - focalPxY + adjPan.y;
+    const left = cW / 2 - focalPxX + adjPan.x;
+    const top  = cH / 2 - focalPxY + adjPan.y;
     crosshairLeft = left + focalPxX;
     crosshairTop  = top  + focalPxY;
     imgStyle = {
@@ -131,7 +125,6 @@ const BannerAdjusterViewport = ({
           const nat = { w: e.target.naturalWidth, h: e.target.naturalHeight };
           setNatural(nat);
           if (naturalSizeRef) naturalSizeRef.current = nat;
-          if (onNaturalSize) onNaturalSize(nat);
         }}
         style={imgStyle}
       />
@@ -385,12 +378,16 @@ const Step2_ProductConfig = () => {
   }, [clampAdjPan, saveAdjScale]);
 
   const resetAdjuster = useCallback(() => {
+    // Reset zoom
     setAdjZoom(1);
     adjZoomRef.current = 1;
+    // Reset pan
     setAdjPan({ x: 0, y: 0 });
     adjPanRef.current = { x: 0, y: 0 };
+    // Reset focal point and scale for active banner
+    const idx = activeBannerIdxRef.current;
     setBannerImages(prev => prev.map((b, i) =>
-      i === activeBannerIdxRef.current ? { ...b, focalX: 50, focalY: 50, scale: 1 } : b
+      i === idx ? { ...b, focalX: 50, focalY: 50, scale: 1 } : b
     ));
   }, []);
 
