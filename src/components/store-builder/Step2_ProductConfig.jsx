@@ -123,6 +123,7 @@ const Step2_ProductConfig = () => {
   const [adjPan, setAdjPan] = useState({ x: 0, y: 0 }); // px offset in adjuster
   const adjPanRef = useRef({ x: 0, y: 0 }); // mirror for use in event handlers
   const [dragMode, setDragMode] = useState('idle'); // 'idle'|'panning'|'focal' — for cursor display only
+  const [adjNatural, setAdjNatural] = useState({ w: 0, h: 0 }); // natural px size of active banner image
   const focalImageRef = useRef(null);
 
   // Keep refs in sync with state
@@ -2218,7 +2219,7 @@ Continue?`;
                 <div
                   key={bImg.url + idx}
                   className={`relative w-20 h-14 rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${activeBannerIdx === idx ? 'border-[#006d2f]' : 'border-transparent'}`}
-                  onClick={() => { setActiveBannerIdx(idx); const s = bannerImages[idx]?.scale ?? 1; setAdjZoom(s); adjZoomRef.current = s; setAdjPan({ x: 0, y: 0 }); adjPanRef.current = { x: 0, y: 0 }; }}
+                  onClick={() => { setActiveBannerIdx(idx); const s = bannerImages[idx]?.scale ?? 1; setAdjZoom(s); adjZoomRef.current = s; setAdjPan({ x: 0, y: 0 }); adjPanRef.current = { x: 0, y: 0 }; setAdjNatural({ w: 0, h: 0 }); }}
                 >
                   <img src={bImg.url} alt={`Banner ${idx + 1}`} className="w-full h-full object-cover" />
                   {/* Remove button */}
@@ -2382,14 +2383,28 @@ Continue?`;
             const pan  = adjPanRef.current;
             const relX = clientX - rect.left;
             const relY = clientY - rect.top;
-            // Image origin (top-left) in container coords
-            const imgLeft = (0.5 - zoom * 0.5) * rect.width  + pan.x;
-            const imgTop  = (0.5 - zoom * 0.5) * rect.height + pan.y;
-            const imgW = zoom * rect.width;
-            const imgH = zoom * rect.height;
-            const x = Math.round(Math.min(100, Math.max(0, ((relX - imgLeft) / imgW) * 100)));
-            const y = Math.round(Math.min(100, Math.max(0, ((relY - imgTop)  / imgH) * 100)));
-            setBannerImages(prev => prev.map((b, i) => i === activeBannerIdx ? { ...b, focalX: x, focalY: y } : b));
+            // Mirror the same natural-dimension layout math used in the render block below
+            const nat = adjNatural;
+            const cW = rect.width;
+            const cH = rect.height;
+            const bW = cW;
+            const bH = nat.w > 0 ? cW * (nat.h / nat.w) : cH;
+            const iW = bW * zoom;
+            const iH = bH * zoom;
+            // We don't know current focalX/focalY here (stale closure risk), but we can infer
+            // the image left/top from what we know: the click itself tells us the new focal point.
+            // Use the current bannerImages value via a functional update:
+            setBannerImages(prev => {
+              const cur = prev[activeBannerIdx];
+              if (!cur) return prev;
+              const fx = cur.focalX ?? 50;
+              const fy = cur.focalY ?? 50;
+              const iLeft = cW / 2 - (fx / 100) * iW + pan.x;
+              const iTop  = cH / 2 - (fy / 100) * iH + pan.y;
+              const x = Math.round(Math.min(100, Math.max(0, ((relX - iLeft) / iW) * 100)));
+              const y = Math.round(Math.min(100, Math.max(0, ((relY - iTop)  / iH) * 100)));
+              return prev.map((b, i) => i === activeBannerIdx ? { ...b, focalX: x, focalY: y } : b);
+            });
           };
 
           const handleWheel = (e) => {
@@ -2404,15 +2419,32 @@ Continue?`;
           };
 
           // Crosshair position — image starts at (left, top) = ((50 - zoom*50)%, same) + pan offset
+          // ── Image layout math ───────────────────────────────────────────
+          // Base: image fills container width at scale=1, maintaining aspect ratio.
+          // scale < 1 → image smaller than container (letterboxed).
+          // scale > 1 → image larger than container (crops at edges).
+          // focalX/focalY pins which image point sits at container centre.
+          // adjPan shifts that centre point.
           const rect = focalImageRef.current?.getBoundingClientRect();
-          const containerW = rect?.width || 1;
+          const containerW = rect?.width  || 1;
           const containerH = rect?.height || 1;
-          const imgLeft = (0.5 - adjZoom * 0.5) * containerW + adjPan.x;
-          const imgTop  = (0.5 - adjZoom * 0.5) * containerH + adjPan.y;
-          const imgW = adjZoom * containerW;
-          const imgH = adjZoom * containerH;
-          const crosshairLeft = imgLeft + (focalX / 100) * imgW;
-          const crosshairTop  = imgTop  + (focalY / 100) * imgH;
+          const natW = adjNatural.w || containerW;
+          const natH = adjNatural.h || containerH;
+          // Base image size: fit-width (same as object-fit:cover baseline for wide images)
+          const baseW = containerW;
+          const baseH = containerW * (natH / natW);
+          // Scaled image size
+          const imgW = baseW * adjZoom;
+          const imgH = baseH * adjZoom;
+          // Focal point in image px
+          const focalPxX = (focalX / 100) * imgW;
+          const focalPxY = (focalY / 100) * imgH;
+          // Image top-left so focal point lands at container centre + pan
+          const imgLeft = containerW / 2 - focalPxX + adjPan.x;
+          const imgTop  = containerH / 2 - focalPxY + adjPan.y;
+          // Crosshair sits at focal point in container coords
+          const crosshairLeft = imgLeft + focalPxX;
+          const crosshairTop  = imgTop  + focalPxY;
 
           return (
             <div className="space-y-2 mb-4">
@@ -2445,22 +2477,19 @@ Continue?`;
                 onTouchEnd={handlePointerUp}
                 onWheel={handleWheel}
               >
-                {/* Zoomed + panned image */}
+                {/* Zoomed + panned image — no objectFit, explicit pixel placement */}
                 <img
                   src={activeBanner.url}
                   alt="Banner preview"
                   draggable={false}
                   className="absolute pointer-events-none"
+                  onLoad={(e) => setAdjNatural({ w: e.target.naturalWidth, h: e.target.naturalHeight })}
                   style={{
-                    width: `${adjZoom * 100}%`,
-                    height: `${adjZoom * 100}%`,
-                    left: `${50 - adjZoom * 50}% `,
-                    top: `${50 - adjZoom * 50}%`,
-                    marginLeft: adjPan.x,
-                    marginTop: adjPan.y,
-                    objectFit: adjZoom < 1 ? 'contain' : 'cover',
-                    objectPosition: `${focalX}% ${focalY}%`,
-                    transition: dragMode !== 'idle' ? 'none' : 'all 0.15s ease',
+                    width:  adjNatural.w > 0 ? `${imgW}px` : '100%',
+                    height: adjNatural.w > 0 ? `${imgH}px` : '100%',
+                    left:   adjNatural.w > 0 ? `${imgLeft}px` : '0',
+                    top:    adjNatural.w > 0 ? `${imgTop}px`  : '0',
+                    transition: dragMode !== 'idle' ? 'none' : 'left 0.15s ease, top 0.15s ease, width 0.15s ease, height 0.15s ease',
                   }}
                 />
 
