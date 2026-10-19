@@ -46,6 +46,122 @@ const ImageError = ({ error }) => {
   );
 };
 
+// ── BannerAdjusterViewport ────────────────────────────────────────────────────
+// Self-contained component so it has its own mount lifecycle and ResizeObserver.
+// Same pattern as SlideImage in PreviewBanner — mounts fresh, measures itself cleanly.
+const BannerAdjusterViewport = ({
+  slide, bannerHeight, bannerBgColor, adjZoom, adjPan, dragMode,
+  onPointerDown, onPointerMove, onPointerUp, onWheel,
+  onNaturalSize, onContainerSize,
+}) => {
+  const containerRef = useRef(null);
+  const [containerW, setContainerW] = useState(0);
+  const [containerH, setContainerH] = useState(0);
+  const [natural, setNatural] = useState({ w: 0, h: 0 });
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const measure = () => {
+      const r = el.getBoundingClientRect();
+      setContainerW(r.width);
+      setContainerH(r.height);
+      onContainerSize({ w: r.width, h: r.height });
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const focalX = slide.focalX ?? 50;
+  const focalY = slide.focalY ?? 50;
+
+  let imgStyle;
+  let crosshairLeft = containerW / 2;
+  let crosshairTop  = containerH / 2;
+
+  if (natural.w > 0 && containerW > 0 && containerH > 0) {
+    const coverSc = Math.max(containerW / natural.w, containerH / natural.h);
+    const imgW = natural.w * coverSc * adjZoom;
+    const imgH = natural.h * coverSc * adjZoom;
+    const focalPxX = (focalX / 100) * imgW;
+    const focalPxY = (focalY / 100) * imgH;
+    const left = containerW / 2 - focalPxX + adjPan.x;
+    const top  = containerH / 2 - focalPxY + adjPan.y;
+    crosshairLeft = left + focalPxX;
+    crosshairTop  = top  + focalPxY;
+    imgStyle = {
+      position: 'absolute',
+      width: `${imgW}px`,
+      height: `${imgH}px`,
+      left: `${left}px`,
+      top: `${top}px`,
+      transition: dragMode !== 'idle' ? 'none' : 'left 0.15s ease, top 0.15s ease, width 0.15s ease, height 0.15s ease',
+    };
+  } else {
+    imgStyle = { position: 'absolute', width: '100%', height: '100%', left: 0, top: 0, objectFit: 'cover' };
+  }
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative w-full rounded-xl overflow-hidden select-none"
+      style={{
+        height: `${bannerHeight}px`,
+        backgroundColor: bannerBgColor,
+        cursor: adjZoom > 1 ? (dragMode === 'panning' ? 'grabbing' : 'grab') : 'crosshair',
+        touchAction: 'none',
+      }}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
+      onWheel={onWheel}
+    >
+      <img
+        src={slide.url}
+        alt="Banner preview"
+        draggable={false}
+        className="pointer-events-none"
+        onLoad={(e) => {
+          const nat = { w: e.target.naturalWidth, h: e.target.naturalHeight };
+          setNatural(nat);
+          onNaturalSize(nat);
+        }}
+        style={imgStyle}
+      />
+
+      {/* Rule-of-thirds grid */}
+      <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 1 }}>
+        <div style={{ position: 'absolute', left: '33.33%', top: 0, bottom: 0, width: '1px', backgroundColor: 'rgba(255,255,255,0.25)' }} />
+        <div style={{ position: 'absolute', left: '66.66%', top: 0, bottom: 0, width: '1px', backgroundColor: 'rgba(255,255,255,0.25)' }} />
+        <div style={{ position: 'absolute', top: '33.33%', left: 0, right: 0, height: '1px', backgroundColor: 'rgba(255,255,255,0.25)' }} />
+        <div style={{ position: 'absolute', top: '66.66%', left: 0, right: 0, height: '1px', backgroundColor: 'rgba(255,255,255,0.25)' }} />
+      </div>
+
+      {/* Focal point crosshair */}
+      {natural.w > 0 && (
+        <div
+          className="absolute pointer-events-none"
+          style={{ left: crosshairLeft, top: crosshairTop, transform: 'translate(-50%,-50%)', zIndex: 2 }}
+        >
+          <div style={{ width: 28, height: 28, borderRadius: '50%', border: '2px solid white', boxShadow: '0 0 0 1px rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: 'white', boxShadow: '0 0 0 1px rgba(0,0,0,0.5)' }} />
+          </div>
+          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 40, height: 1, backgroundColor: 'white', boxShadow: '0 0 2px rgba(0,0,0,0.5)' }} />
+          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 1, height: 40, backgroundColor: 'white', boxShadow: '0 0 2px rgba(0,0,0,0.5)' }} />
+        </div>
+      )}
+
+      {/* Hint */}
+      <div className="absolute bottom-2 left-2 bg-black/50 text-white text-[10px] rounded px-2 py-1 pointer-events-none" style={{ zIndex: 2 }}>
+        {adjZoom > 1 ? 'Drag to pan · click to set focal point' : 'Click or drag to set focal point'}
+      </div>
+    </div>
+  );
+};
+
 const Step2_ProductConfig = () => {
   const navigate = useNavigate();
   // ✅ FIX: Destructure `currentStoreId` instead of `storeId`!
@@ -180,8 +296,8 @@ const Step2_ProductConfig = () => {
   }, []);
 
   // updateFocal — convert container-relative pointer coords into focalX/focalY (0–100)
-  const updateAdjFocal = useCallback((clientX, clientY) => {
-    const rect = focalImageRef.current?.getBoundingClientRect();
+  const updateAdjFocal = useCallback((clientX, clientY, targetEl) => {
+    const rect = (targetEl || focalImageRef.current)?.getBoundingClientRect();
     if (!rect) return;
     const zoom = adjZoomRef.current;
     const pan  = adjPanRef.current;
@@ -220,7 +336,7 @@ const Step2_ProductConfig = () => {
       isDraggingFocalRef.current = true;
       setDragMode('focal');
       lastFocalPosRef.current = { x: e.clientX, y: e.clientY };
-      updateAdjFocal(e.clientX, e.clientY);
+      updateAdjFocal(e.clientX, e.clientY, e.currentTarget);
     }
   }, [updateAdjFocal]);
 
@@ -236,7 +352,7 @@ const Step2_ProductConfig = () => {
       const dy = e.clientY - last.y;
       if (Math.sqrt(dx * dx + dy * dy) >= 8) {
         lastFocalPosRef.current = { x: e.clientX, y: e.clientY };
-        updateAdjFocal(e.clientX, e.clientY);
+        updateAdjFocal(e.clientX, e.clientY, e.currentTarget);
       }
     }
   }, [clampAdjPan, updateAdjFocal]);
@@ -2476,23 +2592,6 @@ Continue?`;
           const focalX = activeBanner.focalX ?? 50;
           const focalY = activeBanner.focalY ?? 50;
 
-          // ── Image layout math (cover geometry) ────────────────────────────────
-          const containerW = adjContainerSize.w || focalImageRef.current?.getBoundingClientRect().width  || 660;
-          const containerH = adjContainerSize.h || focalImageRef.current?.getBoundingClientRect().height || bannerHeight;
-          const natW = adjNatural.w || 1;
-          const natH = adjNatural.h || 1;
-          const coverScale = adjNatural.w > 0
-            ? Math.max(containerW / natW, containerH / natH)
-            : 1;
-          const imgW = natW * coverScale * adjZoom;
-          const imgH = natH * coverScale * adjZoom;
-          const focalPxX = (focalX / 100) * imgW;
-          const focalPxY = (focalY / 100) * imgH;
-          const imgLeft = containerW / 2 - focalPxX + adjPan.x;
-          const imgTop  = containerH / 2 - focalPxY + adjPan.y;
-          const crosshairLeft = imgLeft + focalPxX;
-          const crosshairTop  = imgTop  + focalPxY;
-
           // Zoom button helpers — use stable top-level callbacks
           const zoomStep = (delta) => {
             const z = Math.min(3, Math.max(1, adjZoom + delta));
@@ -2516,69 +2615,22 @@ Continue?`;
                 <span className="text-[10px] text-[#556067]">{focalX}% · {focalY}% · {Math.round(adjZoom * 100)}%</span>
               </div>
 
-              {/* Interactive viewport — uses pointer events with capture for reliable drag */}
-              <div
-                ref={focalContainerRefCallback}
-                className="relative w-full rounded-xl overflow-hidden select-none"
-                style={{
-                  height: `${bannerHeight}px`,
-                  backgroundColor: bannerBgColor,
-                  cursor: adjZoom > 1 ? (dragMode === 'panning' ? 'grabbing' : 'grab') : 'crosshair',
-                  touchAction: 'none',
-                }}
+              {/* Interactive viewport — self-contained component with its own ResizeObserver */}
+              <BannerAdjusterViewport
+                key={activeBanner.url}
+                slide={activeBanner}
+                bannerHeight={bannerHeight}
+                bannerBgColor={bannerBgColor}
+                adjZoom={adjZoom}
+                adjPan={adjPan}
+                dragMode={dragMode}
                 onPointerDown={onAdjPointerDown}
                 onPointerMove={onAdjPointerMove}
                 onPointerUp={onAdjPointerUp}
-                onPointerCancel={onAdjPointerUp}
                 onWheel={onAdjWheel}
-              >
-                {/* Zoomed + panned image — no objectFit, explicit pixel placement */}
-                <img
-                  src={activeBanner.url}
-                  alt="Banner preview"
-                  draggable={false}
-                  className="absolute pointer-events-none"
-                  onLoad={(e) => {
-                    // Capture natural dimensions only — do NOT reset tenant's saved adjustments.
-                    // New uploads start at focalX:50 focalY:50 scale:1 (set at push time).
-                    const nat = { w: e.target.naturalWidth, h: e.target.naturalHeight };
-                    setAdjNatural(nat);
-                    adjNaturalRef.current = nat;
-                  }}
-                  style={{
-                    width:  adjNatural.w > 0 ? `${imgW}px` : '100%',
-                    height: adjNatural.w > 0 ? `${imgH}px` : '100%',
-                    left:   adjNatural.w > 0 ? `${imgLeft}px` : '0',
-                    top:    adjNatural.w > 0 ? `${imgTop}px`  : '0',
-                    transition: dragMode !== 'idle' ? 'none' : 'left 0.15s ease, top 0.15s ease, width 0.15s ease, height 0.15s ease',
-                  }}
-                />
-
-                {/* Rule-of-thirds grid */}
-                <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 1 }}>
-                  <div style={{ position: 'absolute', left: '33.33%', top: 0, bottom: 0, width: '1px', backgroundColor: 'rgba(255,255,255,0.25)' }} />
-                  <div style={{ position: 'absolute', left: '66.66%', top: 0, bottom: 0, width: '1px', backgroundColor: 'rgba(255,255,255,0.25)' }} />
-                  <div style={{ position: 'absolute', top: '33.33%', left: 0, right: 0, height: '1px', backgroundColor: 'rgba(255,255,255,0.25)' }} />
-                  <div style={{ position: 'absolute', top: '66.66%', left: 0, right: 0, height: '1px', backgroundColor: 'rgba(255,255,255,0.25)' }} />
-                </div>
-
-                {/* Focal point crosshair */}
-                <div
-                  className="absolute pointer-events-none"
-                  style={{ left: crosshairLeft, top: crosshairTop, transform: 'translate(-50%,-50%)', zIndex: 2 }}
-                >
-                  <div style={{ width: 28, height: 28, borderRadius: '50%', border: '2px solid white', boxShadow: '0 0 0 1px rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <div style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: 'white', boxShadow: '0 0 0 1px rgba(0,0,0,0.5)' }} />
-                  </div>
-                  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 40, height: 1, backgroundColor: 'white', boxShadow: '0 0 2px rgba(0,0,0,0.5)' }} />
-                  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 1, height: 40, backgroundColor: 'white', boxShadow: '0 0 2px rgba(0,0,0,0.5)' }} />
-                </div>
-
-                {/* Hint */}
-                <div className="absolute bottom-2 left-2 bg-black/50 text-white text-[10px] rounded px-2 py-1 pointer-events-none" style={{ zIndex: 2 }}>
-                  {adjZoom > 1 ? 'Drag to pan · click to set focal point' : 'Click or drag to set focal point'}
-                </div>
-              </div>
+                onNaturalSize={(nat) => { setAdjNatural(nat); adjNaturalRef.current = nat; }}
+                onContainerSize={(s) => { setAdjContainerSize(s); adjContainerSizeRef.current = s; }}
+              />
 
               {/* Zoom controls + Reset */}
               <div className="flex items-center gap-2 mt-1">
