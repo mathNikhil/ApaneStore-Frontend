@@ -292,14 +292,17 @@ const Step2_ProductConfig = () => {
     setBannerImages(prev => prev.map((b, i) => i === activeBannerIdxRef.current ? { ...b, scale: z } : b));
   }, []);
 
-  // updateFocal — convert container-relative pointer coords into focalX/focalY (0–100)
+  // updateAdjFocal — convert container-relative pointer coords into focalX/focalY (0–100)
+  // targetEl MUST be the container div (not the img). rect.width/height is the ground truth
+  // for cW/cH — never use adjContainerSizeRef here, it may be stale.
   const updateAdjFocal = useCallback((clientX, clientY, targetEl) => {
-    const rect = (targetEl || focalImageRef.current)?.getBoundingClientRect();
+    const rect = targetEl?.getBoundingClientRect();
     if (!rect) return;
     const zoom = adjZoomRef.current;
     const pan  = adjPanRef.current;
     const nat  = adjNaturalRef.current;
-    const cW   = adjContainerSizeRef.current.w || rect.width;
+    // Use live DOM rect — always correct, never stale
+    const cW   = rect.width;
     const cH   = adjContainerSizeRef.current.h || rect.height;
     if (nat.w === 0 || nat.h === 0) return;
     const coverSc = Math.max(cW / nat.w, cH / nat.h);
