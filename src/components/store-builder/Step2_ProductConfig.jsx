@@ -2482,7 +2482,7 @@ Continue?`;
                 <div
                   key={bImg.url + idx}
                   className={`relative w-20 h-14 rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${activeBannerIdx === idx ? 'border-[#006d2f]' : 'border-transparent'}`}
-                  onClick={() => { setActiveBannerIdx(idx); const s = bannerImages[idx]?.scale ?? 1; setAdjZoom(s); adjZoomRef.current = s; setAdjPan({ x: 0, y: 0 }); adjPanRef.current = { x: 0, y: 0 }; setAdjNatural({ w: 0, h: 0 }); }}
+                  onClick={() => { setActiveBannerIdx(idx); activeBannerIdxRef.current = idx; const s = bannerImages[idx]?.scale ?? 1; setAdjZoom(s); adjZoomRef.current = s; setAdjPan({ x: 0, y: 0 }); adjPanRef.current = { x: 0, y: 0 }; }}
                 >
                   <img src={bImg.url} alt={`Banner ${idx + 1}`} className="w-full h-full object-cover" />
                   {/* Remove button */}
