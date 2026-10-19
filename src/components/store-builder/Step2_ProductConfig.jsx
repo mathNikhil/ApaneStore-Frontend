@@ -102,6 +102,21 @@ const Step2_ProductConfig = () => {
 
   // Hero Banner State
   const [bannerImage, setBannerImage] = useState(productData.banner?.image || null);
+  // Multi-banner: array of { url, focalX, focalY } objects. Legacy single bannerImage
+  // is kept for backward-compat — new uploads always go into bannerImages.
+  const [bannerImages, setBannerImages] = useState(
+    productData.banner?.images?.length > 0
+      ? productData.banner.images
+      : productData.banner?.image
+        ? [{ url: productData.banner.image, focalX: productData.banner.focalX ?? 50, focalY: productData.banner.focalY ?? 50 }]
+        : []
+  );
+  // Which banner is active in the adjuster panel (index into bannerImages)
+  const [activeBannerIdx, setActiveBannerIdx] = useState(0);
+  // Dragging state for the focal-point crosshair
+  const [isDraggingFocal, setIsDraggingFocal] = useState(false);
+  const focalImageRef = useRef(null);
+
   const [bannerTagline, setBannerTagline] = useState(productData.banner?.tagline || '');
   const [bannerSubtitle, setBannerSubtitle] = useState(productData.banner?.subtitle || '');
   const [bannerCta, setBannerCta] = useState(productData.banner?.cta || 'Shop Now');
@@ -132,6 +147,12 @@ const Step2_ProductConfig = () => {
     }
     if (currentStoreId && productData.banner) {
       setBannerImage(productData.banner.image || null);
+      // Re-hydrate multi-banner images
+      if (productData.banner.images?.length > 0) {
+        setBannerImages(productData.banner.images);
+      } else if (productData.banner.image) {
+        setBannerImages([{ url: productData.banner.image, focalX: productData.banner.focalX ?? 50, focalY: productData.banner.focalY ?? 50 }]);
+      }
       setBannerTagline(productData.banner.tagline || '');
       setBannerSubtitle(productData.banner.subtitle || '');
       setBannerCta(productData.banner.cta || 'Shop Now');
@@ -417,7 +438,12 @@ const Step2_ProductConfig = () => {
       autoSlideProductImages: autoSlideProductImages,
       addToCartLabel: addToCartLabel,
       banner: {
-        image: bannerImage,
+        // Legacy single-image field (kept for backward-compat)
+        image: bannerImages[0]?.url || bannerImage,
+        focalX: bannerImages[0]?.focalX ?? 50,
+        focalY: bannerImages[0]?.focalY ?? 50,
+        // Multi-banner array — each: { url, focalX, focalY }
+        images: bannerImages,
         tagline: bannerTagline,
         subtitle: bannerSubtitle,
         cta: bannerCta,
@@ -430,7 +456,7 @@ const Step2_ProductConfig = () => {
         textColor: textColor,
       }
     });
-  }, [categories, bannerImage, bannerTagline, bannerSubtitle, bannerCta, bannerHeight, bannerBgColor, showCta, showText, textAlignment, textColor, textShadow, enableImageZoom, categoryImageShape, categoryImageSize, autoSlideProductImages, addToCartLabel]);
+  }, [categories, bannerImage, bannerImages, bannerTagline, bannerSubtitle, bannerCta, bannerHeight, bannerBgColor, showCta, showText, textAlignment, textColor, textShadow, enableImageZoom, categoryImageShape, categoryImageSize, autoSlideProductImages, addToCartLabel]);
 
   const generateId = () => Math.floor(Date.now() + Math.random() * 1000);
   const pendingInventoryUpdates = React.useRef([]);
@@ -2157,80 +2183,117 @@ Continue?`;
       <Card className="mb-6">
         <div className="flex items-center gap-2 mb-4">
           <span className="material-symbols-outlined text-[#006d2f]">image</span>
-          <h2 className="font-label-md text-label-md text-[#556067] uppercase tracking-wider text-xs">Hero Banner Properties</h2>
+          <h2 className="font-label-md text-label-md text-[#556067] uppercase tracking-wider text-xs">Hero Banner</h2>
         </div>
 
+        {/* ── Multi-banner upload strip ─────────────────────────── */}
         <div className="space-y-3 mb-4">
-          <label className="font-label-md text-label-md text-[#3c4a3d] block uppercase tracking-wider text-xs">Banner Image</label>
-          <div 
-            className="relative h-32 w-full rounded-lg bg-[#f2f4f7] border-2 border-dashed border-[#bbcbb9] overflow-hidden group cursor-pointer hover:border-[#006d2f] transition-colors"
-            onClick={() => {
-              const input = document.getElementById('banner-upload');
-              if (input) input.click();
-            }}
-          >
-            {bannerImage ? (
-              <>
-                <img src={bannerImage} alt="Banner" className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <span className="text-white text-sm font-semibold">Change Banner</span>
+          <label className="font-label-md text-label-md text-[#3c4a3d] block uppercase tracking-wider text-xs">
+            Banner Images
+            <span className="ml-2 text-[10px] font-normal text-[#556067] normal-case tracking-normal">
+              {bannerImages.length > 1 ? `${bannerImages.length} banners · auto-slides` : 'Add more for auto-slideshow'}
+            </span>
+          </label>
+
+          {/* Existing banner thumbnails */}
+          {bannerImages.length > 0 && (
+            <div className="flex gap-2 flex-wrap">
+              {bannerImages.map((bImg, idx) => (
+                <div
+                  key={bImg.url + idx}
+                  className={`relative w-20 h-14 rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${activeBannerIdx === idx ? 'border-[#006d2f]' : 'border-transparent'}`}
+                  onClick={() => setActiveBannerIdx(idx)}
+                >
+                  <img src={bImg.url} alt={`Banner ${idx + 1}`} className="w-full h-full object-cover" />
+                  {/* Remove button */}
+                  <button
+                    className="absolute top-0.5 right-0.5 bg-black/60 text-white rounded-full w-4 h-4 flex items-center justify-center hover:bg-red-600 transition-colors"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setBannerImages(prev => {
+                        const next = prev.filter((_, i) => i !== idx);
+                        setActiveBannerIdx(Math.min(activeBannerIdx, next.length - 1));
+                        return next;
+                      });
+                    }}
+                    title="Remove"
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: '10px' }}>close</span>
+                  </button>
+                  {/* Slide number badge */}
+                  <span className="absolute bottom-0.5 left-0.5 bg-black/50 text-white text-[9px] rounded px-1">{idx + 1}</span>
                 </div>
-              </>
-            ) : (
+              ))}
+
+              {/* Add another banner button */}
+              <div
+                className="w-20 h-14 rounded-lg border-2 border-dashed border-[#bbcbb9] flex flex-col items-center justify-center cursor-pointer hover:border-[#006d2f] text-[#556067] hover:text-[#006d2f] transition-colors"
+                onClick={() => document.getElementById('banner-upload-multi').click()}
+              >
+                <span className="material-symbols-outlined text-lg">add_photo_alternate</span>
+                <span className="text-[9px] mt-0.5">Add</span>
+              </div>
+            </div>
+          )}
+
+          {/* Empty state — first upload */}
+          {bannerImages.length === 0 && (
+            <div
+              className="relative h-32 w-full rounded-lg bg-[#f2f4f7] border-2 border-dashed border-[#bbcbb9] overflow-hidden group cursor-pointer hover:border-[#006d2f] transition-colors"
+              onClick={() => document.getElementById('banner-upload-multi').click()}
+            >
               <div className="absolute inset-0 flex flex-col items-center justify-center text-[#556067] group-hover:text-[#006d2f] transition-colors">
                 <span className="material-symbols-outlined text-3xl mb-1">upload_file</span>
                 <span className="font-caption text-caption text-xs">Upload banner image</span>
                 <div className="flex gap-3 mt-1 text-[10px] text-gray-400">
-                  <span>📐 1200×375px</span>
-                  <span>📄 PNG/JPG</span>
-                  <span>📦 300KB</span>
-                  <span>📐 16:5</span>
+                  <span>📐 1200×375px</span><span>📄 PNG/JPG</span><span>📦 300KB</span>
                 </div>
               </div>
-            )}
-            <input
-              id="banner-upload"
-              type="file"
-              accept="image/*"
-              onChange={async (e) => {
-                const file = e.target.files?.[0];
-                e.target.value = '';
-                if (!file) return;
+            </div>
+          )}
 
-                // ✅ FIX: This used to read the file into a base64 data URI
-                // client-side (FileReader.readAsDataURL) and store that
-                // directly — completely bypassing the server upload that
-                // every other image field (logo, product, gallery, variant,
-                // category) correctly goes through. That's why it wasn't
-                // behaving like the others: it was never actually uploaded
-                // or given a real, persistent server URL. Now uses the same
-                // imageService upload path as everything else, via the
-                // existing HERO image type endpoint.
-                if (!currentStoreId || !tenantId) {
-                  setElementError('banner', 'Store ID or Tenant ID missing. Please save the store first');
-                  return;
-                }
-
-                clearElementError('banner');
-                setElementUploading('banner', true);
-                try {
+          <input
+            id="banner-upload-multi"
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={async (e) => {
+              const files = Array.from(e.target.files || []);
+              e.target.value = '';
+              if (!files.length) return;
+              if (!currentStoreId || !tenantId) {
+                setElementError('banner', 'Store ID or Tenant ID missing. Please save the store first');
+                return;
+              }
+              clearElementError('banner');
+              setElementUploading('banner', true);
+              try {
+                const uploaded = [];
+                for (const file of files) {
                   const response = await imageService.uploadImage(currentStoreId, tenantId, 'HERO', file);
                   if (response.success) {
-                    setBannerImage(response.data.url);
+                    uploaded.push({ url: response.data.url, focalX: 50, focalY: 50 });
                   } else {
-                    setElementError('banner', response.error || 'Banner upload failed');
+                    setElementError('banner', response.error || 'One or more banners failed to upload');
                   }
-                } catch (error) {
-                  setElementError('banner', error.response?.data?.error || error.message || 'Failed to upload banner image');
-                } finally {
-                  setElementUploading('banner', false);
                 }
-              }}
-              className="hidden"
-            />
-          </div>
+                if (uploaded.length > 0) {
+                  setBannerImages(prev => {
+                    const next = [...prev, ...uploaded];
+                    setActiveBannerIdx(next.length - uploaded.length); // select first newly added
+                    return next;
+                  });
+                }
+              } catch (error) {
+                setElementError('banner', error.response?.data?.error || error.message || 'Failed to upload banner image');
+              } finally {
+                setElementUploading('banner', false);
+              }
+            }}
+            className="hidden"
+          />
           {uploadingStates['banner'] && (
-            <p className="text-xs text-[#556067]">Uploading banner image...</p>
+            <p className="text-xs text-[#556067]">Uploading banner image…</p>
           )}
           {errorStates['banner'] && (
             <p className="text-xs text-red-600">{errorStates['banner']}</p>
@@ -2238,90 +2301,196 @@ Continue?`;
           <ImageGuidelineBadge size="1200×375px" format="PNG/JPG" maxSize="300KB" ratio="16:5" />
         </div>
 
-        <div className="space-y-3">
-          <div>
-            <label className="font-label-md text-label-md text-[#3c4a3d] block uppercase tracking-wider text-xs mb-1">Tagline</label>
-            <textarea value={bannerTagline} onChange={(e) => setBannerTagline(e.target.value)} placeholder="e.g. Fresh, Organic & Delivered" rows={2} className="w-full px-3 py-2 bg-white border border-[#bbcbb9] rounded-lg text-sm focus:outline-none focus:border-[#006d2f] resize-none" />
-          </div>
-          <div>
-            <label className="font-label-md text-label-md text-[#3c4a3d] block uppercase tracking-wider text-xs mb-1">Subtitle</label>
-            <textarea value={bannerSubtitle} onChange={(e) => setBannerSubtitle(e.target.value)} placeholder="e.g. 100% Natural Stone-Ground Flour" rows={2} className="w-full px-3 py-2 bg-white border border-[#bbcbb9] rounded-lg text-sm focus:outline-none focus:border-[#006d2f] resize-none" />
-          </div>
+        {/* ── Visual image adjuster (focal-point) ──────────────── */}
+        {bannerImages.length > 0 && bannerImages[activeBannerIdx] && (() => {
+          const activeBanner = bannerImages[activeBannerIdx];
+          const focalX = activeBanner.focalX ?? 50;
+          const focalY = activeBanner.focalY ?? 50;
 
-          <div className="flex items-center justify-between py-2 border-b border-[#e0e3e6]">
-            <span className="font-body-md text-[#191c1e] font-medium">Show Tagline & Subtitle</span>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" checked={showText} onChange={() => setShowText(!showText)} className="sr-only peer" />
-              <div className={`w-11 h-6 rounded-full transition-all duration-200 ease-in-out ${showText ? 'bg-[#006d2f]' : 'bg-[#e0e3e6]'} peer-focus:ring-2 peer-focus:ring-[#25D366]/50 relative`}>
-                <div className={`absolute top-[2px] left-[2px] bg-white w-5 h-5 rounded-full transition-all duration-200 ease-in-out border border-gray-300 ${showText ? 'translate-x-5' : 'translate-x-0'} shadow-sm`} />
+          const updateFocal = (clientX, clientY) => {
+            const rect = focalImageRef.current?.getBoundingClientRect();
+            if (!rect) return;
+            const x = Math.round(Math.min(100, Math.max(0, ((clientX - rect.left) / rect.width) * 100)));
+            const y = Math.round(Math.min(100, Math.max(0, ((clientY - rect.top) / rect.height) * 100)));
+            setBannerImages(prev => prev.map((b, i) => i === activeBannerIdx ? { ...b, focalX: x, focalY: y } : b));
+          };
+
+          return (
+            <div className="space-y-2 mb-4">
+              <div className="flex items-center justify-between">
+                <label className="font-label-md text-label-md text-[#3c4a3d] block uppercase tracking-wider text-xs">
+                  Image Placement
+                  {bannerImages.length > 1 && (
+                    <span className="ml-2 normal-case tracking-normal text-[10px] text-[#556067]">— Banner {activeBannerIdx + 1}</span>
+                  )}
+                </label>
+                <span className="text-[10px] text-[#556067]">{focalX}% · {focalY}%</span>
               </div>
-            </label>
-          </div>
 
-          <div className="flex items-center justify-between py-2 border-b border-[#e0e3e6]">
-            <span className="font-body-md text-[#191c1e] font-medium">Text Shadow</span>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" checked={textShadow} onChange={() => setTextShadow(!textShadow)} className="sr-only peer" />
-              <div className={`w-11 h-6 rounded-full transition-all duration-200 ease-in-out ${textShadow ? 'bg-[#006d2f]' : 'bg-[#e0e3e6]'} peer-focus:ring-2 peer-focus:ring-[#25D366]/50 relative`}>
-                <div className={`absolute top-[2px] left-[2px] bg-white w-5 h-5 rounded-full transition-all duration-200 ease-in-out border border-gray-300 ${textShadow ? 'translate-x-5' : 'translate-x-0'} shadow-sm`} />
+              {/* The interactive image with crosshair overlay */}
+              <div
+                ref={focalImageRef}
+                className="relative w-full rounded-xl overflow-hidden cursor-crosshair select-none"
+                style={{ height: `${Math.min(bannerHeight, 280)}px`, backgroundColor: bannerBgColor }}
+                onMouseDown={(e) => { setIsDraggingFocal(true); updateFocal(e.clientX, e.clientY); }}
+                onMouseMove={(e) => { if (isDraggingFocal) updateFocal(e.clientX, e.clientY); }}
+                onMouseUp={() => setIsDraggingFocal(false)}
+                onMouseLeave={() => setIsDraggingFocal(false)}
+                onTouchStart={(e) => { setIsDraggingFocal(true); updateFocal(e.touches[0].clientX, e.touches[0].clientY); }}
+                onTouchMove={(e) => { if (isDraggingFocal) updateFocal(e.touches[0].clientX, e.touches[0].clientY); }}
+                onTouchEnd={() => setIsDraggingFocal(false)}
+              >
+                <img
+                  src={activeBanner.url}
+                  alt="Banner preview"
+                  draggable={false}
+                  className="w-full h-full pointer-events-none"
+                  style={{ objectFit: 'cover', objectPosition: `${focalX}% ${focalY}%` }}
+                />
+
+                {/* Rule-of-thirds grid */}
+                <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 1 }}>
+                  <div style={{ position: 'absolute', left: '33.33%', top: 0, bottom: 0, width: '1px', backgroundColor: 'rgba(255,255,255,0.25)' }} />
+                  <div style={{ position: 'absolute', left: '66.66%', top: 0, bottom: 0, width: '1px', backgroundColor: 'rgba(255,255,255,0.25)' }} />
+                  <div style={{ position: 'absolute', top: '33.33%', left: 0, right: 0, height: '1px', backgroundColor: 'rgba(255,255,255,0.25)' }} />
+                  <div style={{ position: 'absolute', top: '66.66%', left: 0, right: 0, height: '1px', backgroundColor: 'rgba(255,255,255,0.25)' }} />
+                </div>
+
+                {/* Focal point crosshair */}
+                <div
+                  className="absolute pointer-events-none"
+                  style={{ left: `${focalX}%`, top: `${focalY}%`, transform: 'translate(-50%,-50%)', zIndex: 2 }}
+                >
+                  {/* Outer ring */}
+                  <div style={{ width: 28, height: 28, borderRadius: '50%', border: '2px solid white', boxShadow: '0 0 0 1px rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {/* Inner dot */}
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: 'white', boxShadow: '0 0 0 1px rgba(0,0,0,0.5)' }} />
+                  </div>
+                  {/* Cross lines */}
+                  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 40, height: 1, backgroundColor: 'white', boxShadow: '0 0 2px rgba(0,0,0,0.5)' }} />
+                  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 1, height: 40, backgroundColor: 'white', boxShadow: '0 0 2px rgba(0,0,0,0.5)' }} />
+                </div>
+
+                {/* Instruction hint */}
+                <div className="absolute bottom-2 left-2 bg-black/50 text-white text-[10px] rounded px-2 py-1 pointer-events-none" style={{ zIndex: 2 }}>
+                  Drag to adjust focal point
+                </div>
               </div>
-            </label>
-          </div>
 
-          <div className="flex items-center justify-between py-2 border-b border-[#e0e3e6]">
-            <span className="font-body-md text-[#191c1e] font-medium">Text Color</span>
-            <div className="flex items-center gap-2">
-              <input type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)}
-                className="w-8 h-8 rounded-lg cursor-pointer"
-                style={{ WebkitAppearance: 'none', border: 'none', outline: 'none', backgroundColor: textColor }} />
-              <code className="text-xs bg-[#f2f4f7] px-2 py-1 rounded-lg text-[#3c4a3d]">{textColor}</code>
-            </div>
-          </div>
-
-          <div>
-            <label className="font-label-md text-label-md text-[#3c4a3d] block uppercase tracking-wider text-xs mb-1">Text Alignment</label>
-            <div className="flex gap-2">
-              {['left', 'center', 'right'].map((align) => (
-                <button key={align} onClick={() => setTextAlignment(align)} className={`flex-1 px-4 py-2 rounded-lg border-2 transition-all flex items-center justify-center gap-1 ${textAlignment === align ? 'border-[#006d2f] bg-[#25D366]/10 text-[#006d2f]' : 'border-[#bbcbb9] hover:border-[#006d2f]'}`}>
-                  <span className="material-symbols-outlined text-base">{`format_align_${align}`}</span> {align.charAt(0).toUpperCase() + align.slice(1)}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <label className="font-label-md text-label-md text-[#3c4a3d] block uppercase tracking-wider text-xs mb-1">CTA Text</label>
-            <Input value={bannerCta} onChange={(e) => setBannerCta(e.target.value)} placeholder="e.g. Shop Now" className="bg-white border border-[#bbcbb9] rounded-lg" />
-          </div>
-
-          <div className="flex items-center justify-between py-2 border-b border-[#e0e3e6]">
-            <span className="font-body-md text-[#191c1e] font-medium">Show CTA Button</span>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" checked={showCta} onChange={() => setShowCta(!showCta)} className="sr-only peer" />
-              <div className={`w-11 h-6 rounded-full transition-all duration-200 ease-in-out ${showCta ? 'bg-[#006d2f]' : 'bg-[#e0e3e6]'} peer-focus:ring-2 peer-focus:ring-[#25D366]/50 relative`}>
-                <div className={`absolute top-[2px] left-[2px] bg-white w-5 h-5 rounded-full transition-all duration-200 ease-in-out border border-gray-300 ${showCta ? 'translate-x-5' : 'translate-x-0'} shadow-sm`} />
+              {/* Banner height slider — kept here beside the adjuster */}
+              <div className="flex items-center gap-4 mt-1">
+                <span className="font-label-md text-label-md text-[#3c4a3d] uppercase tracking-wider text-xs whitespace-nowrap">Height</span>
+                <input type="range" min="200" max="800" value={bannerHeight} onChange={(e) => setBannerHeight(parseInt(e.target.value))} className="flex-1 h-1.5 bg-[#e0e3e6] rounded-lg appearance-none cursor-pointer accent-[#006d2f]" />
+                <span className="text-sm font-semibold text-[#006d2f] min-w-[50px] text-right">{bannerHeight}px</span>
               </div>
-            </label>
-          </div>
 
-          <div>
-            <label className="font-label-md text-label-md text-[#3c4a3d] block uppercase tracking-wider text-xs mb-1">Height</label>
-            <div className="flex items-center gap-4">
-              <input type="range" min="200" max="800" value={bannerHeight} onChange={(e) => setBannerHeight(parseInt(e.target.value))} className="flex-1 h-1.5 bg-[#e0e3e6] rounded-lg appearance-none cursor-pointer accent-[#006d2f]" />
-              <span className="text-sm font-semibold text-[#006d2f] min-w-[50px] text-right">{bannerHeight}px</span>
+              {/* Multi-banner pagination dots (when > 1) */}
+              {bannerImages.length > 1 && (
+                <div className="flex gap-2 justify-center mt-2">
+                  {bannerImages.map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setActiveBannerIdx(i)}
+                      className="rounded-full transition-all"
+                      style={{ width: i === activeBannerIdx ? 20 : 8, height: 8, backgroundColor: i === activeBannerIdx ? '#006d2f' : '#bbcbb9' }}
+                      aria-label={`Edit banner ${i + 1}`}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
+        {/* Height slider for when there's no image yet */}
+        {bannerImages.length === 0 && (
+          <div className="flex items-center gap-4 mb-4">
+            <span className="font-label-md text-label-md text-[#3c4a3d] uppercase tracking-wider text-xs whitespace-nowrap">Height</span>
+            <input type="range" min="200" max="800" value={bannerHeight} onChange={(e) => setBannerHeight(parseInt(e.target.value))} className="flex-1 h-1.5 bg-[#e0e3e6] rounded-lg appearance-none cursor-pointer accent-[#006d2f]" />
+            <span className="text-sm font-semibold text-[#006d2f] min-w-[50px] text-right">{bannerHeight}px</span>
+          </div>
+        )}
+
+        {/* ── HIDDEN: Text & CTA fields ─────────────────────────
+            Kept for future re-use. Do not delete.
+            Hidden per product decision (2026-10-19).
+        ──────────────────────────────────────────────────────── */}
+        {false && (
+          <div className="space-y-3">
+            {/* Tagline */}
+            <div>
+              <label className="font-label-md text-label-md text-[#3c4a3d] block uppercase tracking-wider text-xs mb-1">Tagline</label>
+              <textarea value={bannerTagline} onChange={(e) => setBannerTagline(e.target.value)} placeholder="e.g. Fresh, Organic & Delivered" rows={2} className="w-full px-3 py-2 bg-white border border-[#bbcbb9] rounded-lg text-sm focus:outline-none focus:border-[#006d2f] resize-none" />
+            </div>
+            {/* Subtitle */}
+            <div>
+              <label className="font-label-md text-label-md text-[#3c4a3d] block uppercase tracking-wider text-xs mb-1">Subtitle</label>
+              <textarea value={bannerSubtitle} onChange={(e) => setBannerSubtitle(e.target.value)} placeholder="e.g. 100% Natural Stone-Ground Flour" rows={2} className="w-full px-3 py-2 bg-white border border-[#bbcbb9] rounded-lg text-sm focus:outline-none focus:border-[#006d2f] resize-none" />
+            </div>
+            {/* Show Tagline & Subtitle */}
+            <div className="flex items-center justify-between py-2 border-b border-[#e0e3e6]">
+              <span className="font-body-md text-[#191c1e] font-medium">Show Tagline & Subtitle</span>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" checked={showText} onChange={() => setShowText(!showText)} className="sr-only peer" />
+                <div className={`w-11 h-6 rounded-full transition-all duration-200 ease-in-out ${showText ? 'bg-[#006d2f]' : 'bg-[#e0e3e6]'} peer-focus:ring-2 peer-focus:ring-[#25D366]/50 relative`}>
+                  <div className={`absolute top-[2px] left-[2px] bg-white w-5 h-5 rounded-full transition-all duration-200 ease-in-out border border-gray-300 ${showText ? 'translate-x-5' : 'translate-x-0'} shadow-sm`} />
+                </div>
+              </label>
+            </div>
+            {/* Text Shadow */}
+            <div className="flex items-center justify-between py-2 border-b border-[#e0e3e6]">
+              <span className="font-body-md text-[#191c1e] font-medium">Text Shadow</span>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" checked={textShadow} onChange={() => setTextShadow(!textShadow)} className="sr-only peer" />
+                <div className={`w-11 h-6 rounded-full transition-all duration-200 ease-in-out ${textShadow ? 'bg-[#006d2f]' : 'bg-[#e0e3e6]'} peer-focus:ring-2 peer-focus:ring-[#25D366]/50 relative`}>
+                  <div className={`absolute top-[2px] left-[2px] bg-white w-5 h-5 rounded-full transition-all duration-200 ease-in-out border border-gray-300 ${textShadow ? 'translate-x-5' : 'translate-x-0'} shadow-sm`} />
+                </div>
+              </label>
+            </div>
+            {/* Text Color */}
+            <div className="flex items-center justify-between py-2 border-b border-[#e0e3e6]">
+              <span className="font-body-md text-[#191c1e] font-medium">Text Color</span>
+              <div className="flex items-center gap-2">
+                <input type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)} className="w-8 h-8 rounded-lg cursor-pointer" style={{ WebkitAppearance: 'none', border: 'none', outline: 'none', backgroundColor: textColor }} />
+                <code className="text-xs bg-[#f2f4f7] px-2 py-1 rounded-lg text-[#3c4a3d]">{textColor}</code>
+              </div>
+            </div>
+            {/* Text Alignment */}
+            <div>
+              <label className="font-label-md text-label-md text-[#3c4a3d] block uppercase tracking-wider text-xs mb-1">Text Alignment</label>
+              <div className="flex gap-2">
+                {['left', 'center', 'right'].map((align) => (
+                  <button key={align} onClick={() => setTextAlignment(align)} className={`flex-1 px-4 py-2 rounded-lg border-2 transition-all flex items-center justify-center gap-1 ${textAlignment === align ? 'border-[#006d2f] bg-[#25D366]/10 text-[#006d2f]' : 'border-[#bbcbb9] hover:border-[#006d2f]'}`}>
+                    <span className="material-symbols-outlined text-base">{`format_align_${align}`}</span> {align.charAt(0).toUpperCase() + align.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* CTA Text */}
+            <div>
+              <label className="font-label-md text-label-md text-[#3c4a3d] block uppercase tracking-wider text-xs mb-1">CTA Text</label>
+              <Input value={bannerCta} onChange={(e) => setBannerCta(e.target.value)} placeholder="e.g. Shop Now" className="bg-white border border-[#bbcbb9] rounded-lg" />
+            </div>
+            {/* Show CTA Button */}
+            <div className="flex items-center justify-between py-2 border-b border-[#e0e3e6]">
+              <span className="font-body-md text-[#191c1e] font-medium">Show CTA Button</span>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" checked={showCta} onChange={() => setShowCta(!showCta)} className="sr-only peer" />
+                <div className={`w-11 h-6 rounded-full transition-all duration-200 ease-in-out ${showCta ? 'bg-[#006d2f]' : 'bg-[#e0e3e6]'} peer-focus:ring-2 peer-focus:ring-[#25D366]/50 relative`}>
+                  <div className={`absolute top-[2px] left-[2px] bg-white w-5 h-5 rounded-full transition-all duration-200 ease-in-out border border-gray-300 ${showCta ? 'translate-x-5' : 'translate-x-0'} shadow-sm`} />
+                </div>
+              </label>
+            </div>
+            {/* Background Color */}
+            <div className="flex items-center justify-between py-2 border-b border-[#e0e3e6]">
+              <span className="font-body-md text-[#191c1e] font-medium">Background Color</span>
+              <div className="flex items-center gap-2">
+                <input type="color" value={bannerBgColor} onChange={(e) => setBannerBgColor(e.target.value)} className="w-8 h-8 rounded-lg cursor-pointer" style={{ WebkitAppearance: 'none', border: 'none', outline: 'none', backgroundColor: bannerBgColor }} />
+                <code className="text-xs bg-[#f2f4f7] px-2 py-1 rounded-lg text-[#3c4a3d]">{bannerBgColor}</code>
+              </div>
             </div>
           </div>
-
-          <div className="flex items-center justify-between py-2 border-b border-[#e0e3e6]">
-            <span className="font-body-md text-[#191c1e] font-medium">Background Color</span>
-            <div className="flex items-center gap-2">
-              <input type="color" value={bannerBgColor} onChange={(e) => setBannerBgColor(e.target.value)}
-                className="w-8 h-8 rounded-lg cursor-pointer"
-                style={{ WebkitAppearance: 'none', border: 'none', outline: 'none', backgroundColor: bannerBgColor }} />
-              <code className="text-xs bg-[#f2f4f7] px-2 py-1 rounded-lg text-[#3c4a3d]">{bannerBgColor}</code>
-            </div>
-          </div>
-        </div>
+        )}
       </Card>
     </StoreBuilderLayout>
     </>

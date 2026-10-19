@@ -122,6 +122,7 @@ const StorefrontApp = ({ builderData, storeId, device = 'desktop', className = '
     autoSlideProductImages: builderData.products.autoSlideProductImages || false,
     addToCartLabel: builderData.products.addToCartLabel || 'Add to Cart',
     bannerImage: builderData.products.banner.image,
+    bannerImages: builderData.products.banner.images || [],
     bannerTagline: builderData.products.banner.tagline,
     bannerSubtitle: builderData.products.banner.subtitle,
     bannerCta: builderData.products.banner.cta,
