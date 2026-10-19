@@ -1,7 +1,7 @@
 import AIAssistant from './AIAssistant';
 import * as XLSX from 'xlsx';
 import { showSuccess, showError } from '../../utils/toast';
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStoreBuilder } from '../../Context/StoreBuilderContext';
 import StoreBuilderLayout from './StoreBuilderLayout';
@@ -131,6 +131,128 @@ const Step2_ProductConfig = () => {
   // Keep refs in sync with state
   useEffect(() => { adjZoomRef.current = adjZoom; }, [adjZoom]);
   useEffect(() => { adjPanRef.current = adjPan; }, [adjPan]);
+
+  // ── Adjuster handler refs (stable across renders — no stale closures) ──────
+  // These refs hold the current values of state that handlers need to read
+  // without causing re-renders or stale closure bugs.
+  const adjNaturalRef = useRef({ w: 0, h: 0 });
+  const adjContainerSizeRef = useRef({ w: 0, h: 0 });
+  const activeBannerIdxRef = useRef(0);
+  useEffect(() => { adjNaturalRef.current = adjNatural; }, [adjNatural]);
+  useEffect(() => { adjContainerSizeRef.current = adjContainerSize; }, [adjContainerSize]);
+  useEffect(() => { activeBannerIdxRef.current = activeBannerIdx; }, [activeBannerIdx]);
+
+  // clampPan — keeps image covering the container when panned
+  const clampAdjPan = useCallback((px, py, zoom) => {
+    if (zoom <= 1) return { x: 0, y: 0 };
+    const { w, h } = adjContainerSizeRef.current;
+    const maxX = ((zoom - 1) / zoom) * w / 2;
+    const maxY = ((zoom - 1) / zoom) * h / 2;
+    return {
+      x: Math.max(-maxX, Math.min(maxX, px)),
+      y: Math.max(-maxY, Math.min(maxY, py)),
+    };
+  }, []);
+
+  // saveScale — persist zoom into bannerImages array
+  const saveAdjScale = useCallback((z) => {
+    setBannerImages(prev => prev.map((b, i) => i === activeBannerIdxRef.current ? { ...b, scale: z } : b));
+  }, []);
+
+  // updateFocal — convert container-relative pointer coords into focalX/focalY (0–100)
+  const updateAdjFocal = useCallback((clientX, clientY) => {
+    const rect = focalImageRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const zoom = adjZoomRef.current;
+    const pan  = adjPanRef.current;
+    const nat  = adjNaturalRef.current;
+    const cW   = adjContainerSizeRef.current.w || rect.width;
+    const cH   = adjContainerSizeRef.current.h || rect.height;
+    if (nat.w === 0 || nat.h === 0) return;
+    const coverSc = Math.max(cW / nat.w, cH / nat.h);
+    const iW = nat.w * coverSc * zoom;
+    const iH = nat.h * coverSc * zoom;
+    const relX = clientX - rect.left;
+    const relY = clientY - rect.top;
+    setBannerImages(prev => {
+      const idx = activeBannerIdxRef.current;
+      const cur = prev[idx];
+      if (!cur) return prev;
+      const fx = cur.focalX ?? 50;
+      const fy = cur.focalY ?? 50;
+      const iLeft = cW / 2 - (fx / 100) * iW + pan.x;
+      const iTop  = cH / 2 - (fy / 100) * iH + pan.y;
+      const x = Math.round(Math.min(100, Math.max(0, ((relX - iLeft) / iW) * 100)));
+      const y = Math.round(Math.min(100, Math.max(0, ((relY - iTop)  / iH) * 100)));
+      return prev.map((b, i) => i === idx ? { ...b, focalX: x, focalY: y } : b);
+    });
+  }, []);
+
+  // Pointer handlers — defined at component top level, use refs, pointer capture
+  const onAdjPointerDown = useCallback((e) => {
+    e.preventDefault();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    if (adjZoomRef.current > 1) {
+      isPanningRef.current = true;
+      setDragMode('panning');
+      panStartRef.current = { x: e.clientX - adjPanRef.current.x, y: e.clientY - adjPanRef.current.y };
+    } else {
+      isDraggingFocalRef.current = true;
+      setDragMode('focal');
+      lastFocalPosRef.current = { x: e.clientX, y: e.clientY };
+      updateAdjFocal(e.clientX, e.clientY);
+    }
+  }, [updateAdjFocal]);
+
+  const onAdjPointerMove = useCallback((e) => {
+    if (isPanningRef.current) {
+      const raw = { x: e.clientX - panStartRef.current.x, y: e.clientY - panStartRef.current.y };
+      const clamped = clampAdjPan(raw.x, raw.y, adjZoomRef.current);
+      adjPanRef.current = clamped;
+      setAdjPan(clamped);
+    } else if (isDraggingFocalRef.current) {
+      const last = lastFocalPosRef.current;
+      const dx = e.clientX - last.x;
+      const dy = e.clientY - last.y;
+      if (Math.sqrt(dx * dx + dy * dy) >= 8) {
+        lastFocalPosRef.current = { x: e.clientX, y: e.clientY };
+        updateAdjFocal(e.clientX, e.clientY);
+      }
+    }
+  }, [clampAdjPan, updateAdjFocal]);
+
+  const onAdjPointerUp = useCallback(() => {
+    isDraggingFocalRef.current = false;
+    isPanningRef.current = false;
+    setDragMode('idle');
+  }, []);
+
+  const onAdjWheel = useCallback((e) => {
+    e.preventDefault();
+    const delta = e.deltaY < 0 ? 0.15 : -0.15;
+    const next = Math.min(3, Math.max(1, adjZoomRef.current + delta));
+    adjZoomRef.current = next;
+    setAdjZoom(next);
+    saveAdjScale(next);
+    if (next <= 1) {
+      adjPanRef.current = { x: 0, y: 0 };
+      setAdjPan({ x: 0, y: 0 });
+    } else {
+      const c = clampAdjPan(adjPanRef.current.x, adjPanRef.current.y, next);
+      adjPanRef.current = c;
+      setAdjPan(c);
+    }
+  }, [clampAdjPan, saveAdjScale]);
+
+  const resetAdjuster = useCallback(() => {
+    setAdjZoom(1);
+    adjZoomRef.current = 1;
+    setAdjPan({ x: 0, y: 0 });
+    adjPanRef.current = { x: 0, y: 0 };
+    setBannerImages(prev => prev.map((b, i) =>
+      i === activeBannerIdxRef.current ? { ...b, focalX: 50, focalY: 50, scale: 1 } : b
+    ));
+  }, []);
 
   // Measure adjuster container via ResizeObserver so layout math always has real dimensions
   useEffect(() => {
@@ -2346,136 +2468,32 @@ Continue?`;
           const focalX = activeBanner.focalX ?? 50;
           const focalY = activeBanner.focalY ?? 50;
 
-          // Clamp pan so image never drifts too far when zoomed
-          const clampPan = (px, py, zoom) => {
-            // When zoom >= 1: pan is allowed up to the overflow edge
-            // When zoom < 1: image is smaller than container — no pan needed, lock to centre
-            if (zoom <= 1) return { x: 0, y: 0 };
-            const r = focalImageRef.current?.getBoundingClientRect();
-            const w = r?.width  || 300;
-            const h = r?.height || 200;
-            const maxX = ((zoom - 1) / zoom) * w / 2;
-            const maxY = ((zoom - 1) / zoom) * h / 2;
-            return {
-              x: Math.max(-maxX, Math.min(maxX, px)),
-              y: Math.max(-maxY, Math.min(maxY, py)),
-            };
-          };
-
-          // Save scale to the active image whenever adjZoom changes
-          const saveScale = (z) => {
-            setBannerImages(prev => prev.map((b, i) => i === activeBannerIdx ? { ...b, scale: z } : b));
-          };
-
-                  // All handlers use refs — avoids stale closure in mousemove/touchmove
-          // dragMode state is declared at component top level (not here) to satisfy Rules of Hooks
-          const handlePointerDown = (clientX, clientY) => {
-            if (adjZoomRef.current > 1) {
-              isPanningRef.current = true;
-              setDragMode('panning');
-              panStartRef.current = { x: clientX - adjPanRef.current.x, y: clientY - adjPanRef.current.y };
-            } else {
-              isDraggingFocalRef.current = true;
-              lastFocalPosRef.current = { x: clientX, y: clientY };
-              setDragMode('focal');
-              updateFocal(clientX, clientY);
-            }
-          };
-
-          const handlePointerMove = (clientX, clientY) => {
-            if (isPanningRef.current) {
-              const raw = { x: clientX - panStartRef.current.x, y: clientY - panStartRef.current.y };
-              const clamped = clampPan(raw.x, raw.y, adjZoomRef.current);
-              adjPanRef.current = clamped;
-              setAdjPan(clamped);
-            } else if (isDraggingFocalRef.current) {
-              // Throttle: only update focal point when cursor moves >6px — reduces jitter
-              const last = lastFocalPosRef.current;
-              const dx = clientX - last.x;
-              const dy = clientY - last.y;
-              if (Math.sqrt(dx * dx + dy * dy) >= 16) {
-                lastFocalPosRef.current = { x: clientX, y: clientY };
-                updateFocal(clientX, clientY);
-              }
-            }
-          };
-
-          const handlePointerUp = () => {
-            isDraggingFocalRef.current = false;
-            isPanningRef.current = false;
-            setDragMode('idle');
-          };
-
-          const updateFocal = (clientX, clientY) => {
-            const rect = focalImageRef.current?.getBoundingClientRect();
-            if (!rect) return;
-            const zoom = adjZoomRef.current;
-            const pan  = adjPanRef.current;
-            const relX = clientX - rect.left;
-            const relY = clientY - rect.top;
-            // Mirror the same natural-dimension layout math used in the render block below
-            const nat = adjNatural;
-            const cW = rect.width;
-            const cH = rect.height;
-            const nW = nat.w > 0 ? nat.w : 1;
-            const nH = nat.w > 0 ? nat.h : 1;
-            const coverSc = nat.w > 0 ? Math.max(cW / nW, cH / nH) : 1;
-            const iW = nW * coverSc * zoom;
-            const iH = nH * coverSc * zoom;
-            // We don't know current focalX/focalY here (stale closure risk), but we can infer
-            // the image left/top from what we know: the click itself tells us the new focal point.
-            // Use the current bannerImages value via a functional update:
-            setBannerImages(prev => {
-              const cur = prev[activeBannerIdx];
-              if (!cur) return prev;
-              const fx = cur.focalX ?? 50;
-              const fy = cur.focalY ?? 50;
-              const iLeft = cW / 2 - (fx / 100) * iW + pan.x;
-              const iTop  = cH / 2 - (fy / 100) * iH + pan.y;
-              const x = Math.round(Math.min(100, Math.max(0, ((relX - iLeft) / iW) * 100)));
-              const y = Math.round(Math.min(100, Math.max(0, ((relY - iTop)  / iH) * 100)));
-              return prev.map((b, i) => i === activeBannerIdx ? { ...b, focalX: x, focalY: y } : b);
-            });
-          };
-
-          const handleWheel = (e) => {
-            e.preventDefault();
-            const delta = e.deltaY < 0 ? 0.15 : -0.15;
-            const next = Math.min(3, Math.max(1, adjZoomRef.current + delta));
-            adjZoomRef.current = next;
-            setAdjZoom(next);
-            saveScale(next);
-            if (next === 1) { adjPanRef.current = { x: 0, y: 0 }; setAdjPan({ x: 0, y: 0 }); }
-            else { const c = clampPan(adjPanRef.current.x, adjPanRef.current.y, next); adjPanRef.current = c; setAdjPan(c); }
-          };
-
-          // Crosshair position — image starts at (left, top) = ((50 - zoom*50)%, same) + pan offset
-          // ── Image layout math ───────────────────────────────────────────
-          // Base: image fills container width at scale=1, maintaining aspect ratio.
-          // scale < 1 → image smaller than container (letterboxed).
-          // scale > 1 → image larger than container (crops at edges).
-          // focalX/focalY pins which image point sits at container centre.
-          // adjPan shifts that centre point.
-          // Use ResizeObserver-measured size — reliable even before first paint
+          // ── Image layout math (cover geometry) ────────────────────────────────
           const containerW = adjContainerSize.w || focalImageRef.current?.getBoundingClientRect().width  || 660;
           const containerH = adjContainerSize.h || focalImageRef.current?.getBoundingClientRect().height || bannerHeight;
           const natW = adjNatural.w || 1;
           const natH = adjNatural.h || 1;
-          // Cover geometry: scale so image fills BOTH dimensions at adjZoom=1
           const coverScale = adjNatural.w > 0
             ? Math.max(containerW / natW, containerH / natH)
             : 1;
           const imgW = natW * coverScale * adjZoom;
           const imgH = natH * coverScale * adjZoom;
-          // Focal point in image px
           const focalPxX = (focalX / 100) * imgW;
           const focalPxY = (focalY / 100) * imgH;
-          // Image top-left so focal point lands at container centre + pan
           const imgLeft = containerW / 2 - focalPxX + adjPan.x;
           const imgTop  = containerH / 2 - focalPxY + adjPan.y;
-          // Crosshair sits at focal point in container coords
           const crosshairLeft = imgLeft + focalPxX;
           const crosshairTop  = imgTop  + focalPxY;
+
+          // Zoom button helpers — use stable top-level callbacks
+          const zoomStep = (delta) => {
+            const z = Math.min(3, Math.max(1, adjZoom + delta));
+            adjZoomRef.current = z;
+            setAdjZoom(z);
+            saveAdjScale(z);
+            if (z <= 1) { adjPanRef.current = { x: 0, y: 0 }; setAdjPan({ x: 0, y: 0 }); }
+            else { const c = clampAdjPan(adjPanRef.current.x, adjPanRef.current.y, z); adjPanRef.current = c; setAdjPan(c); }
+          };
 
           return (
             <div className="space-y-2 mb-4">
@@ -2490,7 +2508,7 @@ Continue?`;
                 <span className="text-[10px] text-[#556067]">{focalX}% · {focalY}% · {Math.round(adjZoom * 100)}%</span>
               </div>
 
-              {/* Interactive viewport */}
+              {/* Interactive viewport — uses pointer events with capture for reliable drag */}
               <div
                 ref={focalImageRef}
                 className="relative w-full rounded-xl overflow-hidden select-none"
@@ -2498,15 +2516,13 @@ Continue?`;
                   height: `${bannerHeight}px`,
                   backgroundColor: bannerBgColor,
                   cursor: adjZoom > 1 ? (dragMode === 'panning' ? 'grabbing' : 'grab') : 'crosshair',
+                  touchAction: 'none',
                 }}
-                onMouseDown={(e) => handlePointerDown(e.clientX, e.clientY)}
-                onMouseMove={(e) => handlePointerMove(e.clientX, e.clientY)}
-                onMouseUp={handlePointerUp}
-                onMouseLeave={handlePointerUp}
-                onTouchStart={(e) => { e.preventDefault(); handlePointerDown(e.touches[0].clientX, e.touches[0].clientY); }}
-                onTouchMove={(e) => { e.preventDefault(); handlePointerMove(e.touches[0].clientX, e.touches[0].clientY); }}
-                onTouchEnd={handlePointerUp}
-                onWheel={handleWheel}
+                onPointerDown={onAdjPointerDown}
+                onPointerMove={onAdjPointerMove}
+                onPointerUp={onAdjPointerUp}
+                onPointerCancel={onAdjPointerUp}
+                onWheel={onAdjWheel}
               >
                 {/* Zoomed + panned image — no objectFit, explicit pixel placement */}
                 <img
@@ -2515,10 +2531,11 @@ Continue?`;
                   draggable={false}
                   className="absolute pointer-events-none"
                   onLoad={(e) => {
-                    // Capture natural dimensions so cover-geometry math has real values.
-                    // Do NOT reset focal/scale/pan — tenant may have already adjusted them.
-                    // New uploads always start at focalX:50 focalY:50 scale:1 (set at push time).
-                    setAdjNatural({ w: e.target.naturalWidth, h: e.target.naturalHeight });
+                    // Capture natural dimensions only — do NOT reset tenant's saved adjustments.
+                    // New uploads start at focalX:50 focalY:50 scale:1 (set at push time).
+                    const nat = { w: e.target.naturalWidth, h: e.target.naturalHeight };
+                    setAdjNatural(nat);
+                    adjNaturalRef.current = nat;
                   }}
                   style={{
                     width:  adjNatural.w > 0 ? `${imgW}px` : '100%',
@@ -2537,7 +2554,7 @@ Continue?`;
                   <div style={{ position: 'absolute', top: '66.66%', left: 0, right: 0, height: '1px', backgroundColor: 'rgba(255,255,255,0.25)' }} />
                 </div>
 
-                {/* Focal point crosshair — follows image content position */}
+                {/* Focal point crosshair */}
                 <div
                   className="absolute pointer-events-none"
                   style={{ left: crosshairLeft, top: crosshairTop, transform: 'translate(-50%,-50%)', zIndex: 2 }}
@@ -2551,15 +2568,15 @@ Continue?`;
 
                 {/* Hint */}
                 <div className="absolute bottom-2 left-2 bg-black/50 text-white text-[10px] rounded px-2 py-1 pointer-events-none" style={{ zIndex: 2 }}>
-                  {adjZoom > 1 ? 'Drag to pan · click to set focal point' : 'Drag or click to set focal point'}
+                  {adjZoom > 1 ? 'Drag to pan · click to set focal point' : 'Click or drag to set focal point'}
                 </div>
               </div>
 
-              {/* Zoom + Pan controls */}
+              {/* Zoom controls + Reset */}
               <div className="flex items-center gap-2 mt-1">
                 {/* Zoom out */}
                 <button
-                  onClick={() => { const z = Math.max(1, adjZoom - 0.25); setAdjZoom(z); adjZoomRef.current = z; if (z <= 1) { setAdjPan({ x: 0, y: 0 }); adjPanRef.current = { x: 0, y: 0 }; } saveScale(z); }}
+                  onClick={() => zoomStep(-0.25)}
                   className="w-7 h-7 rounded-lg border border-[#bbcbb9] flex items-center justify-center hover:border-[#006d2f] hover:text-[#006d2f] transition-colors flex-shrink-0"
                   title="Zoom out"
                 >
@@ -2572,17 +2589,18 @@ Continue?`;
                   value={Math.round(adjZoom * 100)}
                   onChange={(e) => {
                     const z = parseInt(e.target.value) / 100;
-                    setAdjZoom(z); adjZoomRef.current = z;
-                    if (z <= 1) { setAdjPan({ x: 0, y: 0 }); adjPanRef.current = { x: 0, y: 0 }; }
-                    else setAdjPan(p => { const c = clampPan(p.x, p.y, z); adjPanRef.current = c; return c; });
-                    saveScale(z);
+                    adjZoomRef.current = z;
+                    setAdjZoom(z);
+                    saveAdjScale(z);
+                    if (z <= 1) { adjPanRef.current = { x: 0, y: 0 }; setAdjPan({ x: 0, y: 0 }); }
+                    else { const c = clampAdjPan(adjPanRef.current.x, adjPanRef.current.y, z); adjPanRef.current = c; setAdjPan(c); }
                   }}
                   className="flex-1 h-1.5 bg-[#e0e3e6] rounded-lg appearance-none cursor-pointer accent-[#006d2f]"
                 />
 
                 {/* Zoom in */}
                 <button
-                  onClick={() => { const z = Math.min(3, adjZoom + 0.25); setAdjZoom(z); adjZoomRef.current = z; setAdjPan(p => { const c = clampPan(p.x, p.y, z); adjPanRef.current = c; return c; }); saveScale(z); }}
+                  onClick={() => zoomStep(0.25)}
                   className="w-7 h-7 rounded-lg border border-[#bbcbb9] flex items-center justify-center hover:border-[#006d2f] hover:text-[#006d2f] transition-colors flex-shrink-0"
                   title="Zoom in"
                 >
@@ -2591,16 +2609,14 @@ Continue?`;
 
                 <span className="text-sm font-semibold text-[#006d2f] min-w-[42px] text-right">{Math.round(adjZoom * 100)}%</span>
 
-                {/* Reset button */}
-                {(adjZoom !== 1 || adjPan.x !== 0 || adjPan.y !== 0) && (
-                  <button
-                    onClick={() => { setAdjZoom(1); adjZoomRef.current = 1; setAdjPan({ x: 0, y: 0 }); adjPanRef.current = { x: 0, y: 0 }; saveScale(1); }}
-                    className="text-[10px] text-[#556067] hover:text-[#006d2f] border border-[#bbcbb9] rounded px-2 py-1 transition-colors flex-shrink-0"
-                    title="Reset zoom & pan"
-                  >
-                    Reset
-                  </button>
-                )}
+                {/* Reset — zeros ALL adjustments: focal, scale, pan */}
+                <button
+                  onClick={resetAdjuster}
+                  className="text-[10px] text-[#556067] hover:text-[#006d2f] border border-[#bbcbb9] rounded px-2 py-1 transition-colors flex-shrink-0"
+                  title="Reset to centre · 100% zoom"
+                >
+                  Reset
+                </button>
               </div>
 
               {/* D-pad pan controls — visible only when zoomed */}
@@ -2609,29 +2625,19 @@ Continue?`;
                 const panBtn = (icon, title, dx, dy) => (
                   <button
                     key={title}
-                    onMouseDown={(e) => {
+                    onPointerDown={(e) => {
                       e.preventDefault();
+                      e.currentTarget.setPointerCapture(e.pointerId);
                       const move = () => {
-                        const next = clampPan(adjPanRef.current.x + dx * step, adjPanRef.current.y + dy * step, adjZoomRef.current);
+                        const next = clampAdjPan(adjPanRef.current.x + dx * step, adjPanRef.current.y + dy * step, adjZoomRef.current);
                         adjPanRef.current = next;
                         setAdjPan({ ...next });
                       };
                       move();
                       const iv = setInterval(move, 80);
-                      const stop = () => { clearInterval(iv); window.removeEventListener('mouseup', stop); };
-                      window.addEventListener('mouseup', stop);
-                    }}
-                    onTouchStart={(e) => {
-                      e.preventDefault();
-                      const move = () => {
-                        const next = clampPan(adjPanRef.current.x + dx * step, adjPanRef.current.y + dy * step, adjZoomRef.current);
-                        adjPanRef.current = next;
-                        setAdjPan({ ...next });
-                      };
-                      move();
-                      const iv = setInterval(move, 80);
-                      const stop = () => { clearInterval(iv); window.removeEventListener('touchend', stop); };
-                      window.addEventListener('touchend', stop);
+                      const stop = () => clearInterval(iv);
+                      e.currentTarget.addEventListener('pointerup', stop, { once: true });
+                      e.currentTarget.addEventListener('pointercancel', stop, { once: true });
                     }}
                     className="w-8 h-8 rounded-lg border border-[#bbcbb9] flex items-center justify-center hover:border-[#006d2f] hover:text-[#006d2f] active:bg-[#006d2f]/10 transition-colors"
                     title={title}
@@ -2667,7 +2673,7 @@ Continue?`;
                   {bannerImages.map((_, i) => (
                     <button
                       key={i}
-                      onClick={() => { setActiveBannerIdx(i); setAdjZoom(1); setAdjPan({ x: 0, y: 0 }); }}
+                      onClick={() => { setActiveBannerIdx(i); activeBannerIdxRef.current = i; const s = bannerImages[i]?.scale ?? 1; setAdjZoom(s); adjZoomRef.current = s; setAdjPan({ x: 0, y: 0 }); adjPanRef.current = { x: 0, y: 0 }; setAdjNatural({ w: 0, h: 0 }); adjNaturalRef.current = { w: 0, h: 0 }; }}
                       className="rounded-full transition-all"
                       style={{ width: i === activeBannerIdx ? 20 : 8, height: 8, backgroundColor: i === activeBannerIdx ? '#006d2f' : '#bbcbb9' }}
                       aria-label={`Edit banner ${i + 1}`}
