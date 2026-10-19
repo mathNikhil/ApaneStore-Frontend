@@ -122,6 +122,7 @@ const Step2_ProductConfig = () => {
   const adjZoomRef = useRef(1); // mirror for use in event handlers
   const [adjPan, setAdjPan] = useState({ x: 0, y: 0 }); // px offset in adjuster
   const adjPanRef = useRef({ x: 0, y: 0 }); // mirror for use in event handlers
+  const [dragMode, setDragMode] = useState('idle'); // 'idle'|'panning'|'focal' — for cursor display only
   const focalImageRef = useRef(null);
 
   // Keep refs in sync with state
@@ -2332,9 +2333,7 @@ Continue?`;
           };
 
                   // All handlers use refs — avoids stale closure in mousemove/touchmove
-          // dragMode is the only state piece used for cursor display
-          const [dragMode, setDragMode] = useState('idle'); // 'idle' | 'panning' | 'focal'
-
+          // dragMode state is declared at component top level (not here) to satisfy Rules of Hooks
           const handlePointerDown = (clientX, clientY) => {
             if (adjZoomRef.current > 1) {
               isPanningRef.current = true;
