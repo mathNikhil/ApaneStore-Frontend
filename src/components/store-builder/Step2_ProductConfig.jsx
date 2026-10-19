@@ -47,20 +47,20 @@ const ImageError = ({ error }) => {
 };
 
 // ── BannerCropTool ───────────────────────────────────────────────────────────
-// Fixed-width crop frame (~1077px) dragged over the full image.
-// Tenant drags the frame to select which area to show. "Apply Crop" sends
-// the selection to the server (Sharp .extract), which overwrites the file.
+// Fixed-width crop frame dragged over the full image.
+// "Apply Crop" saves the frame position as natural-pixel coords in state —
+// NO server-side crop, original file is never touched.
+// Storefront uses those coords to CSS-clip the image to the framed area.
 // FRAME_W mirrors the storefront banner container width.
 const CROP_FRAME_W = 1200;
 
-const BannerCropTool = ({ slide, frameH, onCropApplied, tenantId, storeId }) => {
+const BannerCropTool = ({ slide, frameH, onCropApplied }) => {
   const wrapRef   = useRef(null);
   const [natural, setNatural] = useState({ w: 0, h: 0 });
   const [frameTop, setFrameTop]   = useState(0); // px from image top
   const [frameLeft, setFrameLeft] = useState(0); // px from image left
   const [scale, setScale]         = useState(1); // display scale: displayW / CROP_FRAME_W
-  const [saving, setSaving]       = useState(false);
-  const [saved,  setSaved]        = useState(false);
+  const [saved,  setSaved]        = useState(!!slide.crop);
   const dragRef   = useRef(null); // { startX, startY, startLeft, startTop }
   const frameRef  = useRef(null);
 
@@ -121,28 +121,25 @@ const BannerCropTool = ({ slide, frameH, onCropApplied, tenantId, storeId }) => 
     };
   };
 
-  const handleApplyCrop = async () => {
-    if (!slide.id) { alert('Image ID missing — please re-upload this banner'); return; }
-    setSaving(true);
-    try {
-      const crop = getNaturalCrop();
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5002'}/api/stores/${tenantId}/${storeId}/images/hero/${slide.id}/crop`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(crop),
-        }
-      );
-      const json = await res.json();
-      if (!json.success) throw new Error(json.error || 'Crop failed');
-      setSaved(true);
-      if (onCropApplied) onCropApplied(slide.id, crop);
-    } catch (err) {
-      alert('Crop failed: ' + err.message);
-    } finally {
-      setSaving(false);
+  const handleApplyCrop = () => {
+    const crop = getNaturalCrop();
+    setSaved(true);
+    if (onCropApplied) onCropApplied(slide.id, crop);
+  };
+
+  const handleReset = () => {
+    // Re-centre the frame and clear crop from state
+    if (natural.w > 0 && wrapRef.current) {
+      const ds = Math.min(1, wrapRef.current.offsetWidth / natural.w);
+      const dW = natural.w * ds;
+      const dH = natural.h * ds;
+      const fW = Math.min(CROP_FRAME_W * ds, dW);
+      const fH = frameH * ds;
+      setFrameLeft(Math.max(0, (dW - fW) / 2));
+      setFrameTop(Math.max(0, (dH - fH) / 2));
     }
+    setSaved(false);
+    if (onCropApplied) onCropApplied(slide.id, null); // null = reset
   };
 
   return (
@@ -228,19 +225,24 @@ const BannerCropTool = ({ slide, frameH, onCropApplied, tenantId, storeId }) => 
         Drag the green frame to select what your store banner shows · Aspect ratio guide: 16:5
       </p>
 
-      {/* Apply Crop button */}
+      {/* Apply / Reset buttons */}
       {natural.w > 0 && (
-        <button
-          onClick={handleApplyCrop}
-          disabled={saving || saved}
-          className={`w-full py-2 rounded-lg text-sm font-medium transition-colors ${
-            saved
-              ? 'bg-[#e6f4ea] text-[#006d2f] border border-[#006d2f]/30 cursor-default'
-              : 'bg-[#006d2f] text-white hover:bg-[#005525] disabled:opacity-60'
-          }`}
-        >
-          {saving ? 'Applying…' : saved ? '✓ Crop Applied' : 'Apply Crop'}
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={handleApplyCrop}
+            className="flex-1 py-2 rounded-lg text-sm font-medium transition-colors bg-[#006d2f] text-white hover:bg-[#005525]"
+          >
+            {saved ? '✓ Applied — Update' : 'Apply Crop'}
+          </button>
+          {saved && (
+            <button
+              onClick={handleReset}
+              className="py-2 px-4 rounded-lg text-sm font-medium transition-colors bg-white border border-[#bbcbb9] text-[#3c4a3d] hover:bg-[#f1f5f1]"
+            >
+              Reset
+            </button>
+          )}
+        </div>
       )}
     </div>
   );
@@ -2522,13 +2524,10 @@ Continue?`;
               frameH={bannerHeight}
               tenantId={tenantId}
               storeId={currentStoreId}
-              onCropApplied={(imageId) => {
-                // Bust the browser cache so the storefront and builder both show the new crop
-                const ts = Date.now();
+              onCropApplied={(imageId, crop) => {
+                // crop = { cropX, cropY, cropW, cropH } in natural px, or null to reset
                 setBannerImages(prev => prev.map(b =>
-                  b.id === imageId
-                    ? { ...b, url: b.url.replace(/\?t=\d+$/, '') + `?t=${ts}` }
-                    : b
+                  b.id === imageId ? { ...b, crop: crop || null } : b
                 ));
               }}
             />
