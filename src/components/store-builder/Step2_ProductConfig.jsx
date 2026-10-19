@@ -2441,7 +2441,7 @@ Continue?`;
           const handleWheel = (e) => {
             e.preventDefault();
             const delta = e.deltaY < 0 ? 0.15 : -0.15;
-            const next = Math.min(3, Math.max(0.5, adjZoomRef.current + delta));
+            const next = Math.min(3, Math.max(1, adjZoomRef.current + delta));
             adjZoomRef.current = next;
             setAdjZoom(next);
             saveScale(next);
@@ -2559,7 +2559,7 @@ Continue?`;
               <div className="flex items-center gap-2 mt-1">
                 {/* Zoom out */}
                 <button
-                  onClick={() => { const z = Math.max(0.5, adjZoom - 0.25); setAdjZoom(z); adjZoomRef.current = z; if (z <= 1) { setAdjPan({ x: 0, y: 0 }); adjPanRef.current = { x: 0, y: 0 }; } saveScale(z); }}
+                  onClick={() => { const z = Math.max(1, adjZoom - 0.25); setAdjZoom(z); adjZoomRef.current = z; if (z <= 1) { setAdjPan({ x: 0, y: 0 }); adjPanRef.current = { x: 0, y: 0 }; } saveScale(z); }}
                   className="w-7 h-7 rounded-lg border border-[#bbcbb9] flex items-center justify-center hover:border-[#006d2f] hover:text-[#006d2f] transition-colors flex-shrink-0"
                   title="Zoom out"
                 >
@@ -2568,7 +2568,7 @@ Continue?`;
 
                 {/* Zoom slider */}
                 <input
-                  type="range" min="50" max="300" step="25"
+                  type="range" min="100" max="300" step="25"
                   value={Math.round(adjZoom * 100)}
                   onChange={(e) => {
                     const z = parseInt(e.target.value) / 100;
