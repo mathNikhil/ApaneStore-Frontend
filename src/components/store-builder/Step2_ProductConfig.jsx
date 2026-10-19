@@ -46,115 +46,202 @@ const ImageError = ({ error }) => {
   );
 };
 
-// ── BannerAdjusterViewport ────────────────────────────────────────────────────
-// Reads container size directly from DOM on every render — no stale refs.
-const BannerAdjusterViewport = ({
-  slide, bannerHeight, bannerBgColor, adjZoom, adjPan, dragMode,
-  onPointerDown, onPointerMove, onPointerUp, onWheel,
-  naturalSizeRef, containerSizeRef,
-}) => {
-  const containerRef = useRef(null);
+// ── BannerCropTool ───────────────────────────────────────────────────────────
+// Fixed-width crop frame (~1077px) dragged over the full image.
+// Tenant drags the frame to select which area to show. "Apply Crop" sends
+// the selection to the server (Sharp .extract), which overwrites the file.
+// FRAME_W mirrors the storefront banner container width.
+const CROP_FRAME_W = 1077;
+
+const BannerCropTool = ({ slide, frameH, onCropApplied, tenantId, storeId }) => {
+  const wrapRef   = useRef(null);
   const [natural, setNatural] = useState({ w: 0, h: 0 });
-  const [tick, setTick] = useState(0); // force re-render after mount so DOM is measured
+  const [frameTop, setFrameTop]   = useState(0); // px from image top
+  const [frameLeft, setFrameLeft] = useState(0); // px from image left
+  const [scale, setScale]         = useState(1); // display scale: displayW / CROP_FRAME_W
+  const [saving, setSaving]       = useState(false);
+  const [saved,  setSaved]        = useState(false);
+  const dragRef   = useRef(null); // { startX, startY, startLeft, startTop }
+  const frameRef  = useRef(null);
 
+  // Display dimensions — image is shown at its natural size if it fits, else shrunk
+  const displayScale = natural.w > 0 ? Math.min(1, (wrapRef.current?.offsetWidth || CROP_FRAME_W) / natural.w) : 1;
+  const dispW = natural.w * displayScale;
+  const dispH = natural.h * displayScale;
+  const frameDispW = Math.min(CROP_FRAME_W * displayScale, dispW);
+  const frameDispH = frameH * displayScale;
+
+  // Clamp helpers
+  const clampLeft = (l) => Math.max(0, Math.min(dispW - frameDispW, l));
+  const clampTop  = (t) => Math.max(0, Math.min(dispH - frameDispH, t));
+
+  // When natural size or frameH changes, re-centre the frame
   useEffect(() => {
-    // Fire once after mount so containerRef.current is available for measurement
-    setTick(1);
-    if (!containerRef.current) return;
-    const ro = new ResizeObserver(() => setTick(t => t + 1));
-    ro.observe(containerRef.current);
-    return () => ro.disconnect();
-  }, []);
+    if (natural.w === 0) return;
+    const ds = wrapRef.current ? Math.min(1, wrapRef.current.offsetWidth / natural.w) : 1;
+    const dW = natural.w * ds;
+    const dH = natural.h * ds;
+    const fW = Math.min(CROP_FRAME_W * ds, dW);
+    const fH = frameH * ds;
+    setFrameLeft(clamp(0, dW - fW, (dW - fW) / 2));
+    setFrameTop(clamp(0, dH - fH, (dH - fH) / 2));
+    setSaved(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [natural.w, natural.h, frameH]);
 
-  // Read container size directly from DOM every render — no stale closure possible
-  const cW = containerRef.current ? containerRef.current.offsetWidth : 0;
-  const cH = bannerHeight;
-  if (containerSizeRef && cW > 0) containerSizeRef.current = { w: cW, h: cH };
+  const clamp = (min, max, v) => Math.max(min, Math.min(max, v));
 
-  const focalX = slide.focalX ?? 50;
-  const focalY = slide.focalY ?? 50;
+  // Pointer drag on the frame
+  const onFramePointerDown = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    dragRef.current = { startX: e.clientX, startY: e.clientY, startLeft: frameLeft, startTop: frameTop };
+  };
+  const onFramePointerMove = (e) => {
+    if (!dragRef.current) return;
+    const dx = e.clientX - dragRef.current.startX;
+    const dy = e.clientY - dragRef.current.startY;
+    setFrameLeft(clampLeft(dragRef.current.startLeft + dx));
+    setFrameTop(clampTop(dragRef.current.startTop + dy));
+    setSaved(false);
+  };
+  const onFramePointerUp = () => { dragRef.current = null; };
 
-  let imgStyle;
-  let crosshairLeft = cW / 2;
-  let crosshairTop  = cH / 2;
-
-  if (natural.w > 0 && cW > 0) {
-    const coverSc = Math.max(cW / natural.w, cH / natural.h);
-    const imgW = natural.w * coverSc * adjZoom;
-    const imgH = natural.h * coverSc * adjZoom;
-    const focalPxX = (focalX / 100) * imgW;
-    const focalPxY = (focalY / 100) * imgH;
-    const left = cW / 2 - focalPxX + adjPan.x;
-    const top  = cH / 2 - focalPxY + adjPan.y;
-    crosshairLeft = left + focalPxX;
-    crosshairTop  = top  + focalPxY;
-    imgStyle = {
-      position: 'absolute',
-      width: `${imgW}px`,
-      height: `${imgH}px`,
-      left: `${left}px`,
-      top: `${top}px`,
-      transition: dragMode !== 'idle' ? 'none' : 'left 0.15s ease, top 0.15s ease, width 0.15s ease, height 0.15s ease',
+  // Convert display px → natural px for the API call
+  const getNaturalCrop = () => {
+    const ds = wrapRef.current ? Math.min(1, wrapRef.current.offsetWidth / natural.w) : 1;
+    const fDispW = Math.min(CROP_FRAME_W * ds, natural.w * ds);
+    const fDispH = frameH * ds;
+    return {
+      cropX: Math.round(frameLeft / ds),
+      cropY: Math.round(frameTop  / ds),
+      cropW: Math.round(fDispW    / ds),
+      cropH: Math.round(fDispH    / ds),
     };
-  } else {
-    imgStyle = { position: 'absolute', width: '100%', height: '100%', left: 0, top: 0, objectFit: 'cover' };
-  }
+  };
+
+  const handleApplyCrop = async () => {
+    if (!slide.id) { alert('Image ID missing — please re-upload this banner'); return; }
+    setSaving(true);
+    try {
+      const crop = getNaturalCrop();
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL || 'http://localhost:5002'}/api/images/${tenantId}/${storeId}/images/hero/${slide.id}/crop`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(crop),
+        }
+      );
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error || 'Crop failed');
+      setSaved(true);
+      if (onCropApplied) onCropApplied(slide.id, crop);
+    } catch (err) {
+      alert('Crop failed: ' + err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
-    <div
-      ref={containerRef}
-      className="relative w-full rounded-xl overflow-hidden select-none"
-      style={{
-        height: `${bannerHeight}px`,
-        backgroundColor: bannerBgColor,
-        cursor: adjZoom > 1 ? (dragMode === 'panning' ? 'grabbing' : 'grab') : 'crosshair',
-        touchAction: 'none',
-      }}
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onPointerCancel={onPointerUp}
-      onWheel={onWheel}
-    >
-      <img
-        src={slide.url}
-        alt="Banner preview"
-        draggable={false}
-        className="pointer-events-none"
-        onLoad={(e) => {
-          const nat = { w: e.target.naturalWidth, h: e.target.naturalHeight };
-          setNatural(nat);
-          if (naturalSizeRef) naturalSizeRef.current = nat;
-        }}
-        style={imgStyle}
-      />
+    <div ref={wrapRef} className="space-y-2">
+      {/* Crop canvas */}
+      <div
+        className="relative overflow-hidden rounded-xl select-none"
+        style={{ width: '100%', height: natural.h > 0 ? `${natural.h * (wrapRef.current ? Math.min(1, wrapRef.current.offsetWidth / natural.w) : 1)}px` : '220px', background: '#1a1a1a' }}
+      >
+        {/* Full image */}
+        <img
+          src={slide.url}
+          alt="Banner"
+          draggable={false}
+          className="pointer-events-none absolute top-0 left-0"
+          style={{ width: natural.w > 0 ? `${natural.w * (wrapRef.current ? Math.min(1, wrapRef.current.offsetWidth / natural.w) : 1)}px` : '100%', height: 'auto' }}
+          onLoad={(e) => setNatural({ w: e.target.naturalWidth, h: e.target.naturalHeight })}
+        />
 
-      {/* Rule-of-thirds grid */}
-      <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 1 }}>
-        <div style={{ position: 'absolute', left: '33.33%', top: 0, bottom: 0, width: '1px', backgroundColor: 'rgba(255,255,255,0.25)' }} />
-        <div style={{ position: 'absolute', left: '66.66%', top: 0, bottom: 0, width: '1px', backgroundColor: 'rgba(255,255,255,0.25)' }} />
-        <div style={{ position: 'absolute', top: '33.33%', left: 0, right: 0, height: '1px', backgroundColor: 'rgba(255,255,255,0.25)' }} />
-        <div style={{ position: 'absolute', top: '66.66%', left: 0, right: 0, height: '1px', backgroundColor: 'rgba(255,255,255,0.25)' }} />
+        {natural.w > 0 && (() => {
+          const ds = wrapRef.current ? Math.min(1, wrapRef.current.offsetWidth / natural.w) : 1;
+          const dW = natural.w * ds;
+          const dH = natural.h * ds;
+          const fW = Math.min(CROP_FRAME_W * ds, dW);
+          const fH = frameH * ds;
+
+          return (
+            <>
+              {/* Dark overlay — four quadrants around the frame */}
+              {/* top */}
+              <div className="absolute pointer-events-none" style={{ top: 0, left: 0, width: dW, height: frameTop, background: 'rgba(0,0,0,0.55)' }} />
+              {/* bottom */}
+              <div className="absolute pointer-events-none" style={{ top: frameTop + fH, left: 0, width: dW, height: Math.max(0, dH - frameTop - fH), background: 'rgba(0,0,0,0.55)' }} />
+              {/* left */}
+              <div className="absolute pointer-events-none" style={{ top: frameTop, left: 0, width: frameLeft, height: fH, background: 'rgba(0,0,0,0.55)' }} />
+              {/* right */}
+              <div className="absolute pointer-events-none" style={{ top: frameTop, left: frameLeft + fW, width: Math.max(0, dW - frameLeft - fW), height: fH, background: 'rgba(0,0,0,0.55)' }} />
+
+              {/* Draggable crop frame */}
+              <div
+                ref={frameRef}
+                className="absolute cursor-grab active:cursor-grabbing"
+                style={{
+                  top: frameTop,
+                  left: frameLeft,
+                  width: fW,
+                  height: fH,
+                  border: '2px solid #25D366',
+                  boxSizing: 'border-box',
+                  touchAction: 'none',
+                }}
+                onPointerDown={onFramePointerDown}
+                onPointerMove={onFramePointerMove}
+                onPointerUp={onFramePointerUp}
+                onPointerCancel={onFramePointerUp}
+              >
+                {/* Corner handles */}
+                {[['top:0;left:0','-2px -2px'], ['top:0;right:0','-2px auto auto -2px'], ['bottom:0;left:0','auto -2px -2px auto'], ['bottom:0;right:0','auto auto -2px -2px']].map(([pos], ci) => (
+                  <div key={ci} className="absolute w-3 h-3 bg-white border-2 border-[#25D366] rounded-sm pointer-events-none"
+                    style={{ ...(ci===0?{top:-3,left:-3}:ci===1?{top:-3,right:-3}:ci===2?{bottom:-3,left:-3}:{bottom:-3,right:-3}) }} />
+                ))}
+                {/* Rule of thirds */}
+                <div style={{ position:'absolute', left:'33.33%', top:0, bottom:0, width:1, background:'rgba(255,255,255,0.3)' }} />
+                <div style={{ position:'absolute', left:'66.66%', top:0, bottom:0, width:1, background:'rgba(255,255,255,0.3)' }} />
+                <div style={{ position:'absolute', top:'33.33%', left:0, right:0, height:1, background:'rgba(255,255,255,0.3)' }} />
+                <div style={{ position:'absolute', top:'66.66%', left:0, right:0, height:1, background:'rgba(255,255,255,0.3)' }} />
+                {/* Label */}
+                <div className="absolute bottom-1 right-2 text-white text-[9px] pointer-events-none" style={{ textShadow:'0 1px 2px rgba(0,0,0,0.8)' }}>
+                  {CROP_FRAME_W}×{frameH}px
+                </div>
+              </div>
+            </>
+          );
+        })()}
+
+        {natural.w === 0 && (
+          <div className="absolute inset-0 flex items-center justify-center text-white/50 text-sm">Loading…</div>
+        )}
       </div>
-
-      {/* Focal point crosshair */}
-      {natural.w > 0 && (
-        <div
-          className="absolute pointer-events-none"
-          style={{ left: crosshairLeft, top: crosshairTop, transform: 'translate(-50%,-50%)', zIndex: 2 }}
-        >
-          <div style={{ width: 28, height: 28, borderRadius: '50%', border: '2px solid white', boxShadow: '0 0 0 1px rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: 'white', boxShadow: '0 0 0 1px rgba(0,0,0,0.5)' }} />
-          </div>
-          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 40, height: 1, backgroundColor: 'white', boxShadow: '0 0 2px rgba(0,0,0,0.5)' }} />
-          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 1, height: 40, backgroundColor: 'white', boxShadow: '0 0 2px rgba(0,0,0,0.5)' }} />
-        </div>
-      )}
 
       {/* Hint */}
-      <div className="absolute bottom-2 left-2 bg-black/50 text-white text-[10px] rounded px-2 py-1 pointer-events-none" style={{ zIndex: 2 }}>
-        {adjZoom > 1 ? 'Drag to pan · click to set focal point' : 'Click or drag to set focal point'}
-      </div>
+      <p className="text-[10px] text-[#556067]">
+        Drag the green frame to select what your store banner shows · Aspect ratio guide: 16:5
+      </p>
+
+      {/* Apply Crop button */}
+      {natural.w > 0 && (
+        <button
+          onClick={handleApplyCrop}
+          disabled={saving || saved}
+          className={`w-full py-2 rounded-lg text-sm font-medium transition-colors ${
+            saved
+              ? 'bg-[#e6f4ea] text-[#006d2f] border border-[#006d2f]/30 cursor-default'
+              : 'bg-[#006d2f] text-white hover:bg-[#005525] disabled:opacity-60'
+          }`}
+        >
+          {saving ? 'Applying…' : saved ? '✓ Crop Applied' : 'Apply Crop'}
+        </button>
+      )}
     </div>
   );
 };
@@ -215,186 +302,17 @@ const Step2_ProductConfig = () => {
 
   // Hero Banner State
   const [bannerImage, setBannerImage] = useState(productData.banner?.image || null);
-  // Multi-banner: array of { url, focalX, focalY } objects. Legacy single bannerImage
+  // Multi-banner: array of { id, url } objects. Legacy single bannerImage
   // is kept for backward-compat — new uploads always go into bannerImages.
   const [bannerImages, setBannerImages] = useState(
     productData.banner?.images?.length > 0
-      ? productData.banner.images.map(b => ({ focalX: 50, focalY: 50, scale: 1, ...b }))
+      ? productData.banner.images.map(b => ({ id: b.id, url: b.url }))
       : productData.banner?.image
-        ? [{ url: productData.banner.image, focalX: productData.banner.focalX ?? 50, focalY: productData.banner.focalY ?? 50, scale: productData.banner.scale ?? 1 }]
+        ? [{ url: productData.banner.image }]
         : []
   );
-  // Which banner is active in the adjuster panel (index into bannerImages)
+  // Which banner is active in the crop tool panel (index into bannerImages)
   const [activeBannerIdx, setActiveBannerIdx] = useState(0);
-  // Dragging state for the focal-point crosshair / pan
-  // Use refs (not state) for drag tracking — avoids stale-closure bugs in mousemove
-  const isDraggingFocalRef = useRef(false);
-  const isPanningRef = useRef(false);
-  const panStartRef = useRef({ x: 0, y: 0 });
-  const lastFocalPosRef = useRef({ x: -999, y: -999 }); // throttle focal drag sensitivity
-  const [adjZoom, setAdjZoom] = useState(1); // 1–3x zoom for the adjuster view
-  const adjZoomRef = useRef(1); // mirror for use in event handlers
-  const [adjPan, setAdjPan] = useState({ x: 0, y: 0 }); // px offset in adjuster
-  const adjPanRef = useRef({ x: 0, y: 0 }); // mirror for use in event handlers
-  const [dragMode, setDragMode] = useState('idle'); // 'idle'|'panning'|'focal' — for cursor display only
-  const [adjNatural, setAdjNatural] = useState({ w: 0, h: 0 }); // natural px size of active banner image
-  const [adjContainerSize, setAdjContainerSize] = useState({ w: 0, h: 0 }); // measured container px
-  const focalImageRef = useRef(null);
-
-  // Callback ref for the adjuster container — fires whenever the node mounts/unmounts.
-  // useEffect([focalImageRef.current]) does NOT work because React doesn't track ref mutations.
-  const focalContainerRefCallback = useCallback((node) => {
-    focalImageRef.current = node;
-    if (!node) return;
-    const r = node.getBoundingClientRect();
-    const size = { w: r.width, h: r.height };
-    setAdjContainerSize(size);
-    adjContainerSizeRef.current = size;
-    const ro = new ResizeObserver(entries => {
-      const { width, height } = entries[0].contentRect;
-      const s = { w: width, h: height };
-      setAdjContainerSize(s);
-      adjContainerSizeRef.current = s;
-    });
-    ro.observe(node);
-    // Store cleanup on the node itself so we can disconnect when node unmounts
-    node._adjRo = ro;
-  }, []);
-
-  // Keep refs in sync with state
-  useEffect(() => { adjZoomRef.current = adjZoom; }, [adjZoom]);
-  useEffect(() => { adjPanRef.current = adjPan; }, [adjPan]);
-
-  // ── Adjuster handler refs (stable across renders — no stale closures) ──────
-  // These refs hold the current values of state that handlers need to read
-  // without causing re-renders or stale closure bugs.
-  const adjNaturalRef = useRef({ w: 0, h: 0 });
-  const adjContainerSizeRef = useRef({ w: 0, h: 0 });
-  const activeBannerIdxRef = useRef(0);
-  useEffect(() => { adjNaturalRef.current = adjNatural; }, [adjNatural]);
-  useEffect(() => { adjContainerSizeRef.current = adjContainerSize; }, [adjContainerSize]);
-  useEffect(() => { activeBannerIdxRef.current = activeBannerIdx; }, [activeBannerIdx]);
-
-  // clampPan — keeps image covering the container when panned
-  const clampAdjPan = useCallback((px, py, zoom) => {
-    if (zoom <= 1) return { x: 0, y: 0 };
-    const { w, h } = adjContainerSizeRef.current;
-    const maxX = ((zoom - 1) / zoom) * w / 2;
-    const maxY = ((zoom - 1) / zoom) * h / 2;
-    return {
-      x: Math.max(-maxX, Math.min(maxX, px)),
-      y: Math.max(-maxY, Math.min(maxY, py)),
-    };
-  }, []);
-
-  // saveScale — persist zoom into bannerImages array
-  const saveAdjScale = useCallback((z) => {
-    setBannerImages(prev => prev.map((b, i) => i === activeBannerIdxRef.current ? { ...b, scale: z } : b));
-  }, []);
-
-  // updateAdjFocal — convert container-relative pointer coords into focalX/focalY (0–100)
-  // targetEl MUST be the container div (not the img). rect.width/height is the ground truth
-  // for cW/cH — never use adjContainerSizeRef here, it may be stale.
-  const updateAdjFocal = useCallback((clientX, clientY, targetEl) => {
-    const rect = targetEl?.getBoundingClientRect();
-    if (!rect) return;
-    const zoom = adjZoomRef.current;
-    const pan  = adjPanRef.current;
-    const nat  = adjNaturalRef.current;
-    // Use live DOM rect — always correct, never stale
-    const cW   = rect.width;
-    const cH   = adjContainerSizeRef.current.h || rect.height;
-    if (nat.w === 0 || nat.h === 0) return;
-    const coverSc = Math.max(cW / nat.w, cH / nat.h);
-    const iW = nat.w * coverSc * zoom;
-    const iH = nat.h * coverSc * zoom;
-    const relX = clientX - rect.left;
-    const relY = clientY - rect.top;
-    setBannerImages(prev => {
-      const idx = activeBannerIdxRef.current;
-      const cur = prev[idx];
-      if (!cur) return prev;
-      const fx = cur.focalX ?? 50;
-      const fy = cur.focalY ?? 50;
-      const iLeft = cW / 2 - (fx / 100) * iW + pan.x;
-      const iTop  = cH / 2 - (fy / 100) * iH + pan.y;
-      const x = Math.round(Math.min(100, Math.max(0, ((relX - iLeft) / iW) * 100)));
-      const y = Math.round(Math.min(100, Math.max(0, ((relY - iTop)  / iH) * 100)));
-      return prev.map((b, i) => i === idx ? { ...b, focalX: x, focalY: y } : b);
-    });
-  }, []);
-
-  // Pointer handlers — defined at component top level, use refs, pointer capture
-  const onAdjPointerDown = useCallback((e) => {
-    e.preventDefault();
-    e.currentTarget.setPointerCapture(e.pointerId);
-    if (adjZoomRef.current > 1) {
-      isPanningRef.current = true;
-      setDragMode('panning');
-      panStartRef.current = { x: e.clientX - adjPanRef.current.x, y: e.clientY - adjPanRef.current.y };
-    } else {
-      isDraggingFocalRef.current = true;
-      setDragMode('focal');
-      lastFocalPosRef.current = { x: e.clientX, y: e.clientY };
-      updateAdjFocal(e.clientX, e.clientY, e.currentTarget);
-    }
-  }, [updateAdjFocal]);
-
-  const onAdjPointerMove = useCallback((e) => {
-    if (isPanningRef.current) {
-      const raw = { x: e.clientX - panStartRef.current.x, y: e.clientY - panStartRef.current.y };
-      const clamped = clampAdjPan(raw.x, raw.y, adjZoomRef.current);
-      adjPanRef.current = clamped;
-      setAdjPan(clamped);
-    } else if (isDraggingFocalRef.current) {
-      const last = lastFocalPosRef.current;
-      const dx = e.clientX - last.x;
-      const dy = e.clientY - last.y;
-      if (Math.sqrt(dx * dx + dy * dy) >= 8) {
-        lastFocalPosRef.current = { x: e.clientX, y: e.clientY };
-        updateAdjFocal(e.clientX, e.clientY, e.currentTarget);
-      }
-    }
-  }, [clampAdjPan, updateAdjFocal]);
-
-  const onAdjPointerUp = useCallback(() => {
-    isDraggingFocalRef.current = false;
-    isPanningRef.current = false;
-    setDragMode('idle');
-  }, []);
-
-  const onAdjWheel = useCallback((e) => {
-    e.preventDefault();
-    const delta = e.deltaY < 0 ? 0.15 : -0.15;
-    const next = Math.min(3, Math.max(1, adjZoomRef.current + delta));
-    adjZoomRef.current = next;
-    setAdjZoom(next);
-    saveAdjScale(next);
-    if (next <= 1) {
-      adjPanRef.current = { x: 0, y: 0 };
-      setAdjPan({ x: 0, y: 0 });
-    } else {
-      const c = clampAdjPan(adjPanRef.current.x, adjPanRef.current.y, next);
-      adjPanRef.current = c;
-      setAdjPan(c);
-    }
-  }, [clampAdjPan, saveAdjScale]);
-
-  const resetAdjuster = useCallback(() => {
-    // Reset zoom
-    setAdjZoom(1);
-    adjZoomRef.current = 1;
-    // Reset pan
-    setAdjPan({ x: 0, y: 0 });
-    adjPanRef.current = { x: 0, y: 0 };
-    // Reset focal point and scale for active banner
-    const idx = activeBannerIdxRef.current;
-    setBannerImages(prev => prev.map((b, i) =>
-      i === idx ? { ...b, focalX: 50, focalY: 50, scale: 1 } : b
-    ));
-  }, []);
-
-  // ResizeObserver is set up in focalContainerRefCallback above (callback ref pattern)
 
   const [bannerTagline, setBannerTagline] = useState(productData.banner?.tagline || '');
   const [bannerSubtitle, setBannerSubtitle] = useState(productData.banner?.subtitle || '');
@@ -428,13 +346,9 @@ const Step2_ProductConfig = () => {
       setBannerImage(productData.banner.image || null);
       // Re-hydrate multi-banner images
       if (productData.banner.images?.length > 0) {
-        setBannerImages(productData.banner.images);
+        setBannerImages(productData.banner.images.map(b => ({ id: b.id, url: b.url })));
       } else if (productData.banner.image) {
-        setBannerImages(
-          productData.banner.images?.length > 0
-            ? productData.banner.images.map(b => ({ focalX: 50, focalY: 50, scale: 1, ...b }))
-            : [{ url: productData.banner.image, focalX: productData.banner.focalX ?? 50, focalY: productData.banner.focalY ?? 50, scale: productData.banner.scale ?? 1 }]
-        );
+        setBannerImages([{ url: productData.banner.image }]);
       }
       setBannerTagline(productData.banner.tagline || '');
       setBannerSubtitle(productData.banner.subtitle || '');
@@ -723,9 +637,7 @@ const Step2_ProductConfig = () => {
       banner: {
         // Legacy single-image field (kept for backward-compat)
         image: bannerImages[0]?.url || bannerImage,
-        focalX: bannerImages[0]?.focalX ?? 50,
-        focalY: bannerImages[0]?.focalY ?? 50,
-        // Multi-banner array — each: { url, focalX, focalY }
+        // Multi-banner array — each: { id, url }
         images: bannerImages,
         tagline: bannerTagline,
         subtitle: bannerSubtitle,
@@ -2485,7 +2397,7 @@ Continue?`;
                 <div
                   key={bImg.url + idx}
                   className={`relative w-20 h-14 rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${activeBannerIdx === idx ? 'border-[#006d2f]' : 'border-transparent'}`}
-                  onClick={() => { setActiveBannerIdx(idx); activeBannerIdxRef.current = idx; const s = bannerImages[idx]?.scale ?? 1; setAdjZoom(s); adjZoomRef.current = s; setAdjPan({ x: 0, y: 0 }); adjPanRef.current = { x: 0, y: 0 }; }}
+                  onClick={() => setActiveBannerIdx(idx)}
                 >
                   <img src={bImg.url} alt={`Banner ${idx + 1}`} className="w-full h-full object-cover" />
                   {/* Remove button */}
@@ -2561,7 +2473,7 @@ Continue?`;
                 for (const file of files) {
                   const response = await imageService.uploadImage(currentStoreId, tenantId, 'HERO', file);
                   if (response.success) {
-                    uploaded.push({ url: response.data.url, focalX: 50, focalY: 50, scale: 1 });
+                    uploaded.push({ id: response.data.id, url: response.data.url });
                   } else {
                     setElementError('banner', response.error || 'One or more banners failed to upload');
                   }
@@ -2590,164 +2502,54 @@ Continue?`;
           <ImageGuidelineBadge size="Any size" format="PNG/JPG" maxSize="500KB max" ratio="Any ratio" />
         </div>
 
-        {/* ── Visual image adjuster (focal-point + zoom + pan) ─── */}
-        {bannerImages.length > 0 && bannerImages[activeBannerIdx] && (() => {
-          const activeBanner = bannerImages[activeBannerIdx];
-          const focalX = activeBanner.focalX ?? 50;
-          const focalY = activeBanner.focalY ?? 50;
-
-          // Zoom button helpers — use stable top-level callbacks
-          const zoomStep = (delta) => {
-            const z = Math.min(3, Math.max(1, adjZoom + delta));
-            adjZoomRef.current = z;
-            setAdjZoom(z);
-            saveAdjScale(z);
-            if (z <= 1) { adjPanRef.current = { x: 0, y: 0 }; setAdjPan({ x: 0, y: 0 }); }
-            else { const c = clampAdjPan(adjPanRef.current.x, adjPanRef.current.y, z); adjPanRef.current = c; setAdjPan(c); }
-          };
-
-          return (
-            <div className="space-y-2 mb-4">
-              {/* Header row */}
-              <div className="flex items-center justify-between">
-                <label className="font-label-md text-label-md text-[#3c4a3d] block uppercase tracking-wider text-xs">
-                  Image Placement
-                  {bannerImages.length > 1 && (
-                    <span className="ml-2 normal-case tracking-normal text-[10px] text-[#556067]">— Banner {activeBannerIdx + 1}</span>
-                  )}
-                </label>
-                <span className="text-[10px] text-[#556067]">{focalX}% · {focalY}% · {Math.round(adjZoom * 100)}%</span>
-              </div>
-
-              {/* Interactive viewport — self-contained component with its own ResizeObserver */}
-              <BannerAdjusterViewport
-                key={activeBanner.url}
-                slide={activeBanner}
-                bannerHeight={bannerHeight}
-                bannerBgColor={bannerBgColor}
-                adjZoom={adjZoom}
-                adjPan={adjPan}
-                dragMode={dragMode}
-                onPointerDown={onAdjPointerDown}
-                onPointerMove={onAdjPointerMove}
-                onPointerUp={onAdjPointerUp}
-                onWheel={onAdjWheel}
-                naturalSizeRef={adjNaturalRef}
-                containerSizeRef={adjContainerSizeRef}
-              />
-
-              {/* Zoom controls + Reset */}
-              <div className="flex items-center gap-2 mt-1">
-                {/* Zoom out */}
-                <button
-                  onClick={() => zoomStep(-0.25)}
-                  className="w-7 h-7 rounded-lg border border-[#bbcbb9] flex items-center justify-center hover:border-[#006d2f] hover:text-[#006d2f] transition-colors flex-shrink-0"
-                  title="Zoom out"
-                >
-                  <span className="material-symbols-outlined text-base">zoom_out</span>
-                </button>
-
-                {/* Zoom slider */}
-                <input
-                  type="range" min="100" max="300" step="25"
-                  value={Math.round(adjZoom * 100)}
-                  onChange={(e) => {
-                    const z = parseInt(e.target.value) / 100;
-                    adjZoomRef.current = z;
-                    setAdjZoom(z);
-                    saveAdjScale(z);
-                    if (z <= 1) { adjPanRef.current = { x: 0, y: 0 }; setAdjPan({ x: 0, y: 0 }); }
-                    else { const c = clampAdjPan(adjPanRef.current.x, adjPanRef.current.y, z); adjPanRef.current = c; setAdjPan(c); }
-                  }}
-                  className="flex-1 h-1.5 bg-[#e0e3e6] rounded-lg appearance-none cursor-pointer accent-[#006d2f]"
-                />
-
-                {/* Zoom in */}
-                <button
-                  onClick={() => zoomStep(0.25)}
-                  className="w-7 h-7 rounded-lg border border-[#bbcbb9] flex items-center justify-center hover:border-[#006d2f] hover:text-[#006d2f] transition-colors flex-shrink-0"
-                  title="Zoom in"
-                >
-                  <span className="material-symbols-outlined text-base">zoom_in</span>
-                </button>
-
-                <span className="text-sm font-semibold text-[#006d2f] min-w-[42px] text-right">{Math.round(adjZoom * 100)}%</span>
-
-                {/* Reset — zeros ALL adjustments: focal, scale, pan */}
-                <button
-                  onClick={resetAdjuster}
-                  className="text-[10px] text-[#556067] hover:text-[#006d2f] border border-[#bbcbb9] rounded px-2 py-1 transition-colors flex-shrink-0"
-                  title="Reset to centre · 100% zoom"
-                >
-                  Reset
-                </button>
-              </div>
-
-              {/* D-pad pan controls — visible only when zoomed */}
-              {adjZoom > 1 && (() => {
-                const step = 20;
-                const panBtn = (icon, title, dx, dy) => (
-                  <button
-                    key={title}
-                    onPointerDown={(e) => {
-                      e.preventDefault();
-                      e.currentTarget.setPointerCapture(e.pointerId);
-                      const move = () => {
-                        const next = clampAdjPan(adjPanRef.current.x + dx * step, adjPanRef.current.y + dy * step, adjZoomRef.current);
-                        adjPanRef.current = next;
-                        setAdjPan({ ...next });
-                      };
-                      move();
-                      const iv = setInterval(move, 80);
-                      const stop = () => clearInterval(iv);
-                      e.currentTarget.addEventListener('pointerup', stop, { once: true });
-                      e.currentTarget.addEventListener('pointercancel', stop, { once: true });
-                    }}
-                    className="w-8 h-8 rounded-lg border border-[#bbcbb9] flex items-center justify-center hover:border-[#006d2f] hover:text-[#006d2f] active:bg-[#006d2f]/10 transition-colors"
-                    title={title}
-                  >
-                    <span className="material-symbols-outlined text-base">{icon}</span>
-                  </button>
-                );
-                return (
-                  <div className="flex items-center justify-between mt-1">
-                    <span className="font-label-md text-label-md text-[#3c4a3d] uppercase tracking-wider text-xs">Pan</span>
-                    <div className="flex items-center gap-1">
-                      {panBtn('keyboard_arrow_left',  'Pan left',  -1,  0)}
-                      <div className="flex flex-col gap-1">
-                        {panBtn('keyboard_arrow_up',   'Pan up',    0, -1)}
-                        {panBtn('keyboard_arrow_down', 'Pan down',  0,  1)}
-                      </div>
-                      {panBtn('keyboard_arrow_right', 'Pan right',  1,  0)}
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* Banner height slider */}
-              <div className="flex items-center gap-4 mt-1">
-                <span className="font-label-md text-label-md text-[#3c4a3d] uppercase tracking-wider text-xs whitespace-nowrap">Height</span>
-                <input type="range" min="200" max="800" value={bannerHeight} onChange={(e) => setBannerHeight(parseInt(e.target.value))} className="flex-1 h-1.5 bg-[#e0e3e6] rounded-lg appearance-none cursor-pointer accent-[#006d2f]" />
-                <span className="text-sm font-semibold text-[#006d2f] min-w-[50px] text-right">{bannerHeight}px</span>
-              </div>
-
-              {/* Multi-banner pagination dots */}
-              {bannerImages.length > 1 && (
-                <div className="flex gap-2 justify-center mt-2">
-                  {bannerImages.map((_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => { setActiveBannerIdx(i); activeBannerIdxRef.current = i; const s = bannerImages[i]?.scale ?? 1; setAdjZoom(s); adjZoomRef.current = s; setAdjPan({ x: 0, y: 0 }); adjPanRef.current = { x: 0, y: 0 }; setAdjNatural({ w: 0, h: 0 }); adjNaturalRef.current = { w: 0, h: 0 }; }}
-                      className="rounded-full transition-all"
-                      style={{ width: i === activeBannerIdx ? 20 : 8, height: 8, backgroundColor: i === activeBannerIdx ? '#006d2f' : '#bbcbb9' }}
-                      aria-label={`Edit banner ${i + 1}`}
-                    />
-                  ))}
-                </div>
-              )}
+        {/* ── Banner crop tool ─── */}
+        {bannerImages.length > 0 && bannerImages[activeBannerIdx] && (
+          <div className="space-y-2 mb-4">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <label className="font-label-md text-label-md text-[#3c4a3d] block uppercase tracking-wider text-xs">
+                Crop Area
+                {bannerImages.length > 1 && (
+                  <span className="ml-2 normal-case tracking-normal text-[10px] text-[#556067]">— Banner {activeBannerIdx + 1}</span>
+                )}
+              </label>
             </div>
-          );
-        })()}
+
+            {/* Crop tool — frame over full image */}
+            <BannerCropTool
+              key={bannerImages[activeBannerIdx].url}
+              slide={bannerImages[activeBannerIdx]}
+              frameH={bannerHeight}
+              tenantId={tenantId}
+              storeId={currentStoreId}
+              onCropApplied={(imageId, crop) => {
+                // After crop the stored file is the cropped image — no extra state needed
+              }}
+            />
+
+            {/* Banner height slider */}
+            <div className="flex items-center gap-4 mt-1">
+              <span className="font-label-md text-label-md text-[#3c4a3d] uppercase tracking-wider text-xs whitespace-nowrap">Height</span>
+              <input type="range" min="200" max="800" value={bannerHeight} onChange={(e) => setBannerHeight(parseInt(e.target.value))} className="flex-1 h-1.5 bg-[#e0e3e6] rounded-lg appearance-none cursor-pointer accent-[#006d2f]" />
+              <span className="text-sm font-semibold text-[#006d2f] min-w-[50px] text-right">{bannerHeight}px</span>
+            </div>
+
+            {/* Multi-banner pagination dots */}
+            {bannerImages.length > 1 && (
+              <div className="flex gap-2 justify-center mt-2">
+                {bannerImages.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setActiveBannerIdx(i)}
+                    className="rounded-full transition-all"
+                    style={{ width: i === activeBannerIdx ? 20 : 8, height: 8, backgroundColor: i === activeBannerIdx ? '#006d2f' : '#bbcbb9' }}
+                    aria-label={`Edit banner ${i + 1}`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Height slider for when there's no image yet */}
         {bannerImages.length === 0 && (
