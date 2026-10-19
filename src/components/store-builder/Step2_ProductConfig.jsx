@@ -2279,7 +2279,7 @@ Continue?`;
                 <span className="material-symbols-outlined text-3xl mb-1">upload_file</span>
                 <span className="font-caption text-caption text-xs">Upload banner image</span>
                 <div className="flex gap-3 mt-1 text-[10px] text-gray-400">
-                  <span>📐 Any size</span><span>📄 PNG/JPG</span><span>📦 Max 300KB</span>
+                  <span>📐 Any size</span><span>📄 PNG/JPG</span><span>📦 Max 500KB</span>
                 </div>
               </div>
             </div>
@@ -2299,9 +2299,9 @@ Continue?`;
                 return;
               }
               // Validate: only file size matters — any dimension/ratio is accepted
-              const oversized = files.filter(f => f.size > 300 * 1024);
+              const oversized = files.filter(f => f.size > 500 * 1024);
               if (oversized.length > 0) {
-                setElementError('banner', `Image${oversized.length > 1 ? 's' : ''} must be under 300KB. "${oversized[0].name}" is ${Math.round(oversized[0].size / 1024)}KB — please compress and retry.`);
+                setElementError('banner', `Image${oversized.length > 1 ? 's' : ''} must be under 500KB. "${oversized[0].name}" is ${Math.round(oversized[0].size / 1024)}KB — please compress and retry.`);
                 return;
               }
               clearElementError('banner');
@@ -2337,7 +2337,7 @@ Continue?`;
           {errorStates['banner'] && (
             <p className="text-xs text-red-600">{errorStates['banner']}</p>
           )}
-          <ImageGuidelineBadge size="Any size" format="PNG/JPG" maxSize="300KB max" ratio="Any ratio" />
+          <ImageGuidelineBadge size="Any size" format="PNG/JPG" maxSize="500KB max" ratio="Any ratio" />
         </div>
 
         {/* ── Visual image adjuster (focal-point + zoom + pan) ─── */}
