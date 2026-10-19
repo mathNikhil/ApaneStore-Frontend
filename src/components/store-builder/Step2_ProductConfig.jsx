@@ -2522,8 +2522,14 @@ Continue?`;
               frameH={bannerHeight}
               tenantId={tenantId}
               storeId={currentStoreId}
-              onCropApplied={(imageId, crop) => {
-                // After crop the stored file is the cropped image — no extra state needed
+              onCropApplied={(imageId) => {
+                // Bust the browser cache so the storefront and builder both show the new crop
+                const ts = Date.now();
+                setBannerImages(prev => prev.map(b =>
+                  b.id === imageId
+                    ? { ...b, url: b.url.replace(/\?t=\d+$/, '') + `?t=${ts}` }
+                    : b
+                ));
               }}
             />
 
