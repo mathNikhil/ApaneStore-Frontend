@@ -2449,7 +2449,7 @@ Continue?`;
                   draggable={false}
                   className="absolute inset-0 w-full h-full pointer-events-none"
                   style={{
-                    objectFit: 'cover',
+                    objectFit: adjZoom < 1 ? 'contain' : 'cover',
                     objectPosition: `${focalX}% ${focalY}%`,
                     transform: `translate(${adjPan.x}px, ${adjPan.y}px) scale(${adjZoom})`,
                     transformOrigin: 'center center',
