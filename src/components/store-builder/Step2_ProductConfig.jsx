@@ -2235,7 +2235,7 @@ Continue?`;
                 <div
                   key={bImg.url + idx}
                   className={`relative w-20 h-14 rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${activeBannerIdx === idx ? 'border-[#006d2f]' : 'border-transparent'}`}
-                  onClick={() => { setActiveBannerIdx(idx); setAdjZoom(1); adjZoomRef.current = 1; setAdjPan({ x: 0, y: 0 }); adjPanRef.current = { x: 0, y: 0 }; setAdjNatural({ w: 0, h: 0 }); }}
+                  onClick={() => { setActiveBannerIdx(idx); const s = bannerImages[idx]?.scale ?? 1; setAdjZoom(s); adjZoomRef.current = s; setAdjPan({ x: 0, y: 0 }); adjPanRef.current = { x: 0, y: 0 }; setAdjNatural({ w: 0, h: 0 }); }}
                 >
                   <img src={bImg.url} alt={`Banner ${idx + 1}`} className="w-full h-full object-cover" />
                   {/* Remove button */}
@@ -2279,7 +2279,7 @@ Continue?`;
                 <span className="material-symbols-outlined text-3xl mb-1">upload_file</span>
                 <span className="font-caption text-caption text-xs">Upload banner image</span>
                 <div className="flex gap-3 mt-1 text-[10px] text-gray-400">
-                  <span>📐 1200×375px</span><span>📄 PNG/JPG</span><span>📦 300KB</span>
+                  <span>📐 Any size</span><span>📄 PNG/JPG</span><span>📦 Max 300KB</span>
                 </div>
               </div>
             </div>
@@ -2296,6 +2296,12 @@ Continue?`;
               if (!files.length) return;
               if (!currentStoreId || !tenantId) {
                 setElementError('banner', 'Store ID or Tenant ID missing. Please save the store first');
+                return;
+              }
+              // Validate: only file size matters — any dimension/ratio is accepted
+              const oversized = files.filter(f => f.size > 300 * 1024);
+              if (oversized.length > 0) {
+                setElementError('banner', `Image${oversized.length > 1 ? 's' : ''} must be under 300KB. "${oversized[0].name}" is ${Math.round(oversized[0].size / 1024)}KB — please compress and retry.`);
                 return;
               }
               clearElementError('banner');
@@ -2331,7 +2337,7 @@ Continue?`;
           {errorStates['banner'] && (
             <p className="text-xs text-red-600">{errorStates['banner']}</p>
           )}
-          <ImageGuidelineBadge size="1200×375px" format="PNG/JPG" maxSize="300KB" ratio="16:5" />
+          <ImageGuidelineBadge size="Any size" format="PNG/JPG" maxSize="300KB max" ratio="Any ratio" />
         </div>
 
         {/* ── Visual image adjuster (focal-point + zoom + pan) ─── */}
@@ -2509,19 +2515,10 @@ Continue?`;
                   draggable={false}
                   className="absolute pointer-events-none"
                   onLoad={(e) => {
-                    const w = e.target.naturalWidth;
-                    const h = e.target.naturalHeight;
-                    setAdjNatural({ w, h });
-                    // Always reset focal + scale to sane defaults on load.
-                    // Previously-saved values may have been written by the old broken objectFit math —
-                    // we can't trust them. Let the tenant re-adjust from a correct starting point.
-                    adjZoomRef.current = 1;
-                    setAdjZoom(1);
-                    setAdjPan({ x: 0, y: 0 });
-                    adjPanRef.current = { x: 0, y: 0 };
-                    setBannerImages(prev =>
-                      prev.map((b, i) => i === activeBannerIdx ? { ...b, focalX: 50, focalY: 50, scale: 1 } : b)
-                    );
+                    // Capture natural dimensions so cover-geometry math has real values.
+                    // Do NOT reset focal/scale/pan — tenant may have already adjusted them.
+                    // New uploads always start at focalX:50 focalY:50 scale:1 (set at push time).
+                    setAdjNatural({ w: e.target.naturalWidth, h: e.target.naturalHeight });
                   }}
                   style={{
                     width:  adjNatural.w > 0 ? `${imgW}px` : '100%',
