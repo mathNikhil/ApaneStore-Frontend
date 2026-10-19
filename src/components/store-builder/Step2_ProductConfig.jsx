@@ -128,6 +128,26 @@ const Step2_ProductConfig = () => {
   const [adjContainerSize, setAdjContainerSize] = useState({ w: 0, h: 0 }); // measured container px
   const focalImageRef = useRef(null);
 
+  // Callback ref for the adjuster container — fires whenever the node mounts/unmounts.
+  // useEffect([focalImageRef.current]) does NOT work because React doesn't track ref mutations.
+  const focalContainerRefCallback = useCallback((node) => {
+    focalImageRef.current = node;
+    if (!node) return;
+    const r = node.getBoundingClientRect();
+    const size = { w: r.width, h: r.height };
+    setAdjContainerSize(size);
+    adjContainerSizeRef.current = size;
+    const ro = new ResizeObserver(entries => {
+      const { width, height } = entries[0].contentRect;
+      const s = { w: width, h: height };
+      setAdjContainerSize(s);
+      adjContainerSizeRef.current = s;
+    });
+    ro.observe(node);
+    // Store cleanup on the node itself so we can disconnect when node unmounts
+    node._adjRo = ro;
+  }, []);
+
   // Keep refs in sync with state
   useEffect(() => { adjZoomRef.current = adjZoom; }, [adjZoom]);
   useEffect(() => { adjPanRef.current = adjPan; }, [adjPan]);
@@ -254,19 +274,7 @@ const Step2_ProductConfig = () => {
     ));
   }, []);
 
-  // Measure adjuster container via ResizeObserver so layout math always has real dimensions
-  useEffect(() => {
-    const el = focalImageRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver(entries => {
-      const { width, height } = entries[0].contentRect;
-      setAdjContainerSize({ w: width, h: height });
-    });
-    ro.observe(el);
-    const r = el.getBoundingClientRect();
-    setAdjContainerSize({ w: r.width, h: r.height });
-    return () => ro.disconnect();
-  }, [focalImageRef.current]);
+  // ResizeObserver is set up in focalContainerRefCallback above (callback ref pattern)
 
   const [bannerTagline, setBannerTagline] = useState(productData.banner?.tagline || '');
   const [bannerSubtitle, setBannerSubtitle] = useState(productData.banner?.subtitle || '');
@@ -2510,7 +2518,7 @@ Continue?`;
 
               {/* Interactive viewport — uses pointer events with capture for reliable drag */}
               <div
-                ref={focalImageRef}
+                ref={focalContainerRefCallback}
                 className="relative w-full rounded-xl overflow-hidden select-none"
                 style={{
                   height: `${bannerHeight}px`,
