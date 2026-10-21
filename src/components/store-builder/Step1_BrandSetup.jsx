@@ -375,24 +375,33 @@ const Step1_BrandSetup = () => {
   const [selectedTheme, setSelectedTheme] = useState('Custom');
   const [activeColorKey, setActiveColorKey] = useState(null);
 
-  const PRESET_SWATCHES = [
-    // Neutrals
-    { label: 'Neutrals', colors: ['#FFFFFF','#F5F5F5','#E0E0E0','#9E9E9E','#424242','#000000'] },
-    // Warm
-    { label: 'Warm', colors: ['#FFF8F5','#FFCCBC','#FF7043','#E64A19','#BF360C','#4E1500'] },
-    // Cool
-    { label: 'Cool', colors: ['#F0F8FF','#BBDEFB','#42A5F5','#1565C0','#0D47A1','#050D1A'] },
-    // Nature / Green
-    { label: 'Nature', colors: ['#F1F8E9','#C5E1A5','#66BB6A','#2E7D32','#1B5E20','#0A2E0D'] },
-    // Earthy / Brand
-    { label: 'Brand', colors: ['#25D366','#128C7E','#006d2f','#005523','#003B1A','#001A0C'] },
-    // Purple / Pink
-    { label: 'Pink', colors: ['#FCE4EC','#F48FB1','#E91E63','#AD1457','#880E4F','#3E0021'] },
-    // Gold / Amber
-    { label: 'Gold', colors: ['#FFFDE7','#FFE082','#FFB300','#F57F17','#E65100','#5D3400'] },
-    // Dark / Ink
-    { label: 'Ink', colors: ['#FAF7FF','#D1C4E9','#7B1FA2','#4A148C','#1A0033','#191C1E'] },
-  ];
+  // HSL <-> HEX helpers
+  const hexToHsl = (hex) => {
+    let r = 0, g = 0, b = 0;
+    if (hex.length === 7) {
+      r = parseInt(hex.slice(1,3),16)/255;
+      g = parseInt(hex.slice(3,5),16)/255;
+      b = parseInt(hex.slice(5,7),16)/255;
+    }
+    const max = Math.max(r,g,b), min = Math.min(r,g,b);
+    let h = 0, s = 0, l = (max+min)/2;
+    if (max !== min) {
+      const d = max - min;
+      s = l > 0.5 ? d/(2-max-min) : d/(max+min);
+      if (max===r) h = ((g-b)/d + (g<b?6:0))/6;
+      else if (max===g) h = ((b-r)/d + 2)/6;
+      else h = ((r-g)/d + 4)/6;
+    }
+    return { h: Math.round(h*360), s: Math.round(s*100), l: Math.round(l*100) };
+  };
+  const hslToHex = (h, s, l) => {
+    s /= 100; l /= 100;
+    const k = n => (n + h/30) % 12;
+    const a = s * Math.min(l, 1-l);
+    const f = n => Math.round(255*(l - a*Math.max(-1, Math.min(k(n)-3, Math.min(9-k(n), 1)))));
+    return `#${[f(0),f(8),f(4)].map(v=>v.toString(16).padStart(2,'0')).join('')}`;
+  };
+  const [pickerHsl, setPickerHsl] = useState({ h: 0, s: 0, l: 100 });
   const [themeDropdownOpen, setThemeDropdownOpen] = useState(false);
   const [headingFontOpen, setHeadingFontOpen] = useState(false);
   const [bodyFontOpen, setBodyFontOpen] = useState(false);
@@ -740,14 +749,21 @@ const Step1_BrandSetup = () => {
               <div key={color.key} className="flex flex-col items-center gap-1">
                 <button
                   type="button"
-                  onClick={() => setActiveColorKey(activeColorKey === color.key ? null : color.key)}
+                  onClick={() => {
+                    const next = activeColorKey === color.key ? null : color.key;
+                    if (next) setPickerHsl(hexToHsl(formData.colors[next]));
+                    setActiveColorKey(next);
+                  }}
                   className="w-12 h-12 rounded-full border-2 border-white shadow-md hover:scale-105 transition-transform"
                   style={{ backgroundColor: formData.colors[color.key], outline: activeColorKey === color.key ? '3px solid #25D366' : 'none', outlineOffset: '2px' }}
                   title={color.hint}
                 />
                 <span className="font-caption text-caption text-[#556067] text-xs">{color.label}</span>
                 <span className="text-[10px] font-mono text-[#bbcbb9]">{formData.colors[color.key]}</span>
-                {activeColorKey === color.key && (
+                {activeColorKey === color.key && (() => {
+                  const hsl = pickerHsl;
+                  const previewHex = hslToHex(hsl.h, hsl.s, hsl.l);
+                  return (
                   <div className="fixed inset-0 z-[200] flex items-end justify-center" onClick={() => setActiveColorKey(null)}>
                     <div
                       className="bg-white rounded-t-3xl w-full max-w-sm shadow-2xl"
@@ -759,73 +775,113 @@ const Step1_BrandSetup = () => {
                         <div className="w-10 h-1 rounded-full bg-[#e0e3e6]" />
                       </div>
 
-                      <div className="px-5 pt-2 pb-4">
+                      <div className="px-5 pt-2 pb-2">
                         {/* Header */}
                         <div className="flex items-center justify-between mb-4">
                           <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded-full shadow-inner border border-black/10" style={{ backgroundColor: formData.colors[color.key] }} />
+                            <div className="w-6 h-6 rounded-full shadow-inner border border-black/10 transition-colors" style={{ backgroundColor: previewHex }} />
                             <span className="font-semibold text-[#191c1e] text-base">{color.label}</span>
                           </div>
                           <button onClick={() => setActiveColorKey(null)} className="w-7 h-7 flex items-center justify-center rounded-full bg-[#f0f2f0] text-[#556067] text-sm font-bold">✕</button>
                         </div>
 
-                        {/* Native color wheel */}
-                        <div className="flex items-center gap-3 mb-5 p-3 bg-[#f7f9fc] rounded-2xl">
-                          <label className="relative cursor-pointer">
-                            <div className="w-12 h-12 rounded-xl shadow border-2 border-white" style={{ backgroundColor: formData.colors[color.key], boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }} />
-                            <input
-                              type="color"
-                              value={formData.colors[color.key]}
-                              onChange={e => handleColorChange(color.key, e.target.value)}
-                              className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
-                            />
-                          </label>
-                          <div className="flex-1">
-                            <div className="text-[10px] text-[#556067] mb-1 uppercase tracking-wider font-medium">Tap to open color wheel</div>
-                            <input
-                              type="text"
-                              value={formData.colors[color.key]}
-                              onChange={e => { if (/^#[0-9A-Fa-f]{0,6}$/.test(e.target.value)) handleColorChange(color.key, e.target.value); }}
-                              className="w-full border border-[#bbcbb9] rounded-lg px-3 py-1.5 text-sm font-mono focus:outline-none focus:border-[#006d2f] bg-white"
-                              placeholder="#000000"
-                              maxLength={7}
-                            />
-                          </div>
-                          <button
-                            onClick={() => setActiveColorKey(null)}
-                            className="bg-[#006d2f] text-white px-4 py-2 rounded-xl text-sm font-bold shadow"
-                          >Done</button>
+                        {/* SL panel — saturation (x) × lightness (y) */}
+                        <div
+                          className="relative w-full rounded-2xl mb-3 cursor-crosshair"
+                          style={{
+                            height: 160,
+                            background: `linear-gradient(to bottom, white, transparent, black), linear-gradient(to right, #888 0%, hsl(${hsl.h},100%,50%) 100%)`,
+                          }}
+                          onPointerDown={e => {
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            const move = ev => {
+                              const x = Math.max(0, Math.min(1, (ev.clientX - rect.left) / rect.width));
+                              const y = Math.max(0, Math.min(1, (ev.clientY - rect.top) / rect.height));
+                              const s = Math.round(x * 100);
+                              const l = Math.round(100 - y * 100);
+                              const newHsl = { ...hsl, s, l };
+                              setPickerHsl(newHsl);
+                              handleColorChange(color.key, hslToHex(newHsl.h, newHsl.s, newHsl.l));
+                            };
+                            move(e);
+                            window.addEventListener('pointermove', move);
+                            window.addEventListener('pointerup', () => window.removeEventListener('pointermove', move), { once: true });
+                          }}
+                        >
+                          {/* crosshair */}
+                          <div
+                            className="absolute w-4 h-4 rounded-full border-2 border-white shadow-md pointer-events-none"
+                            style={{
+                              left: `${hsl.s}%`,
+                              top: `${100 - hsl.l}%`,
+                              transform: 'translate(-50%,-50%)',
+                              backgroundColor: previewHex,
+                            }}
+                          />
                         </div>
 
-                        {/* Curated palette families */}
-                        <div className="text-[10px] text-[#556067] uppercase tracking-wider font-medium mb-2">Quick picks</div>
-                        <div className="space-y-2">
-                          {PRESET_SWATCHES.map(family => (
-                            <div key={family.label} className="flex items-center gap-2">
-                              <span className="text-[10px] text-[#9aab98] w-12 shrink-0">{family.label}</span>
-                              <div className="flex gap-1.5 flex-1">
-                                {family.colors.map(swatch => {
-                                  const isActive = formData.colors[color.key].toLowerCase() === swatch.toLowerCase();
-                                  return (
-                                    <button
-                                      key={swatch}
-                                      type="button"
-                                      onClick={() => { handleColorChange(color.key, swatch); setActiveColorKey(null); }}
-                                      className="flex-1 h-7 rounded-lg transition-all"
-                                      style={{
-                                        backgroundColor: swatch,
-                                        outline: isActive ? '2.5px solid #006d2f' : '1.5px solid rgba(0,0,0,0.07)',
-                                        outlineOffset: isActive ? '2px' : '0',
-                                        transform: isActive ? 'scale(1.15)' : 'scale(1)',
-                                      }}
-                                      title={swatch}
-                                    />
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          ))}
+                        {/* Hue slider */}
+                        <div className="mb-3">
+                          <div className="text-[10px] text-[#556067] uppercase tracking-wider font-medium mb-1.5">Hue</div>
+                          <div className="relative h-5 flex items-center">
+                            <div className="absolute inset-0 rounded-full" style={{ background: 'linear-gradient(to right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)', height: 10, top: 5, borderRadius: 99 }} />
+                            <input
+                              type="range" min="0" max="360" value={hsl.h}
+                              onChange={e => {
+                                const newHsl = { ...hsl, h: parseInt(e.target.value) };
+                                setPickerHsl(newHsl);
+                                handleColorChange(color.key, hslToHex(newHsl.h, newHsl.s, newHsl.l));
+                              }}
+                              className="color-picker-range relative w-full h-5 appearance-none bg-transparent cursor-pointer"
+                              style={{ '--thumb-color': `hsl(${hsl.h},100%,50%)` }}
+                            />
+                          </div>
                         </div>
+
+                        {/* Lightness slider */}
+                        <div className="mb-4">
+                          <div className="text-[10px] text-[#556067] uppercase tracking-wider font-medium mb-1.5">Lightness</div>
+                          <div className="relative h-5 flex items-center">
+                            <div className="absolute inset-0 rounded-full" style={{ background: `linear-gradient(to right, #000, hsl(${hsl.h},${hsl.s}%,50%), #fff)`, height: 10, top: 5, borderRadius: 99 }} />
+                            <input
+                              type="range" min="0" max="100" value={hsl.l}
+                              onChange={e => {
+                                const newHsl = { ...hsl, l: parseInt(e.target.value) };
+                                setPickerHsl(newHsl);
+                                handleColorChange(color.key, hslToHex(newHsl.h, newHsl.s, newHsl.l));
+                              }}
+                              className="color-picker-range relative w-full h-5 appearance-none bg-transparent cursor-pointer"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Hex + Done row */}
+                        <div className="flex items-center gap-2">
+                          <div className="w-10 h-10 rounded-xl border border-[#e0e3e6] shrink-0 shadow-inner" style={{ backgroundColor: previewHex }} />
+                          <input
+                            type="text"
+                            value={formData.colors[color.key]}
+                            onChange={e => {
+                              const v = e.target.value;
+                              if (/^#[0-9A-Fa-f]{0,6}$/.test(v)) {
+                                handleColorChange(color.key, v);
+                                if (v.length === 7) setPickerHsl(hexToHsl(v));
+                              }
+                            }}
+                            className="flex-1 border border-[#bbcbb9] rounded-xl px-3 py-2.5 text-sm font-mono focus:outline-none focus:border-[#006d2f] bg-white"
+                            placeholder="#000000"
+                            maxLength={7}
+                          />
+                          <button
+                            onClick={() => setActiveColorKey(null)}
+                            className="bg-[#006d2f] text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow"
+                          >Done</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  );
+                })()}
                       </div>
                     </div>
                   </div>
