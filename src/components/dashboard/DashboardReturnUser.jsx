@@ -58,8 +58,8 @@ const DashboardReturnUser = ({ stores = [], subscriptions = {}, onStoreUpdate })
                 </div>
 
                 {/* Stats Row - All Statuses */}
-                <div className="grid grid-cols-4 gap-4 mb-8">
-                    <div className="bg-white p-4 rounded-xl border border-[#bbcbb9] shadow-sm hover:shadow-md transition-shadow text-center">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
+                    <div className="bg-white p-3 rounded-xl border border-[#bbcbb9] shadow-sm hover:shadow-md transition-shadow text-center">
                         <div className="flex items-center justify-between w-full mb-1">
                             <span className="text-xs text-[#3c4a3d] font-semibold">Total</span>
                             <span className="material-symbols-outlined text-[#556067] opacity-50 text-base">inventory_2</span>
@@ -68,7 +68,7 @@ const DashboardReturnUser = ({ stores = [], subscriptions = {}, onStoreUpdate })
                         <div className="text-[10px] text-[#3c4a3d] mt-1">All Stores</div>
                     </div>
 
-                    <div className="bg-white p-4 rounded-xl border border-[#bbcbb9] shadow-sm hover:shadow-md transition-shadow text-center">
+                    <div className="bg-white p-3 rounded-xl border border-[#bbcbb9] shadow-sm hover:shadow-md transition-shadow text-center">
                         <div className="flex items-center justify-between w-full mb-1">
                             <span className="text-xs text-[#3c4a3d] font-semibold">Published</span>
                             <span className="material-symbols-outlined text-[#006d2f] opacity-50 text-base">check_circle</span>
@@ -77,7 +77,7 @@ const DashboardReturnUser = ({ stores = [], subscriptions = {}, onStoreUpdate })
                         <div className="text-[10px] text-[#3c4a3d] mt-1">Live Stores</div>
                     </div>
 
-                    <div className="bg-white p-4 rounded-xl border border-[#bbcbb9] shadow-sm hover:shadow-md transition-shadow text-center">
+                    <div className="bg-white p-3 rounded-xl border border-[#bbcbb9] shadow-sm hover:shadow-md transition-shadow text-center">
                         <div className="flex items-center justify-between w-full mb-1">
                             <span className="text-xs text-[#3c4a3d] font-semibold">Draft</span>
                             <span className="material-symbols-outlined text-[#006b58] opacity-50 text-base">edit_note</span>
@@ -86,7 +86,7 @@ const DashboardReturnUser = ({ stores = [], subscriptions = {}, onStoreUpdate })
                         <div className="text-[10px] text-[#3c4a3d] mt-1">In Progress</div>
                     </div>
 
-                    <div className="bg-white p-4 rounded-xl border border-[#bbcbb9] shadow-sm hover:shadow-md transition-shadow text-center">
+                    <div className="bg-white p-3 rounded-xl border border-[#bbcbb9] shadow-sm hover:shadow-md transition-shadow text-center">
                         <div className="flex items-center justify-between w-full mb-1">
                             <span className="text-xs text-[#3c4a3d] font-semibold">Unpublished</span>
                             <span className="material-symbols-outlined text-[#556067] opacity-50 text-base">visibility_off</span>

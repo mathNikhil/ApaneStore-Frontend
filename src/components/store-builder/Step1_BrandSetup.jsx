@@ -737,8 +737,8 @@ const Step1_BrandSetup = () => {
                 <span className="font-caption text-caption text-[#556067] text-xs">{color.label}</span>
                 <span className="text-[10px] font-mono text-[#bbcbb9]">{formData.colors[color.key]}</span>
                 {activeColorKey === color.key && (
-                  <div className="fixed inset-0 z-50 flex items-end justify-center" onClick={() => setActiveColorKey(null)}>
-                    <div className="bg-white rounded-t-2xl p-5 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
+                  <div className="fixed inset-0 z-[200] flex items-end justify-center" onClick={() => setActiveColorKey(null)}>
+                    <div className="bg-white rounded-t-2xl p-5 w-full max-w-sm shadow-2xl pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))]" style={{ paddingBottom: 'max(1.25rem, calc(env(safe-area-inset-bottom, 0px) + 80px))' }} onClick={e => e.stopPropagation()}>
                       <div className="flex items-center justify-between mb-4">
                         <span className="font-semibold text-[#191c1e]">{color.label}</span>
                         <button onClick={() => setActiveColorKey(null)} className="text-[#556067] text-sm">✕ Close</button>
