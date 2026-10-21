@@ -59,41 +59,21 @@ const DashboardReturnUser = ({ stores = [], subscriptions = {}, onStoreUpdate })
 
                 {/* Stats Row - All Statuses */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
-                    <div className="bg-white p-3 rounded-xl border border-[#bbcbb9] shadow-sm hover:shadow-md transition-shadow text-center">
-                        <div className="flex items-center justify-between w-full mb-1">
-                            <span className="text-xs text-[#3c4a3d] font-semibold">Total</span>
-                            <span className="material-symbols-outlined text-[#556067] opacity-50 text-base">inventory_2</span>
+                    {[
+                        { label: 'Total', sub: 'All Stores', value: stats.total, icon: 'inventory_2', color: '#191c1e', iconColor: '#556067' },
+                        { label: 'Published', sub: 'Live', value: stats.active, icon: 'check_circle', color: '#16a34a', iconColor: '#006d2f' },
+                        { label: 'Draft', sub: 'In Progress', value: stats.draft, icon: 'edit_note', color: '#ca8a04', iconColor: '#006b58' },
+                        { label: 'Unpublished', sub: 'Hidden', value: stats.inactive, icon: 'visibility_off', color: '#6b7280', iconColor: '#556067' },
+                    ].map(card => (
+                        <div key={card.label} className="bg-white p-3 rounded-xl border border-[#bbcbb9] shadow-sm hover:shadow-md transition-shadow">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-[11px] text-[#3c4a3d] font-semibold truncate mr-1">{card.label}</span>
+                                <span className="material-symbols-outlined shrink-0 opacity-40 text-base" style={{ color: card.iconColor }}>{card.icon}</span>
+                            </div>
+                            <div className="text-2xl font-bold" style={{ color: card.color }}>{card.value}</div>
+                            <div className="text-[10px] text-[#9aab98] mt-0.5">{card.sub}</div>
                         </div>
-                        <div className="text-2xl font-bold text-[#191c1e]">{stats.total}</div>
-                        <div className="text-[10px] text-[#3c4a3d] mt-1">All Stores</div>
-                    </div>
-
-                    <div className="bg-white p-3 rounded-xl border border-[#bbcbb9] shadow-sm hover:shadow-md transition-shadow text-center">
-                        <div className="flex items-center justify-between w-full mb-1">
-                            <span className="text-xs text-[#3c4a3d] font-semibold">Published</span>
-                            <span className="material-symbols-outlined text-[#006d2f] opacity-50 text-base">check_circle</span>
-                        </div>
-                        <div className="text-2xl font-bold text-green-600">{stats.active}</div>
-                        <div className="text-[10px] text-[#3c4a3d] mt-1">Live Stores</div>
-                    </div>
-
-                    <div className="bg-white p-3 rounded-xl border border-[#bbcbb9] shadow-sm hover:shadow-md transition-shadow text-center">
-                        <div className="flex items-center justify-between w-full mb-1">
-                            <span className="text-xs text-[#3c4a3d] font-semibold">Draft</span>
-                            <span className="material-symbols-outlined text-[#006b58] opacity-50 text-base">edit_note</span>
-                        </div>
-                        <div className="text-2xl font-bold text-yellow-600">{stats.draft}</div>
-                        <div className="text-[10px] text-[#3c4a3d] mt-1">In Progress</div>
-                    </div>
-
-                    <div className="bg-white p-3 rounded-xl border border-[#bbcbb9] shadow-sm hover:shadow-md transition-shadow text-center">
-                        <div className="flex items-center justify-between w-full mb-1">
-                            <span className="text-xs text-[#3c4a3d] font-semibold">Unpublished</span>
-                            <span className="material-symbols-outlined text-[#556067] opacity-50 text-base">visibility_off</span>
-                        </div>
-                        <div className="text-2xl font-bold text-gray-600">{stats.inactive}</div>
-                        <div className="text-[10px] text-[#3c4a3d] mt-1">Hidden Stores</div>
-                    </div>
+                    ))}
                 </div>
 
                 {/* Launch Button */}
