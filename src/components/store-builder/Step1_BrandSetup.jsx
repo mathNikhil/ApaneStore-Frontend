@@ -8,6 +8,129 @@ import Card from '../Common/Card';
 import Input from '../Common/Input';
 import imageService from '../../services/imageService';
 
+// ✅ HSL Color Picker bottom sheet component
+const HslColorPicker = ({ label, colorKey, value, hsl, onHslChange, onChange, onClose, hexToHsl, hslToHex }) => {
+  const previewHex = hslToHex(hsl.h, hsl.s, hsl.l);
+  return (
+    <div className="fixed inset-0 z-[200] flex items-end justify-center" onClick={onClose}>
+      <div
+        className="bg-white rounded-t-3xl w-full max-w-sm shadow-2xl"
+        style={{ paddingBottom: 'max(1.5rem, calc(env(safe-area-inset-bottom, 0px) + 80px))' }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Handle bar */}
+        <div className="flex justify-center pt-3 pb-1">
+          <div className="w-10 h-1 rounded-full bg-[#e0e3e6]" />
+        </div>
+
+        <div className="px-5 pt-2 pb-2">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-full shadow-inner border border-black/10 transition-colors" style={{ backgroundColor: previewHex }} />
+              <span className="font-semibold text-[#191c1e] text-base">{label}</span>
+            </div>
+            <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-full bg-[#f0f2f0] text-[#556067] text-sm font-bold">✕</button>
+          </div>
+
+          {/* SL panel — saturation (x) × lightness (y) */}
+          <div
+            className="relative w-full rounded-2xl mb-3 cursor-crosshair"
+            style={{
+              height: 160,
+              background: `linear-gradient(to bottom, rgba(255,255,255,1), rgba(255,255,255,0) 50%, rgba(0,0,0,1)), linear-gradient(to right, hsl(${hsl.h},0%,50%) 0%, hsl(${hsl.h},100%,50%) 100%)`,
+            }}
+            onPointerDown={e => {
+              const rect = e.currentTarget.getBoundingClientRect();
+              const move = ev => {
+                const x = Math.max(0, Math.min(1, (ev.clientX - rect.left) / rect.width));
+                const y = Math.max(0, Math.min(1, (ev.clientY - rect.top) / rect.height));
+                const s = Math.round(x * 100);
+                const l = Math.round((1 - y) * (100 - Math.abs(s - 50)) / 100 * 100 + (1 - y) * Math.max(0, s - 50) / 100 * 0);
+                const lightness = Math.round(100 - y * (50 + s / 2));
+                const newHsl = { ...hsl, s, l: Math.max(0, Math.min(100, lightness)) };
+                onHslChange(newHsl);
+                onChange(colorKey, hslToHex(newHsl.h, newHsl.s, newHsl.l));
+              };
+              move(e);
+              window.addEventListener('pointermove', move);
+              window.addEventListener('pointerup', () => window.removeEventListener('pointermove', move), { once: true });
+            }}
+          >
+            {/* crosshair */}
+            <div
+              className="absolute w-4 h-4 rounded-full border-2 border-white shadow-md pointer-events-none"
+              style={{
+                left: `${hsl.s}%`,
+                top: `${100 - Math.min(100, (hsl.l / (100 - hsl.s / 2)) * 100)}%`,
+                transform: 'translate(-50%,-50%)',
+                backgroundColor: previewHex,
+              }}
+            />
+          </div>
+
+          {/* Hue slider */}
+          <div className="mb-3">
+            <div className="text-[10px] text-[#556067] uppercase tracking-wider font-medium mb-1.5">Hue</div>
+            <div className="relative h-5 flex items-center">
+              <div className="absolute inset-x-0 rounded-full pointer-events-none" style={{ background: 'linear-gradient(to right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)', height: 10, top: 5, borderRadius: 99 }} />
+              <input
+                type="range" min="0" max="360" value={hsl.h}
+                onChange={e => {
+                  const newHsl = { ...hsl, h: parseInt(e.target.value) };
+                  onHslChange(newHsl);
+                  onChange(colorKey, hslToHex(newHsl.h, newHsl.s, newHsl.l));
+                }}
+                className="color-picker-range relative w-full h-5 appearance-none bg-transparent cursor-pointer"
+              />
+            </div>
+          </div>
+
+          {/* Lightness slider */}
+          <div className="mb-4">
+            <div className="text-[10px] text-[#556067] uppercase tracking-wider font-medium mb-1.5">Lightness</div>
+            <div className="relative h-5 flex items-center">
+              <div className="absolute inset-x-0 rounded-full pointer-events-none" style={{ background: `linear-gradient(to right, #000, hsl(${hsl.h},100%,50%), #fff)`, height: 10, top: 5, borderRadius: 99 }} />
+              <input
+                type="range" min="0" max="100" value={hsl.l}
+                onChange={e => {
+                  const newHsl = { ...hsl, l: parseInt(e.target.value) };
+                  onHslChange(newHsl);
+                  onChange(colorKey, hslToHex(newHsl.h, newHsl.s, newHsl.l));
+                }}
+                className="color-picker-range relative w-full h-5 appearance-none bg-transparent cursor-pointer"
+              />
+            </div>
+          </div>
+
+          {/* Hex + Done row */}
+          <div className="flex items-center gap-2">
+            <div className="w-10 h-10 rounded-xl border border-[#e0e3e6] shrink-0 shadow-inner" style={{ backgroundColor: previewHex }} />
+            <input
+              type="text"
+              value={value}
+              onChange={e => {
+                const v = e.target.value;
+                if (/^#[0-9A-Fa-f]{0,6}$/.test(v)) {
+                  onChange(colorKey, v);
+                  if (v.length === 7) onHslChange(hexToHsl(v));
+                }
+              }}
+              className="flex-1 border border-[#bbcbb9] rounded-xl px-3 py-2.5 text-sm font-mono focus:outline-none focus:border-[#006d2f] bg-white"
+              placeholder="#000000"
+              maxLength={7}
+            />
+            <button
+              onClick={onClose}
+              className="bg-[#006d2f] text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow"
+            >Done</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ✅ Image Guideline Component
 const ImageGuidelineBadge = ({ size, format, maxSize, ratio }) => (
   <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-gray-500">
@@ -760,131 +883,18 @@ const Step1_BrandSetup = () => {
                 />
                 <span className="font-caption text-caption text-[#556067] text-xs">{color.label}</span>
                 <span className="text-[10px] font-mono text-[#bbcbb9]">{formData.colors[color.key]}</span>
-                {activeColorKey === color.key && (() => {
-                  const hsl = pickerHsl;
-                  const previewHex = hslToHex(hsl.h, hsl.s, hsl.l);
-                  return (
-                  <div className="fixed inset-0 z-[200] flex items-end justify-center" onClick={() => setActiveColorKey(null)}>
-                    <div
-                      className="bg-white rounded-t-3xl w-full max-w-sm shadow-2xl"
-                      style={{ paddingBottom: 'max(1.5rem, calc(env(safe-area-inset-bottom, 0px) + 80px))' }}
-                      onClick={e => e.stopPropagation()}
-                    >
-                      {/* Handle bar */}
-                      <div className="flex justify-center pt-3 pb-1">
-                        <div className="w-10 h-1 rounded-full bg-[#e0e3e6]" />
-                      </div>
-
-                      <div className="px-5 pt-2 pb-2">
-                        {/* Header */}
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded-full shadow-inner border border-black/10 transition-colors" style={{ backgroundColor: previewHex }} />
-                            <span className="font-semibold text-[#191c1e] text-base">{color.label}</span>
-                          </div>
-                          <button onClick={() => setActiveColorKey(null)} className="w-7 h-7 flex items-center justify-center rounded-full bg-[#f0f2f0] text-[#556067] text-sm font-bold">✕</button>
-                        </div>
-
-                        {/* SL panel — saturation (x) × lightness (y) */}
-                        <div
-                          className="relative w-full rounded-2xl mb-3 cursor-crosshair"
-                          style={{
-                            height: 160,
-                            background: `linear-gradient(to bottom, white, transparent, black), linear-gradient(to right, #888 0%, hsl(${hsl.h},100%,50%) 100%)`,
-                          }}
-                          onPointerDown={e => {
-                            const rect = e.currentTarget.getBoundingClientRect();
-                            const move = ev => {
-                              const x = Math.max(0, Math.min(1, (ev.clientX - rect.left) / rect.width));
-                              const y = Math.max(0, Math.min(1, (ev.clientY - rect.top) / rect.height));
-                              const s = Math.round(x * 100);
-                              const l = Math.round(100 - y * 100);
-                              const newHsl = { ...hsl, s, l };
-                              setPickerHsl(newHsl);
-                              handleColorChange(color.key, hslToHex(newHsl.h, newHsl.s, newHsl.l));
-                            };
-                            move(e);
-                            window.addEventListener('pointermove', move);
-                            window.addEventListener('pointerup', () => window.removeEventListener('pointermove', move), { once: true });
-                          }}
-                        >
-                          {/* crosshair */}
-                          <div
-                            className="absolute w-4 h-4 rounded-full border-2 border-white shadow-md pointer-events-none"
-                            style={{
-                              left: `${hsl.s}%`,
-                              top: `${100 - hsl.l}%`,
-                              transform: 'translate(-50%,-50%)',
-                              backgroundColor: previewHex,
-                            }}
-                          />
-                        </div>
-
-                        {/* Hue slider */}
-                        <div className="mb-3">
-                          <div className="text-[10px] text-[#556067] uppercase tracking-wider font-medium mb-1.5">Hue</div>
-                          <div className="relative h-5 flex items-center">
-                            <div className="absolute inset-0 rounded-full" style={{ background: 'linear-gradient(to right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)', height: 10, top: 5, borderRadius: 99 }} />
-                            <input
-                              type="range" min="0" max="360" value={hsl.h}
-                              onChange={e => {
-                                const newHsl = { ...hsl, h: parseInt(e.target.value) };
-                                setPickerHsl(newHsl);
-                                handleColorChange(color.key, hslToHex(newHsl.h, newHsl.s, newHsl.l));
-                              }}
-                              className="color-picker-range relative w-full h-5 appearance-none bg-transparent cursor-pointer"
-                              style={{ '--thumb-color': `hsl(${hsl.h},100%,50%)` }}
-                            />
-                          </div>
-                        </div>
-
-                        {/* Lightness slider */}
-                        <div className="mb-4">
-                          <div className="text-[10px] text-[#556067] uppercase tracking-wider font-medium mb-1.5">Lightness</div>
-                          <div className="relative h-5 flex items-center">
-                            <div className="absolute inset-0 rounded-full" style={{ background: `linear-gradient(to right, #000, hsl(${hsl.h},${hsl.s}%,50%), #fff)`, height: 10, top: 5, borderRadius: 99 }} />
-                            <input
-                              type="range" min="0" max="100" value={hsl.l}
-                              onChange={e => {
-                                const newHsl = { ...hsl, l: parseInt(e.target.value) };
-                                setPickerHsl(newHsl);
-                                handleColorChange(color.key, hslToHex(newHsl.h, newHsl.s, newHsl.l));
-                              }}
-                              className="color-picker-range relative w-full h-5 appearance-none bg-transparent cursor-pointer"
-                            />
-                          </div>
-                        </div>
-
-                        {/* Hex + Done row */}
-                        <div className="flex items-center gap-2">
-                          <div className="w-10 h-10 rounded-xl border border-[#e0e3e6] shrink-0 shadow-inner" style={{ backgroundColor: previewHex }} />
-                          <input
-                            type="text"
-                            value={formData.colors[color.key]}
-                            onChange={e => {
-                              const v = e.target.value;
-                              if (/^#[0-9A-Fa-f]{0,6}$/.test(v)) {
-                                handleColorChange(color.key, v);
-                                if (v.length === 7) setPickerHsl(hexToHsl(v));
-                              }
-                            }}
-                            className="flex-1 border border-[#bbcbb9] rounded-xl px-3 py-2.5 text-sm font-mono focus:outline-none focus:border-[#006d2f] bg-white"
-                            placeholder="#000000"
-                            maxLength={7}
-                          />
-                          <button
-                            onClick={() => setActiveColorKey(null)}
-                            className="bg-[#006d2f] text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow"
-                          >Done</button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  );
-                })()}
-                      </div>
-                    </div>
-                  </div>
+                {activeColorKey === color.key && (
+                  <HslColorPicker
+                    label={color.label}
+                    colorKey={color.key}
+                    value={formData.colors[color.key]}
+                    hsl={pickerHsl}
+                    onHslChange={setPickerHsl}
+                    onChange={handleColorChange}
+                    onClose={() => setActiveColorKey(null)}
+                    hexToHsl={hexToHsl}
+                    hslToHex={hslToHex}
+                  />
                 )}
               </div>
             ))}
