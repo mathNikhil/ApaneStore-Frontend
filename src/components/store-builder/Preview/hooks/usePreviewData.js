@@ -83,7 +83,7 @@ export const usePreviewData = (builderData, storeId, customerToken) => {
   const [storeData, setStoreData] = useState({
     brand: {
       name: '',
-      tagline: 'Fresh, Organic & Delivered to Your Doorstep',
+      tagline: '',
       logo: null,
       colors: {
         primary: '#25D366',
@@ -108,7 +108,7 @@ export const usePreviewData = (builderData, storeId, customerToken) => {
     },
     banner: {
       image: null,
-      tagline: 'Fresh, Organic & Delivered',
+      tagline: '',
       subtitle: '',
       cta: 'Shop Now',
       height: 400,

@@ -17,7 +17,7 @@ const StorePreview = ({
   logoPreview = null,
   // Hero Banner Props
   bannerImage = null,
-  bannerTagline = 'Fresh, Organic & Delivered',
+  bannerTagline = '',
   bannerSubtitle = '',
   bannerCta = 'Shop Now',
   bannerHeight = 400,
@@ -138,9 +138,9 @@ const StorePreview = ({
                         className="text-3xl md:text-4xl lg:text-5xl font-bold drop-shadow-lg mb-2"
                         style={{ color: textColor || '#FFFFFF' }}
                       >
-                        {bannerTagline || 'Fresh, Organic & Delivered'}
+                        {bannerTagline}
                       </h1>
-                      <p 
+                      <p
                         className="text-lg md:text-xl drop-shadow-md"
                         style={{ color: textColor || '#FFFFFF', opacity: 0.9 }}
                       >
@@ -169,9 +169,9 @@ const StorePreview = ({
                       className="text-3xl md:text-4xl lg:text-5xl font-bold drop-shadow-lg mb-2"
                       style={{ color: textColor || '#FFFFFF' }}
                     >
-                      {bannerTagline || 'Fresh, Organic & Delivered'}
+                      {bannerTagline}
                     </h1>
-                    <p 
+                    <p
                       className="text-lg md:text-xl drop-shadow-md"
                       style={{ color: textColor || '#FFFFFF', opacity: 0.9 }}
                     >

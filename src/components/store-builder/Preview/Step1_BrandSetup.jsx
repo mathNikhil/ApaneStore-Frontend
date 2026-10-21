@@ -12,7 +12,7 @@ const Step1_BrandSetup = () => {
   // Load from context on mount
   const [formData, setFormData] = useState({
     brandName: brandData.brandName || '',
-    tagline: brandData.tagline || 'Fresh, Organic & Delivered to Your Doorstep',
+    tagline: brandData.tagline || '',
     colors: brandData.colors || {
       primary: '#25D366',
       secondary: '#111B21',
