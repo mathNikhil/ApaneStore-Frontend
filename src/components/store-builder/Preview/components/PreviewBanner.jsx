@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 
 // Accepts either:
 //   image  — legacy single string (backward-compat)
-//   images — array of { url, focalX, focalY, scale } objects OR plain strings (multi-banner)
+//   images — array of { url } objects OR plain strings (multi-banner)
 // Auto-slides when images.length > 1. Static when single.
 //
-// Image rendering: no objectFit — uses naturalWidth/naturalHeight to compute explicit
-// pixel dimensions so zoom (scale) shows the full raw image, not a pre-cropped version.
+// Image rendering: object-fit: cover — the image file is already cropped server-side
+// by Sharp, so we just need it to fill the container. No focal/zoom math needed.
 const PreviewBanner = ({
   image,
   images,
@@ -14,7 +14,7 @@ const PreviewBanner = ({
   subtitle,
   cta,
   height = 400,
-  bgColor = '#25D366',
+  bgColor = '#1a1a1a',
   showText = true,
   showCta = true,
   textAlignment = 'center',
@@ -24,21 +24,17 @@ const PreviewBanner = ({
   device = 'desktop',
   fonts = { body: 'Inter' },
 }) => {
-  // Normalise to array of { url, focalX, focalY, scale } objects
+  // Normalise to array of { url, crop? } objects — skip entries with no url
   const allImages = (() => {
     const raw = (images && images.length > 0) ? images : image ? [image] : [];
-    return raw.map(item =>
-      typeof item === 'string'
-        ? { url: item, focalX: 50, focalY: 50, scale: 1 }
-        : { focalX: 50, focalY: 50, scale: 1, ...item }
-    );
+    return raw
+      .map(item => typeof item === 'string' ? { url: item } : { url: item.url, crop: item.crop || null })
+      .filter(item => !!item.url);
   })();
 
   const isMulti = allImages.length > 1;
   const [activeIdx, setActiveIdx] = useState(0);
   const timerRef = useRef(null);
-  // naturalWidth/Height keyed by image url
-  const [naturalSizes, setNaturalSizes] = useState({});
 
   // Auto-slide every 3.5 s when multi-banner
   useEffect(() => {
@@ -85,21 +81,6 @@ const PreviewBanner = ({
   const currentImage = allImages[activeIdx] || null;
   const containerH = height || 400;
 
-  // Compute image style using natural dimensions (same math as the adjuster in Step2)
-  const getImageStyle = (slide, containerRef) => {
-    const nat = naturalSizes[slide.url];
-    if (!nat) {
-      // Image not loaded yet — fill container as placeholder
-      return { position: 'absolute', width: '100%', height: '100%', left: 0, top: 0 };
-    }
-    // We don't have a real container width DOM ref here, so use a percentage-based approach
-    // that mimics the adjuster math. containerW is computed as 100% = 1 unit.
-    // We work in proportions: containerW = 1.
-    // baseW = 1 (fill width), baseH = 1 * (natH/natW)
-    // But we need px for left/top. Use a ref approach — see SlideImage below.
-    return null; // handled by SlideImage
-  };
-
   return (
     <div
       className="relative overflow-hidden mb-6"
@@ -114,8 +95,6 @@ const PreviewBanner = ({
           key={slide.url + i}
           slide={slide}
           containerH={containerH}
-          naturalSizes={naturalSizes}
-          onLoad={(url, w, h) => setNaturalSizes(prev => ({ ...prev, [url]: { w, h } }))}
           opacity={i === activeIdx ? 1 : 0}
         />
       ))}
@@ -227,68 +206,40 @@ const PreviewBanner = ({
   );
 };
 
-// SlideImage: measures its own container width to compute pixel-exact placement.
-// Same math as the adjuster in Step2_ProductConfig.jsx.
-const SlideImage = ({ slide, containerH, naturalSizes, onLoad, opacity }) => {
+// SlideImage: if crop coords saved, CSS-positions the image to show exactly that
+// region. Otherwise falls back to object-fit: cover. Original file is never touched.
+const SlideImage = ({ slide, containerH, opacity }) => {
   const containerRef = useRef(null);
   const [containerW, setContainerW] = useState(0);
+  const [natural, setNatural] = useState({ w: 0, h: 0 });
 
   useEffect(() => {
     if (!containerRef.current) return;
-    const ro = new ResizeObserver(entries => {
-      setContainerW(entries[0].contentRect.width);
-    });
+    const ro = new ResizeObserver(e => setContainerW(e[0].contentRect.width));
     ro.observe(containerRef.current);
     setContainerW(containerRef.current.getBoundingClientRect().width);
     return () => ro.disconnect();
   }, []);
 
-  const nat = naturalSizes[slide.url];
-  const scale = slide.scale ?? 1;
-  const focalX = slide.focalX ?? 50;
-  const focalY = slide.focalY ?? 50;
-
+  const crop = slide.crop;
   let imgStyle;
-  if (nat && containerW > 0) {
-    // Cover geometry: scale image until it fills both container dimensions,
-    // then multiply by user zoom (scale). Same as adjuster in Step2.
-    const coverSc = Math.max(containerW / nat.w, containerH / nat.h);
-    const imgW = nat.w * coverSc * scale;
-    const imgH = nat.h * coverSc * scale;
-    const focalPxX = (focalX / 100) * imgW;
-    const focalPxY = (focalY / 100) * imgH;
-    const left = containerW / 2 - focalPxX;
-    const top  = containerH / 2 - focalPxY;
-    imgStyle = {
-      position: 'absolute',
-      width: `${imgW}px`,
-      height: `${imgH}px`,
-      left: `${left}px`,
-      top: `${top}px`,
-    };
+
+  if (crop && natural.w > 0 && containerW > 0) {
+    const sc = Math.max(containerW / crop.cropW, containerH / crop.cropH);
+    const imgW = natural.w * sc;
+    const imgH = natural.h * sc;
+    const left = -(crop.cropX * sc) + (containerW - crop.cropW * sc) / 2;
+    const top  = -(crop.cropY * sc) + (containerH - crop.cropH * sc) / 2;
+    imgStyle = { position: 'absolute', width: `${imgW}px`, height: `${imgH}px`, left: `${left}px`, top: `${top}px`, pointerEvents: 'none' };
   } else {
-    // Before natural size is known — fill container temporarily
-    imgStyle = { position: 'absolute', width: '100%', height: '100%', left: 0, top: 0, objectFit: 'cover' };
+    imgStyle = { position: 'absolute', width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', display: 'block', pointerEvents: 'none' };
   }
 
   return (
-    <div
-      ref={containerRef}
-      style={{
-        position: 'absolute', inset: 0,
-        opacity,
-        transition: 'opacity 0.6s ease-in-out',
-        overflow: 'hidden',
-        pointerEvents: 'none',
-      }}
-    >
-      <img
-        src={slide.url}
-        alt=""
-        draggable={false}
-        onLoad={(e) => onLoad(slide.url, e.target.naturalWidth, e.target.naturalHeight)}
-        style={{ ...imgStyle, pointerEvents: 'none' }}
-      />
+    <div ref={containerRef} style={{ position: 'absolute', inset: 0, opacity, transition: 'opacity 0.6s ease-in-out', overflow: 'hidden', pointerEvents: 'none' }}>
+      <img src={slide.url} alt="" draggable={false}
+        onLoad={e => setNatural({ w: e.target.naturalWidth, h: e.target.naturalHeight })}
+        style={imgStyle} />
     </div>
   );
 };

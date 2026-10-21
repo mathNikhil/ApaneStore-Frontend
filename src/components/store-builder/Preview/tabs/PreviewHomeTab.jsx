@@ -23,7 +23,7 @@ const PreviewHomeTab = ({ data, onAddToCart, device = 'desktop' }) => {
     mobile: 'grid-cols-2',
     tablet: 'grid-cols-2',
     desktop: 'grid-cols-3',
-  }[device] || 'grid-cols-3';
+  }[device] || 'grid-cols-2 sm:grid-cols-3';
 
   const getSearchResults = () => {
     const words = trimmedQuery.toLowerCase().split(/\s+/).filter(Boolean);
@@ -65,13 +65,14 @@ const PreviewHomeTab = ({ data, onAddToCart, device = 'desktop' }) => {
         cta={banner.cta}
         height={banner.height}
         bgColor={banner.bgColor}
-        showText={banner.showText}
-        showCta={banner.showCta}
+        showText={false}
+        showCta={false}
         textAlignment={banner.textAlignment}
         textColor={banner.textColor}
         textShadow={banner.textShadow !== undefined ? banner.textShadow : true}
         primaryColor={brand.colors.primary}
         device={device}
+        fonts={brand.fonts}
       />
 
       {searchEnabled && (
@@ -107,9 +108,7 @@ const PreviewHomeTab = ({ data, onAddToCart, device = 'desktop' }) => {
 
       {allCategories.length > 0 && (
         <div className="mb-6 pt-4 pb-6 border-b border-[#e0e3e6] overflow-x-auto hide-scrollbar">
-          <div className="flex gap-3 min-w-max items-end">
-
-            {/* All pill — always simple text pill */}
+          <div className="flex gap-3 min-w-max items-center">
             <button
               onClick={() => { setSelectedCategory('all'); clearSearch(); }}
               className="flex items-center gap-1.5 px-4 py-2 rounded-full font-medium text-sm transition-colors whitespace-nowrap border-2 hover:opacity-80 flex-shrink-0"
@@ -118,76 +117,81 @@ const PreviewHomeTab = ({ data, onAddToCart, device = 'desktop' }) => {
                 : { borderColor: brand.colors.secondary, backgroundColor: 'transparent', color: brand.colors.fontBody, fontFamily: brand.fonts?.body || 'Inter' }
               }
             >
-              All ({allProducts.length})
+              All
             </button>
 
-            {allCategories.map((category) => {
-              const isSelected = selectedCategory === category.id && !isSearching;
-              const hasImage = !!category.image?.url;
-              const selectedStyle = { borderColor: brand.colors.primary, backgroundColor: brand.colors.primary, color: '#fff', fontFamily: brand.fonts?.body || 'Inter' };
-              const defaultStyle = { borderColor: brand.colors.secondary, backgroundColor: 'transparent', color: brand.colors.fontBody, fontFamily: brand.fonts?.body || 'Inter' };
+            {allCategories.map((cat) => {
+              const isSelected = selectedCategory === cat.id && !isSearching;
+              const hasCatImage = cat.image?.url || cat.image?.preview;
 
-              // No image → always simple pill
-              if (!hasImage) {
-                return (
-                  <button
-                    key={category.id}
-                    onClick={() => { setSelectedCategory(category.id); clearSearch(); }}
-                    className="flex items-center px-4 py-2 rounded-full font-medium text-sm transition-colors whitespace-nowrap border-2 hover:opacity-80 flex-shrink-0"
-                    style={isSelected ? selectedStyle : defaultStyle}
-                  >
-                    {category.name} ({category.products?.length || 0})
-                  </button>
-                );
-              }
-
-              // S size → horizontal pill: image left, text right
               if (imgSize === 'S') {
                 return (
                   <button
-                    key={category.id}
-                    onClick={() => { setSelectedCategory(category.id); clearSearch(); }}
-                    className="flex items-center gap-2 pl-1.5 pr-4 py-1.5 rounded-full font-medium text-sm transition-colors whitespace-nowrap border-2 hover:opacity-80 flex-shrink-0"
-                    style={isSelected ? selectedStyle : defaultStyle}
+                    key={cat.id}
+                    onClick={() => { setSelectedCategory(cat.id); clearSearch(); }}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-full font-medium text-sm transition-colors whitespace-nowrap border-2 hover:opacity-80 flex-shrink-0"
+                    style={isSelected
+                      ? { borderColor: brand.colors.primary, backgroundColor: brand.colors.primary, color: '#fff', fontFamily: brand.fonts?.body || 'Inter' }
+                      : { borderColor: brand.colors.secondary, backgroundColor: 'transparent', color: brand.colors.fontBody, fontFamily: brand.fonts?.body || 'Inter' }
+                    }
                   >
-                    <img src={category.image.url} alt={category.name} className={`w-6 h-6 ${imgShapeClass} object-cover flex-shrink-0`} />
-                    {category.name} ({category.products?.length || 0})
+                    {hasCatImage && (
+                      <img src={cat.image.url || cat.image.preview} alt={cat.name} className={`object-cover flex-shrink-0 w-6 h-6 ${imgShapeClass}`} />
+                    )}
+                    {cat.name}
                   </button>
                 );
               }
 
-              // M size → vertical card: image top, text below
               if (imgSize === 'M') {
                 return (
                   <button
-                    key={category.id}
-                    onClick={() => { setSelectedCategory(category.id); clearSearch(); }}
-                    className="flex flex-col items-center gap-1.5 p-2 font-medium text-sm transition-colors border-2 hover:opacity-80 flex-shrink-0 rounded-xl"
-                    style={{ ...(isSelected ? selectedStyle : defaultStyle), width: '80px' }}
+                    key={cat.id}
+                    onClick={() => { setSelectedCategory(cat.id); clearSearch(); }}
+                    className="flex flex-col items-center gap-1 flex-shrink-0 hover:opacity-80 transition-opacity outline-none focus:outline-none border-0 bg-transparent p-0 appearance-none"
+                    style={{ width: '80px' }}
                   >
-                    <img src={category.image.url} alt={category.name} className={`w-14 h-14 ${imgShapeClass} object-cover flex-shrink-0`} />
-                    <span className="text-xs text-center leading-tight">{category.name} ({category.products?.length || 0})</span>
-                  </button>
-                );
-              }
-
-              // L size → overlay card: image fills, text overlaid
-              if (imgSize === 'L') {
-                return (
-                  <button
-                    key={category.id}
-                    onClick={() => { setSelectedCategory(category.id); clearSearch(); }}
-                    className={`relative flex items-end justify-center overflow-hidden font-medium text-sm transition-colors border-2 hover:opacity-80 flex-shrink-0 ${imgShapeClass}`}
-                    style={{ width: '110px', height: '110px', borderColor: isSelected ? brand.colors.primary : brand.colors.secondary }}
-                  >
-                    <img src={category.image.url} alt={category.name} className="absolute inset-0 w-full h-full object-cover" />
-                    <div className="absolute inset-0" style={{ background: isSelected ? `${brand.colors.primary}99` : 'linear-gradient(to top, rgba(0,0,0,0.6) 40%, transparent 100%)' }} />
-                    <span className="relative z-10 text-white text-xs text-center pb-2 px-1 leading-tight font-semibold drop-shadow">
-                      {category.name} ({category.products?.length || 0})
+                    {hasCatImage ? (
+                      <img
+                        src={cat.image.url || cat.image.preview}
+                        alt={cat.name}
+                        className={`object-cover w-16 h-16 ${imgShapeClass}`}
+                      />
+                    ) : (
+                      <div
+                        className={`w-16 h-16 ${imgShapeClass} border-2 flex items-center justify-center text-xs font-semibold`}
+                        style={isSelected
+                          ? { borderColor: brand.colors.primary, backgroundColor: brand.colors.primary, color: '#fff' }
+                          : { borderColor: brand.colors.secondary, backgroundColor: 'transparent', color: brand.colors.fontBody }
+                        }
+                      >
+                        {cat.name?.charAt(0)}
+                      </div>
+                    )}
+                    <span style={{ color: isSelected ? brand.colors.primary : brand.colors.fontBody, fontFamily: brand.fonts?.body || 'Inter', fontSize: '11px', fontWeight: '500', textAlign: 'center', lineHeight: '1.2', display: 'block', width: '100%', wordBreak: 'break-word' }}>
+                      {cat.name}
                     </span>
                   </button>
                 );
               }
+
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => { setSelectedCategory(cat.id); clearSearch(); }}
+                  className={`relative flex-shrink-0 overflow-hidden hover:opacity-90 transition-opacity border-2 ${imgShapeClass}`}
+                  style={{ width: '110px', height: '110px', borderColor: isSelected ? brand.colors.primary : 'transparent' }}
+                >
+                  {hasCatImage ? (
+                    <img src={cat.image.url || cat.image.preview} alt={cat.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full" style={{ backgroundColor: brand.colors.secondary }} />
+                  )}
+                  <div className="absolute bottom-0 left-0 right-0 flex items-end p-1.5" style={{ background: `linear-gradient(to top, ${brand.colors.secondary}EE 0%, ${brand.colors.secondary}22 60%, transparent 100%)`, height: '35%' }}>
+                    <span className="text-xs font-semibold leading-tight text-center w-full drop-shadow" style={{ color: isSelected ? brand.colors.primary : brand.colors.fontBody, fontFamily: brand.fonts?.body || 'Inter', textShadow: '0 1px 2px rgba(0,0,0,0.4)' }}>{cat.name}</span>
+                  </div>
+                </button>
+              );
             })}
           </div>
         </div>

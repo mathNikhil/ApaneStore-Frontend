@@ -1,6 +1,6 @@
 import React from 'react';
 
-const PreviewHeader = ({ brand, cartCount = 0 }) => {
+const PreviewHeader = ({ brand, cartCount = 0, qrActive = false, onScanClick }) => {
   const { name, tagline, logo, colors, fonts } = brand;
 
   return (
@@ -31,8 +31,8 @@ const PreviewHeader = ({ brand, cartCount = 0 }) => {
           <div>
             <h1 
               className="font-bold text-lg"
-              style={{ 
-                color: colors.fontHeader || '#191C1E', fontFamily: fonts?.heading || 'Inter'
+              style={{
+                color: colors.fontHeader || '#191C1E', fontFamily: fonts?.body || 'Inter'
               }}
             >
               {name || 'Your Store'}
@@ -43,25 +43,41 @@ const PreviewHeader = ({ brand, cartCount = 0 }) => {
                 color: colors.fontBody || '#556067', fontFamily: fonts?.body || 'Inter'
               }}
             >
-              {tagline || 'Your tagline here'}
+              {tagline}
             </p>
           </div>
         </div>
 
-        {/* Cart Icon */}
-        <button className="relative p-2 hover:bg-[#f2f4f7] rounded-full transition-colors">
-          <span className="material-symbols-outlined" style={{ color: colors.fontBody}}>
-            shopping_cart
-          </span>
-          {cartCount > 0 && (
-            <span 
-              className="absolute -top-1 -right-1 w-5 h-5 rounded-full text-xs font-bold flex items-center justify-center text-white"
-              style={{ backgroundColor: colors.primary }}
+        {/* Right side icons */}
+        <div className="flex items-center gap-1">
+          {/* QR Scan icon — only when store has active QR subscription */}
+          {qrActive && (
+            <button
+              onClick={onScanClick}
+              className="relative p-2 hover:bg-[#f2f4f7] rounded-full transition-colors"
+              title="Scan product QR code"
             >
-              {cartCount}
-            </span>
+              <span className="material-symbols-outlined" style={{ color: colors.primary, fontSize: 26 }}>
+                qr_code_scanner
+              </span>
+            </button>
           )}
-        </button>
+
+          {/* Cart Icon */}
+          <button className="relative p-2 hover:bg-[#f2f4f7] rounded-full transition-colors">
+            <span className="material-symbols-outlined" style={{ color: colors.fontBody }}>
+              shopping_cart
+            </span>
+            {cartCount > 0 && (
+              <span
+                className="absolute -top-1 -right-1 w-5 h-5 rounded-full text-xs font-bold flex items-center justify-center text-white"
+                style={{ backgroundColor: colors.primary }}
+              >
+                {cartCount}
+              </span>
+            )}
+          </button>
+        </div>
       </div>
     </header>
   );
