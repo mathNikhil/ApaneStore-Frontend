@@ -254,15 +254,30 @@ const StoreCard = ({ store, subscriptions = {}, onStoreUpdate }) => {
                     </div>
                 </div>
                 <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                    <span style={{
-                        ...s.statusBadge,
-                        background: isPublished ? '#f0fdf4' : store.status === 'inactive' ? '#f9fafb' : '#fefce8',
-                        color: isPublished ? '#16a34a' : store.status === 'inactive' ? '#6b7280' : '#a16207',
-                        border: `1px solid ${isPublished ? '#bbf7d0' : store.status === 'inactive' ? '#e4e7ec' : '#fde68a'}`,
-                    }}>
-                        <span style={s.statusDot} />
-                        {isPublished ? 'Published' : store.status === 'inactive' ? 'Unpublished' : 'Draft'}
-                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                        {/* Store type badge */}
+                        {store.store_type === 'service' ? (
+                            <span style={{ ...s.statusBadge, background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe' }}>
+                                <span className="material-symbols-outlined" style={{ fontSize: 13 }}>handyman</span>
+                                Service
+                            </span>
+                        ) : (
+                            <span style={{ ...s.statusBadge, background: '#faf5ff', color: '#7e22ce', border: '1px solid #e9d5ff' }}>
+                                <span className="material-symbols-outlined" style={{ fontSize: 13 }}>inventory_2</span>
+                                Product
+                            </span>
+                        )}
+                        {/* Publish status badge */}
+                        <span style={{
+                            ...s.statusBadge,
+                            background: isPublished ? '#f0fdf4' : store.status === 'inactive' ? '#f9fafb' : '#fefce8',
+                            color: isPublished ? '#16a34a' : store.status === 'inactive' ? '#6b7280' : '#a16207',
+                            border: `1px solid ${isPublished ? '#bbf7d0' : store.status === 'inactive' ? '#e4e7ec' : '#fde68a'}`,
+                        }}>
+                            <span style={s.statusDot} />
+                            {isPublished ? 'Published' : store.status === 'inactive' ? 'Unpublished' : 'Draft'}
+                        </span>
+                    </div>
                     <p style={s.createdAt}>{store.created_at && new Date(store.created_at).toLocaleDateString()}</p>
                 </div>
             </div>
