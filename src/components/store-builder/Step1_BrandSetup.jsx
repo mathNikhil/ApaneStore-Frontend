@@ -376,11 +376,22 @@ const Step1_BrandSetup = () => {
   const [activeColorKey, setActiveColorKey] = useState(null);
 
   const PRESET_SWATCHES = [
-    '#000000','#FFFFFF','#F44336','#E91E63','#9C27B0','#673AB7',
-    '#3F51B5','#2196F3','#03A9F4','#00BCD4','#009688','#4CAF50',
-    '#8BC34A','#CDDC39','#FFEB3B','#FFC107','#FF9800','#FF5722',
-    '#795548','#607D8B','#25D366','#005523','#191C1E','#556067',
-    '#F0F8FF','#FFF8F5','#FAF7F2','#F5FFFD','#FFF5F9','#FAF7FF',
+    // Neutrals
+    { label: 'Neutrals', colors: ['#FFFFFF','#F5F5F5','#E0E0E0','#9E9E9E','#424242','#000000'] },
+    // Warm
+    { label: 'Warm', colors: ['#FFF8F5','#FFCCBC','#FF7043','#E64A19','#BF360C','#4E1500'] },
+    // Cool
+    { label: 'Cool', colors: ['#F0F8FF','#BBDEFB','#42A5F5','#1565C0','#0D47A1','#050D1A'] },
+    // Nature / Green
+    { label: 'Nature', colors: ['#F1F8E9','#C5E1A5','#66BB6A','#2E7D32','#1B5E20','#0A2E0D'] },
+    // Earthy / Brand
+    { label: 'Brand', colors: ['#25D366','#128C7E','#006d2f','#005523','#003B1A','#001A0C'] },
+    // Purple / Pink
+    { label: 'Pink', colors: ['#FCE4EC','#F48FB1','#E91E63','#AD1457','#880E4F','#3E0021'] },
+    // Gold / Amber
+    { label: 'Gold', colors: ['#FFFDE7','#FFE082','#FFB300','#F57F17','#E65100','#5D3400'] },
+    // Dark / Ink
+    { label: 'Ink', colors: ['#FAF7FF','#D1C4E9','#7B1FA2','#4A148C','#1A0033','#191C1E'] },
   ];
   const [themeDropdownOpen, setThemeDropdownOpen] = useState(false);
   const [headingFontOpen, setHeadingFontOpen] = useState(false);
@@ -738,38 +749,83 @@ const Step1_BrandSetup = () => {
                 <span className="text-[10px] font-mono text-[#bbcbb9]">{formData.colors[color.key]}</span>
                 {activeColorKey === color.key && (
                   <div className="fixed inset-0 z-[200] flex items-end justify-center" onClick={() => setActiveColorKey(null)}>
-                    <div className="bg-white rounded-t-2xl p-5 w-full max-w-sm shadow-2xl pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))]" style={{ paddingBottom: 'max(1.25rem, calc(env(safe-area-inset-bottom, 0px) + 80px))' }} onClick={e => e.stopPropagation()}>
-                      <div className="flex items-center justify-between mb-4">
-                        <span className="font-semibold text-[#191c1e]">{color.label}</span>
-                        <button onClick={() => setActiveColorKey(null)} className="text-[#556067] text-sm">✕ Close</button>
+                    <div
+                      className="bg-white rounded-t-3xl w-full max-w-sm shadow-2xl"
+                      style={{ paddingBottom: 'max(1.5rem, calc(env(safe-area-inset-bottom, 0px) + 80px))' }}
+                      onClick={e => e.stopPropagation()}
+                    >
+                      {/* Handle bar */}
+                      <div className="flex justify-center pt-3 pb-1">
+                        <div className="w-10 h-1 rounded-full bg-[#e0e3e6]" />
                       </div>
-                      {/* Preset swatches */}
-                      <div className="grid grid-cols-6 gap-2 mb-4">
-                        {PRESET_SWATCHES.map(swatch => (
+
+                      <div className="px-5 pt-2 pb-4">
+                        {/* Header */}
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 rounded-full shadow-inner border border-black/10" style={{ backgroundColor: formData.colors[color.key] }} />
+                            <span className="font-semibold text-[#191c1e] text-base">{color.label}</span>
+                          </div>
+                          <button onClick={() => setActiveColorKey(null)} className="w-7 h-7 flex items-center justify-center rounded-full bg-[#f0f2f0] text-[#556067] text-sm font-bold">✕</button>
+                        </div>
+
+                        {/* Native color wheel */}
+                        <div className="flex items-center gap-3 mb-5 p-3 bg-[#f7f9fc] rounded-2xl">
+                          <label className="relative cursor-pointer">
+                            <div className="w-12 h-12 rounded-xl shadow border-2 border-white" style={{ backgroundColor: formData.colors[color.key], boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }} />
+                            <input
+                              type="color"
+                              value={formData.colors[color.key]}
+                              onChange={e => handleColorChange(color.key, e.target.value)}
+                              className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+                            />
+                          </label>
+                          <div className="flex-1">
+                            <div className="text-[10px] text-[#556067] mb-1 uppercase tracking-wider font-medium">Tap to open color wheel</div>
+                            <input
+                              type="text"
+                              value={formData.colors[color.key]}
+                              onChange={e => { if (/^#[0-9A-Fa-f]{0,6}$/.test(e.target.value)) handleColorChange(color.key, e.target.value); }}
+                              className="w-full border border-[#bbcbb9] rounded-lg px-3 py-1.5 text-sm font-mono focus:outline-none focus:border-[#006d2f] bg-white"
+                              placeholder="#000000"
+                              maxLength={7}
+                            />
+                          </div>
                           <button
-                            key={swatch}
-                            type="button"
-                            onClick={() => { handleColorChange(color.key, swatch); setActiveColorKey(null); }}
-                            className="w-10 h-10 rounded-lg border-2 transition-transform hover:scale-110"
-                            style={{ backgroundColor: swatch, borderColor: formData.colors[color.key] === swatch ? '#25D366' : '#e0e3e6' }}
-                          />
-                        ))}
-                      </div>
-                      {/* Hex input */}
-                      <div className="flex items-center gap-3 mt-2">
-                        <div className="w-10 h-10 rounded-lg border border-[#e0e3e6]" style={{ backgroundColor: formData.colors[color.key] }} />
-                        <input
-                          type="text"
-                          value={formData.colors[color.key]}
-                          onChange={e => { if (/^#[0-9A-Fa-f]{0,6}$/.test(e.target.value)) handleColorChange(color.key, e.target.value); }}
-                          className="flex-1 border border-[#bbcbb9] rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:border-[#006d2f]"
-                          placeholder="#000000"
-                          maxLength={7}
-                        />
-                        <button
-                          onClick={() => setActiveColorKey(null)}
-                          className="bg-[#25D366] text-white px-4 py-2 rounded-lg text-sm font-semibold"
-                        >Set</button>
+                            onClick={() => setActiveColorKey(null)}
+                            className="bg-[#006d2f] text-white px-4 py-2 rounded-xl text-sm font-bold shadow"
+                          >Done</button>
+                        </div>
+
+                        {/* Curated palette families */}
+                        <div className="text-[10px] text-[#556067] uppercase tracking-wider font-medium mb-2">Quick picks</div>
+                        <div className="space-y-2">
+                          {PRESET_SWATCHES.map(family => (
+                            <div key={family.label} className="flex items-center gap-2">
+                              <span className="text-[10px] text-[#9aab98] w-12 shrink-0">{family.label}</span>
+                              <div className="flex gap-1.5 flex-1">
+                                {family.colors.map(swatch => {
+                                  const isActive = formData.colors[color.key].toLowerCase() === swatch.toLowerCase();
+                                  return (
+                                    <button
+                                      key={swatch}
+                                      type="button"
+                                      onClick={() => { handleColorChange(color.key, swatch); setActiveColorKey(null); }}
+                                      className="flex-1 h-7 rounded-lg transition-all"
+                                      style={{
+                                        backgroundColor: swatch,
+                                        outline: isActive ? '2.5px solid #006d2f' : '1.5px solid rgba(0,0,0,0.07)',
+                                        outlineOffset: isActive ? '2px' : '0',
+                                        transform: isActive ? 'scale(1.15)' : 'scale(1)',
+                                      }}
+                                      title={swatch}
+                                    />
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </div>
