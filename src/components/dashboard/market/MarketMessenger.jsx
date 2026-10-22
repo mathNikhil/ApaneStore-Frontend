@@ -1251,59 +1251,59 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
       {/* ── Config sections — only visible when enabled ── */}
       {enabled && <>
 
-      {/* ── Section 1: Frequency ── */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-4">
-        <div className="text-sm font-semibold text-gray-800 mb-0.5">
-          <i className="ti ti-clock mr-1.5 text-gray-400" />Reminder frequency
-        </div>
-        <p className="text-xs text-gray-400 mb-4">First message goes out after this many hours from when the customer last updated their cart.</p>
+      {/* ── Section 1+2: Frequency + Min cart value — single row ── */}
+      <div className="grid grid-cols-2 gap-3">
 
-        <div className="flex gap-2 flex-wrap mb-4">
-          {DELAY_OPTIONS.map(opt => (
-            <button key={opt.hours}
-              onClick={() => updateReminder(0, 'delay_hours', opt.hours)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-all
-                ${reminders[0]?.delay_hours === opt.hours
-                  ? 'bg-[#25D366] text-white border-[#25D366]'
-                  : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-[#25D366] hover:text-[#006d2f]'}`}>
-              {opt.label}
-            </button>
-          ))}
+        {/* Frequency */}
+        <div className="bg-white border border-gray-200 rounded-2xl p-3">
+          <div className="flex items-center gap-1.5 mb-1">
+            <i className="ti ti-clock text-gray-400 text-sm" />
+            <span className="text-xs font-semibold text-gray-700">Send after</span>
+          </div>
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            {DELAY_OPTIONS.map(opt => (
+              <button key={opt.hours}
+                onClick={() => updateReminder(0, 'delay_hours', opt.hours)}
+                className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-all
+                  ${reminders[0]?.delay_hours === opt.hours
+                    ? 'bg-[#25D366] text-white border-[#25D366]'
+                    : 'bg-gray-50 text-gray-500 border-gray-200 hover:border-[#25D366] hover:text-[#006d2f]'}`}>
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          <div className="text-xs text-gray-400 mb-1">Daily time (IST)</div>
+          <input type="time" value={sendTime} onChange={e => setSendTime(e.target.value)}
+            className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[#25D366]/30" />
         </div>
 
-        <div className="flex items-center gap-2 mb-1">
-          <label className="text-xs font-medium text-gray-600">Daily send time</label>
-          <span className="text-xs text-gray-300">—</span>
-          <span className="text-xs text-gray-400">all reminders go at this time each day (IST)</span>
+        {/* Min cart value */}
+        <div className="bg-white border border-gray-200 rounded-2xl p-3">
+          <div className="flex items-center gap-1.5 mb-1">
+            <i className="ti ti-currency-rupee text-gray-400 text-sm" />
+            <span className="text-xs font-semibold text-gray-700">Min cart value</span>
+          </div>
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            {[0, 100, 200, 500, 1000].map(v => (
+              <button key={v}
+                onClick={() => setMinCart(v)}
+                className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-all
+                  ${parseFloat(minCart) === v
+                    ? 'bg-[#25D366] text-white border-[#25D366]'
+                    : 'bg-gray-50 text-gray-500 border-gray-200 hover:border-[#25D366] hover:text-[#006d2f]'}`}>
+                {v === 0 ? 'All' : `₹${v}+`}
+              </button>
+            ))}
+          </div>
+          <div className="text-xs text-gray-400 mb-1">Custom amount</div>
+          <div className="relative">
+            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs">₹</span>
+            <input type="number" min="0" value={minCart} onChange={e => setMinCart(e.target.value)}
+              placeholder="0"
+              className="w-full border border-gray-200 rounded-lg pl-5 pr-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[#25D366]/30" />
+          </div>
         </div>
-        <input type="time" value={sendTime} onChange={e => setSendTime(e.target.value)}
-          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#25D366]/30" />
-      </div>
 
-      {/* ── Section 2: Cart value threshold ── */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-4">
-        <div className="text-sm font-semibold text-gray-800 mb-0.5">
-          <i className="ti ti-currency-rupee mr-1.5 text-gray-400" />Minimum cart value
-        </div>
-        <p className="text-xs text-gray-400 mb-3">Only send reminders when the cart total is at least this amount. Set 0 to message everyone.</p>
-        <div className="flex gap-2 flex-wrap mb-3">
-          {[0, 100, 200, 500, 1000].map(v => (
-            <button key={v}
-              onClick={() => setMinCart(v)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-all
-                ${parseFloat(minCart) === v
-                  ? 'bg-[#25D366] text-white border-[#25D366]'
-                  : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-[#25D366] hover:text-[#006d2f]'}`}>
-              {v === 0 ? 'All carts' : `₹${v}+`}
-            </button>
-          ))}
-        </div>
-        <div className="relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">₹</span>
-          <input type="number" min="0" value={minCart} onChange={e => setMinCart(e.target.value)}
-            placeholder="Custom amount"
-            className="w-full border border-gray-200 rounded-lg pl-7 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#25D366]/30" />
-        </div>
       </div>
 
       {/* ── Section 3: Message templates ── */}
