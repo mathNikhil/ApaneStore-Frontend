@@ -990,19 +990,24 @@ function MessageCard({ m, onDelete = null, onEdit = null }) {
   );
 }
 
+
 // ── CartAbandonedTab ──────────────────────────────────────────────────────────
-function CartAbandonedTab({ storeId, isConnected }) {
+function CartAbandonedTab({ storeId: tenantId, isConnected }) {
   const API_BASE = import.meta.env.VITE_API_URL || 'https://api.aapnaestore.com';
   const getToken = () => localStorage.getItem('token') || '';
 
-  const [config, setConfig]   = useState(null);
-  const [stats, setStats]     = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving]   = useState(false);
-  const [saved, setSaved]     = useState(false);
-  const [error, setError]     = useState('');
+  // Store selection
+  const [stores, setStores]           = useState([]);
+  const [selectedStoreId, setSelectedStoreId] = useState(null);
 
-  // Local edit state
+  // Remote state
+  const [stats, setStats]             = useState(null);
+  const [loading, setLoading]         = useState(true);
+  const [saving, setSaving]           = useState(false);
+  const [saved, setSaved]             = useState(false);
+  const [error, setError]             = useState('');
+
+  // Local edit state (synced from config on load)
   const [enabled, setEnabled]         = useState(false);
   const [sendTime, setSendTime]       = useState('12:00');
   const [minCart, setMinCart]         = useState(0);
@@ -1012,67 +1017,114 @@ function CartAbandonedTab({ storeId, isConnected }) {
 
   const VARS = ['{name}', '{total}', '{items}', '{link}'];
 
+  // 1. Load tenant's stores on mount
   useEffect(() => {
-    if (!storeId) return;
     const headers = { Authorization: `Bearer ${getToken()}` };
-    Promise.all([
-      fetch(`${API_BASE}/api/stores/${storeId}/cart/stats`, { headers }).then(r => r.json()).catch(() => null),
-    ]).then(([s]) => {
-      if (s?.config) {
-        const c = s.config;
-        setConfig(c);
-        setEnabled(c.enabled || false);
-        setSendTime(c.send_time || '12:00');
-        setMinCart(c.min_cart_value || 0);
-        setReminders(c.reminders?.length ? c.reminders : [
-          { delay_hours: 24, message: 'Hi {name}! You left items worth ₹{total} in your cart. Complete your order here: {link}' }
-        ]);
-      }
-      if (s?.stats) setStats(s.stats);
-      setLoading(false);
-    });
-  }, [storeId]);
+    fetch(`${API_BASE}/api/stores`, { headers })
+      .then(r => r.json())
+      .then(data => {
+        const list = Array.isArray(data) ? data : (data.stores || []);
+        const published = list.filter(s => s.status === 'published' || s.status === 'active' || s.id);
+        setStores(published);
+        if (published.length === 1) setSelectedStoreId(published[0].id);
+        else setLoading(false); // wait for user to pick
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
+  // 2. Load config + stats when a store is selected
+  useEffect(() => {
+    if (!selectedStoreId) return;
+    setLoading(true);
+    const headers = { Authorization: `Bearer ${getToken()}` };
+    fetch(`${API_BASE}/api/stores/${selectedStoreId}/cart/stats`, { headers })
+      .then(r => r.json())
+      .then(data => {
+        if (data?.config) {
+          const c = data.config;
+          setEnabled(c.enabled || false);
+          setSendTime(c.send_time || '12:00');
+          setMinCart(c.min_cart_value ?? 0);
+          setReminders(c.reminders?.length ? c.reminders : [
+            { delay_hours: 24, message: 'Hi {name}! You left items worth ₹{total} in your cart. Complete your order here: {link}' }
+          ]);
+        }
+        if (data?.stats) setStats(data.stats);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [selectedStoreId]);
 
   const save = async () => {
     setSaving(true); setError(''); setSaved(false);
     try {
       const body = { enabled, send_time: sendTime, min_cart_value: parseFloat(minCart) || 0, reminders };
-      const res = await fetch(`${API_BASE}/api/stores/${storeId}/cart/config`, {
+      const res = await fetch(`${API_BASE}/api/stores/${selectedStoreId}/cart/config`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
         body: JSON.stringify(body),
       });
-      if (!res.ok) throw new Error((await res.json().catch(()=>({}))).error || 'Save failed');
-      setConfig(body);
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Save failed');
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (e) { setError(e.message); }
     finally { setSaving(false); }
   };
 
-  const updateReminder = (idx, field, val) => {
-    setReminders(prev => prev.map((r,i) => i===idx ? {...r, [field]: val} : r));
-  };
+  const updateReminder = (idx, field, val) =>
+    setReminders(prev => prev.map((r, i) => i === idx ? { ...r, [field]: val } : r));
 
   const addReminder = () => {
     if (reminders.length >= 3) return;
-    const lastDelay = reminders[reminders.length-1]?.delay_hours || 24;
-    setReminders(prev => [...prev, { delay_hours: lastDelay + 24, message: 'Hi {name}, just a reminder — your cart with ₹{total} worth of items is waiting: {link}' }]);
+    const lastDelay = reminders[reminders.length - 1]?.delay_hours || 24;
+    setReminders(prev => [...prev, {
+      delay_hours: lastDelay + 24,
+      message: 'Hi {name}, just a reminder — your cart with ₹{total} worth of items is waiting: {link}'
+    }]);
   };
 
   const removeReminder = (idx) => {
     if (reminders.length <= 1) return;
-    setReminders(prev => prev.filter((_,i) => i!==idx));
+    setReminders(prev => prev.filter((_, i) => i !== idx));
   };
 
   const insertVar = (idx, v) => {
     const el = document.getElementById(`reminder-msg-${idx}`);
-    if (!el) { updateReminder(idx, 'message', (reminders[idx].message||'') + v); return; }
+    if (!el) { updateReminder(idx, 'message', (reminders[idx].message || '') + v); return; }
     const start = el.selectionStart, end = el.selectionEnd;
     const cur = reminders[idx].message || '';
-    updateReminder(idx, 'message', cur.slice(0,start) + v + cur.slice(end));
-    setTimeout(() => { el.focus(); el.setSelectionRange(start+v.length, start+v.length); }, 0);
+    updateReminder(idx, 'message', cur.slice(0, start) + v + cur.slice(end));
+    setTimeout(() => { el.focus(); el.setSelectionRange(start + v.length, start + v.length); }, 0);
   };
+
+  // ── Store picker (multi-store tenants) ───────────────────────────────────
+  const StorePicker = () => (
+    <div className="space-y-3">
+      <div className="bg-white border border-gray-200 rounded-2xl p-5">
+        <h3 className="text-sm font-semibold text-gray-700 mb-1 flex items-center gap-2">
+          <i className="ti ti-building-store text-gray-400" /> Select store to configure
+        </h3>
+        <p className="text-xs text-gray-400 mb-4">Cart recovery is configured per store. Pick the store you want to set up.</p>
+        <div className="space-y-2">
+          {stores.map(s => (
+            <button key={s.id} onClick={() => setSelectedStoreId(s.id)}
+              className="w-full flex items-center gap-3 p-3 rounded-xl border border-gray-200 hover:border-[#25D366] hover:bg-[#f0fdf4] text-left transition-all group">
+              <div className="w-9 h-9 rounded-lg bg-[#25D366]/10 flex items-center justify-center flex-shrink-0">
+                {s.logo_url
+                  ? <img src={s.logo_url} className="w-full h-full object-cover rounded-lg" alt="" />
+                  : <i className="ti ti-building-store text-[#006d2f]" />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-medium text-gray-800 truncate">{s.store_name || s.name}</div>
+                <div className="text-xs text-gray-400">{s.subdomain ? `${s.subdomain}.aapnaestore.com` : `Store #${s.id}`}</div>
+              </div>
+              <i className="ti ti-chevron-right text-gray-300 group-hover:text-[#25D366]" />
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 
   if (loading) return (
     <div className="flex items-center justify-center py-16 text-gray-400">
@@ -1080,9 +1132,27 @@ function CartAbandonedTab({ storeId, isConnected }) {
     </div>
   );
 
+  // Show store picker if multiple stores and none selected
+  if (!selectedStoreId && stores.length > 1) return <StorePicker />;
+  if (!selectedStoreId && stores.length === 0) return (
+    <div className="text-center py-12 text-gray-400 text-sm">No stores found. Create a store first.</div>
+  );
+
+  const selectedStore = stores.find(s => s.id === selectedStoreId);
+
   // ── Feature-off education screen ──────────────────────────────────────────
   if (!enabled) return (
     <div className="space-y-4">
+      {/* Store switcher strip (only shown if tenant has multiple stores) */}
+      {stores.length > 1 && (
+        <button onClick={() => { setSelectedStoreId(null); setStats(null); }}
+          className="flex items-center gap-2 text-xs text-gray-500 hover:text-gray-800 transition-colors">
+          <i className="ti ti-arrow-left" />
+          {selectedStore?.store_name || `Store #${selectedStoreId}`}
+          <span className="text-gray-300">· change store</span>
+        </button>
+      )}
+
       {/* Hero card */}
       <div className="bg-gradient-to-br from-[#f0fdf4] to-[#dcfce7] border border-[#bbf7d0] rounded-2xl p-5">
         <div className="flex items-start gap-4">
@@ -1108,10 +1178,10 @@ function CartAbandonedTab({ storeId, isConnected }) {
         </h3>
         <div className="space-y-3">
           {[
-            { icon:'ti-clock', color:'text-blue-500', bg:'bg-blue-50', title:'Runs once daily at your chosen time', desc:'Every day at 12:00 PM (or whatever time you set), the system checks for customers with items still in cart.' },
-            { icon:'ti-filter', color:'text-purple-500', bg:'bg-purple-50', title:'Only eligible carts are messaged', desc:'Set a minimum cart value (e.g. ₹200) so you only reach out when the order is worth recovering.' },
-            { icon:'ti-send', color:'text-[#006d2f]', bg:'bg-[#25D366]/10', title:'Up to 3 reminder messages per customer', desc:'First reminder after 24 hrs, second after 48 hrs, third after 72 hrs. Each with a different message.' },
-            { icon:'ti-shield-check', color:'text-orange-500', bg:'bg-orange-50', title:'Shares the 75/day WhatsApp limit', desc:'Cart recovery messages count toward your 75/day cap. If the limit is hit, remaining carts are automatically pushed to the next day — no manual action needed.' },
+            { icon: 'ti-clock', color: 'text-blue-500', bg: 'bg-blue-50', title: 'Runs once daily at your chosen time', desc: 'Every day at 12:00 PM (or whatever time you set), the system checks for customers with items still in cart.' },
+            { icon: 'ti-filter', color: 'text-purple-500', bg: 'bg-purple-50', title: 'Only eligible carts are messaged', desc: 'Set a minimum cart value (e.g. ₹200) so you only reach out when the order is worth recovering.' },
+            { icon: 'ti-send', color: 'text-[#006d2f]', bg: 'bg-[#25D366]/10', title: 'Up to 3 reminder messages per customer', desc: 'First reminder after 24 hrs, second after 48 hrs, third after 72 hrs. Each with a different message.' },
+            { icon: 'ti-shield-check', color: 'text-orange-500', bg: 'bg-orange-50', title: 'Shares the 75/day WhatsApp limit', desc: 'Cart recovery messages count toward your 75/day cap. If the limit is hit, remaining carts are automatically pushed to the next day — no manual action needed.' },
           ].map((step, i) => (
             <div key={i} className="flex gap-3">
               <div className={`w-8 h-8 rounded-lg ${step.bg} flex items-center justify-center flex-shrink-0 mt-0.5`}>
@@ -1146,7 +1216,6 @@ function CartAbandonedTab({ storeId, isConnected }) {
         </div>
       </div>
 
-      {/* WA not connected warning */}
       {!isConnected && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center gap-2 text-sm">
           <i className="ti ti-alert-circle text-amber-500" />
@@ -1154,11 +1223,8 @@ function CartAbandonedTab({ storeId, isConnected }) {
         </div>
       )}
 
-      {/* Activate button */}
-      <button
-        onClick={() => setEnabled(true)}
-        className="w-full bg-[#25D366] hover:bg-[#1ebe5d] text-white rounded-xl py-3 text-sm font-medium flex items-center justify-center gap-2 transition-colors"
-      >
+      <button onClick={() => setEnabled(true)}
+        className="w-full bg-[#25D366] hover:bg-[#1ebe5d] text-white rounded-xl py-3 text-sm font-medium flex items-center justify-center gap-2 transition-colors">
         <i className="ti ti-toggle-right text-lg" /> Activate Cart Recovery
       </button>
     </div>
@@ -1167,13 +1233,23 @@ function CartAbandonedTab({ storeId, isConnected }) {
   // ── Config screen (enabled) ───────────────────────────────────────────────
   return (
     <div className="space-y-4">
+      {/* Store switcher strip */}
+      {stores.length > 1 && (
+        <button onClick={() => { setSelectedStoreId(null); setStats(null); setEnabled(false); }}
+          className="flex items-center gap-2 text-xs text-gray-500 hover:text-gray-800 transition-colors">
+          <i className="ti ti-arrow-left" />
+          <span className="font-medium text-gray-700">{selectedStore?.store_name || `Store #${selectedStoreId}`}</span>
+          <span className="text-gray-300">· change store</span>
+        </button>
+      )}
+
       {/* Stats bar */}
       {stats && (
         <div className="grid grid-cols-3 gap-3">
           {[
-            { label: 'Recovered today', value: stats.sent_today ?? '—', icon: 'ti-send', color: 'text-[#006d2f]' },
+            { label: 'Sent today', value: stats.sent_today ?? '—', icon: 'ti-send', color: 'text-[#006d2f]' },
             { label: 'Queued (overflow)', value: stats.queued ?? '—', icon: 'ti-clock', color: 'text-amber-600' },
-            { label: 'Total recovered', value: stats.total_sent ?? '—', icon: 'ti-chart-bar', color: 'text-blue-600' },
+            { label: 'Total sent', value: stats.total_sent ?? '—', icon: 'ti-chart-bar', color: 'text-blue-600' },
           ].map(s => (
             <div key={s.label} className="bg-white border border-gray-200 rounded-xl p-3 text-center">
               <div className={`text-xl font-bold ${s.color}`}>{s.value}</div>
@@ -1186,13 +1262,11 @@ function CartAbandonedTab({ storeId, isConnected }) {
       {/* Toggle */}
       <div className="bg-white border border-gray-200 rounded-xl p-4 flex items-center justify-between">
         <div>
-          <div className="text-sm font-medium text-gray-800">Cart Recovery</div>
+          <div className="text-sm font-medium text-gray-800">Cart Recovery active</div>
           <div className="text-xs text-gray-400 mt-0.5">Automatically message customers with abandoned carts</div>
         </div>
-        <button
-          onClick={() => setEnabled(e => !e)}
-          className={`relative w-11 h-6 rounded-full transition-colors ${enabled ? 'bg-[#25D366]' : 'bg-gray-200'}`}
-        >
+        <button onClick={() => setEnabled(e => !e)}
+          className={`relative w-11 h-6 rounded-full transition-colors ${enabled ? 'bg-[#25D366]' : 'bg-gray-200'}`}>
           <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${enabled ? 'translate-x-5' : ''}`} />
         </button>
       </div>
@@ -1220,7 +1294,7 @@ function CartAbandonedTab({ storeId, isConnected }) {
         </div>
       </div>
 
-      {/* Reminders */}
+      {/* Reminder messages */}
       <div className="bg-white border border-gray-200 rounded-xl p-4">
         <div className="flex items-center justify-between mb-1">
           <label className="text-sm font-medium text-gray-700">
@@ -1239,32 +1313,36 @@ function CartAbandonedTab({ storeId, isConnected }) {
           {reminders.map((r, idx) => (
             <div key={idx} className="border border-gray-100 rounded-xl p-3 bg-gray-50 relative">
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-xs font-semibold text-gray-500 bg-white border border-gray-200 rounded-full w-5 h-5 flex items-center justify-center">{idx+1}</span>
-                <span className="text-xs font-medium text-gray-700">Reminder {idx+1}</span>
+                <span className="text-xs font-semibold text-gray-500 bg-white border border-gray-200 rounded-full w-5 h-5 flex items-center justify-center">{idx + 1}</span>
+                <span className="text-xs font-medium text-gray-700">Reminder {idx + 1}</span>
                 {reminders.length > 1 && (
                   <button onClick={() => removeReminder(idx)}
-                    className="ml-auto text-red-400 hover:text-red-600 text-xs flex items-center gap-0.5">
+                    className="ml-auto text-red-400 hover:text-red-600 text-xs">
                     <i className="ti ti-trash text-xs" />
                   </button>
                 )}
               </div>
 
               <div className="mb-3">
-                <label className="text-xs text-gray-500 mb-1 block">Send after (hours since cart updated)</label>
+                <label className="text-xs text-gray-500 mb-1 block">Send after (hours since cart was updated)</label>
                 <div className="flex items-center gap-2">
                   <input type="number" min="1" max="168" value={r.delay_hours}
-                    onChange={e => updateReminder(idx, 'delay_hours', parseInt(e.target.value)||24)}
+                    onChange={e => updateReminder(idx, 'delay_hours', parseInt(e.target.value) || 24)}
                     className="w-20 border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-center focus:outline-none focus:ring-2 focus:ring-[#25D366]/30 bg-white" />
                   <span className="text-xs text-gray-400">hours</span>
                   <span className="text-xs text-gray-300">·</span>
-                  <span className="text-xs text-gray-400">{r.delay_hours >= 24 ? `${(r.delay_hours/24).toFixed(r.delay_hours%24===0?0:1)} day${r.delay_hours/24>1?'s':''}` : `${r.delay_hours}h`}</span>
+                  <span className="text-xs text-gray-400">
+                    {r.delay_hours >= 24
+                      ? `${(r.delay_hours / 24).toFixed(r.delay_hours % 24 === 0 ? 0 : 1)} day${r.delay_hours / 24 > 1 ? 's' : ''}`
+                      : `${r.delay_hours}h`}
+                  </span>
                 </div>
               </div>
 
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="text-xs text-gray-500">Message</label>
-                  <div className="flex gap-1">
+                  <div className="flex gap-1 flex-wrap justify-end">
                     {VARS.map(v => (
                       <button key={v} onClick={() => insertVar(idx, v)}
                         className="text-xs font-mono bg-white border border-gray-200 px-1.5 py-0.5 rounded text-[#006d2f] hover:bg-[#25D366]/5 transition-colors">
@@ -1288,7 +1366,6 @@ function CartAbandonedTab({ storeId, isConnected }) {
         </div>
       </div>
 
-      {/* Error / success */}
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700 flex items-center gap-2">
           <i className="ti ti-alert-circle" /> {error}
@@ -1300,19 +1377,17 @@ function CartAbandonedTab({ storeId, isConnected }) {
         </div>
       )}
 
-      {/* Save + disable */}
       <div className="flex gap-3">
         <button onClick={save} disabled={saving}
           className="flex-1 bg-[#25D366] hover:bg-[#1ebe5d] disabled:bg-gray-200 text-white rounded-xl py-3 text-sm font-medium flex items-center justify-center gap-2 transition-colors">
           {saving ? <><i className="ti ti-loader-2 animate-spin" /> Saving…</> : <><i className="ti ti-device-floppy" /> Save settings</>}
         </button>
-        <button onClick={() => { setEnabled(false); }}
+        <button onClick={() => setEnabled(false)}
           className="px-4 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl text-sm font-medium transition-colors">
           Disable
         </button>
       </div>
 
-      {/* WA not connected */}
       {!isConnected && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center gap-2 text-xs text-amber-700">
           <i className="ti ti-alert-circle text-amber-500" />
