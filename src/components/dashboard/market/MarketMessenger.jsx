@@ -1144,7 +1144,6 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
     setReminders(prev => prev.map((r, i) => i === idx ? { ...r, [field]: val } : r));
 
   const addReminder = () => {
-    if (reminders.length >= 3) return;
     const newIdx = reminders.length;
     setReminders(prev => [...prev, {
       delay_hours: prev[prev.length - 1]?.delay_hours + 24 || 48,
@@ -1313,17 +1312,29 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
                 <button key={opt.hours}
                   onClick={() => {
                     if (active) {
-                      // remove this reminder (keep at least 1)
+                      // remove — keep at least 1
                       if (reminders.length === 1) return;
                       const idx = reminders.findIndex(r => r.delay_hours === opt.hours);
                       setReminders(r => r.filter((_, i) => i !== idx));
                       setActiveReminderIdx(0);
                     } else {
-                      // add new reminder with this delay
-                      if (reminders.length >= 3) return;
-                      const newR = { delay_hours: opt.hours, message: 'Hi {name}! You left ₹{total} worth of items in your cart.\n\n{items} — still waiting for you 🛍️\n\nComplete your order: {link}' };
-                      setReminders(r => [...r, newR].sort((a, b) => a.delay_hours - b.delay_hours));
-                      setActiveReminderIdx(reminders.length);
+                      // add with a message tailored to the delay
+                      const msgs = {
+                        6:  'Hi {name}! Just checking — you left ₹{total} worth of items in your cart a few hours ago.\n\n{items}\n\nStill interested? Complete your order: {link}',
+                        12: 'Hi {name}! Your cart is still waiting 🛒\n\nYou left ₹{total} worth of items behind:\n{items}\n\nComplete your order before they sell out: {link}',
+                        24: 'Hi {name}! You left ₹{total} worth of items in your cart.\n\n{items} — still waiting for you 🛍️\n\nComplete your order: {link}',
+                        48: 'Hi {name}! It\'s been 2 days since you left ₹{total} in your cart.\n\n{items}\n\nWe\'d hate for you to miss out. Order now: {link}',
+                        72: 'Hi {name}! Last reminder — your cart with ₹{total} worth of items is still saved.\n\n{items}\n\nComplete your order today: {link}',
+                      };
+                      const newR = {
+                        delay_hours: opt.hours,
+                        message: msgs[opt.hours] || msgs[24],
+                      };
+                      setReminders(r => {
+                        const updated = [...r, newR].sort((a, b) => a.delay_hours - b.delay_hours);
+                        setActiveReminderIdx(updated.findIndex(x => x.delay_hours === opt.hours));
+                        return updated;
+                      });
                     }
                   }}
                   className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border transition-all
