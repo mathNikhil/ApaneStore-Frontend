@@ -991,48 +991,63 @@ function MessageCard({ m, onDelete = null, onEdit = null }) {
 }
 
 
+
 // ── CartAbandonedTab ──────────────────────────────────────────────────────────
 function CartAbandonedTab({ storeId: tenantId, isConnected }) {
   const API_BASE = import.meta.env.VITE_API_URL || 'https://api.aapnaestore.com';
   const getToken = () => localStorage.getItem('token') || '';
 
   // Store selection
-  const [stores, setStores]           = useState([]);
-  const [selectedStoreId, setSelectedStoreId] = useState(null);
+  const [stores, setStores]                     = useState([]);
+  const [selectedStoreId, setSelectedStoreId]   = useState(null);
+  const [stats, setStats]                       = useState(null);
+  const [loading, setLoading]                   = useState(true);
+  const [saving, setSaving]                     = useState(false);
+  const [saved, setSaved]                       = useState(false);
+  const [error, setError]                       = useState('');
+  const [activeReminderIdx, setActiveReminderIdx] = useState(0);
 
-  // Remote state
-  const [stats, setStats]             = useState(null);
-  const [loading, setLoading]         = useState(true);
-  const [saving, setSaving]           = useState(false);
-  const [saved, setSaved]             = useState(false);
-  const [error, setError]             = useState('');
-
-  // Local edit state (synced from config on load)
-  const [enabled, setEnabled]         = useState(false);
-  const [sendTime, setSendTime]       = useState('12:00');
-  const [minCart, setMinCart]         = useState(0);
-  const [reminders, setReminders]     = useState([
-    { delay_hours: 24, message: 'Hi {name}! You left items worth ₹{total} in your cart. Complete your order here: {link}' }
+  // Config state
+  const [enabled, setEnabled]     = useState(false);
+  const [sendTime, setSendTime]   = useState('12:00');
+  const [minCart, setMinCart]     = useState(0);
+  const [reminders, setReminders] = useState([
+    { delay_hours: 24, message: 'Hi {name}! You left items worth ₹{total} in your cart. Complete your order: {link}' }
   ]);
 
-  const VARS = ['{name}', '{total}', '{items}', '{link}'];
+  const DELAY_OPTIONS = [
+    { hours: 6,  label: '6 hrs' },
+    { hours: 12, label: '12 hrs' },
+    { hours: 24, label: '1 day' },
+    { hours: 48, label: '2 days' },
+    { hours: 72, label: '3 days' },
+  ];
 
-  // 1. Load tenant's stores on mount
+  const SAMPLE = { name: 'Priya', total: '1,240', items: 'Kurti, Dupatta, +1 more', link: 'fashionhouse.aapnaestore.com' };
+
+  const previewMessage = (template) =>
+    (template || '')
+      .replace(/{name}/gi, SAMPLE.name)
+      .replace(/{total}/gi, `₹${SAMPLE.total}`)
+      .replace(/{items}/gi, SAMPLE.items)
+      .replace(/{link}/gi, SAMPLE.link);
+
+  // Load stores on mount
   useEffect(() => {
     const headers = { Authorization: `Bearer ${getToken()}` };
     fetch(`${API_BASE}/api/stores`, { headers })
       .then(r => r.json())
       .then(data => {
         const list = Array.isArray(data) ? data : (data.data || data.stores || []);
-        const published = list.filter(s => s.id);
-        setStores(published);
-        if (published.length === 1) setSelectedStoreId(published[0].id);
-        else setLoading(false); // wait for user to pick
+        const valid = list.filter(s => s.id);
+        setStores(valid);
+        if (valid.length === 1) setSelectedStoreId(valid[0].id);
+        else setLoading(false);
       })
       .catch(() => setLoading(false));
   }, []);
 
-  // 2. Load config + stats when a store is selected
+  // Load config + stats when store selected
   useEffect(() => {
     if (!selectedStoreId) return;
     setLoading(true);
@@ -1046,7 +1061,7 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
           setSendTime(c.send_time || '12:00');
           setMinCart(c.min_cart_value ?? 0);
           setReminders(c.reminders?.length ? c.reminders : [
-            { delay_hours: 24, message: 'Hi {name}! You left items worth ₹{total} in your cart. Complete your order here: {link}' }
+            { delay_hours: 24, message: 'Hi {name}! You left items worth ₹{total} in your cart. Complete your order: {link}' }
           ]);
         }
         if (data?.stats) setStats(data.stats);
@@ -1076,16 +1091,18 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
 
   const addReminder = () => {
     if (reminders.length >= 3) return;
-    const lastDelay = reminders[reminders.length - 1]?.delay_hours || 24;
+    const newIdx = reminders.length;
     setReminders(prev => [...prev, {
-      delay_hours: lastDelay + 24,
-      message: 'Hi {name}, just a reminder — your cart with ₹{total} worth of items is waiting: {link}'
+      delay_hours: prev[prev.length - 1]?.delay_hours + 24 || 48,
+      message: 'Hi {name}, still thinking? Your cart has ₹{total} worth of items waiting: {link}'
     }]);
+    setActiveReminderIdx(newIdx);
   };
 
   const removeReminder = (idx) => {
     if (reminders.length <= 1) return;
     setReminders(prev => prev.filter((_, i) => i !== idx));
+    setActiveReminderIdx(Math.max(0, idx - 1));
   };
 
   const insertVar = (idx, v) => {
@@ -1097,31 +1114,49 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
     setTimeout(() => { el.focus(); el.setSelectionRange(start + v.length, start + v.length); }, 0);
   };
 
-  // ── Store picker (multi-store tenants) ───────────────────────────────────
-  const StorePicker = () => (
-    <div className="space-y-3">
-      <div className="bg-white border border-gray-200 rounded-2xl p-5">
-        <h3 className="text-sm font-semibold text-gray-700 mb-1 flex items-center gap-2">
-          <i className="ti ti-building-store text-gray-400" /> Select store to configure
-        </h3>
-        <p className="text-xs text-gray-400 mb-4">Cart recovery is configured per store. Pick the store you want to set up.</p>
-        <div className="space-y-2">
-          {stores.map(s => (
-            <button key={s.id} onClick={() => setSelectedStoreId(s.id)}
-              className="w-full flex items-center gap-3 p-3 rounded-xl border border-gray-200 hover:border-[#25D366] hover:bg-[#f0fdf4] text-left transition-all group">
-              <div className="w-9 h-9 rounded-lg bg-[#25D366]/10 flex items-center justify-center flex-shrink-0">
-                {s.logo_url
-                  ? <img src={s.logo_url} className="w-full h-full object-cover rounded-lg" alt="" />
-                  : <i className="ti ti-building-store text-[#006d2f]" />}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-gray-800 truncate">{s.store_name || s.name}</div>
-                <div className="text-xs text-gray-400">{s.subdomain ? `${s.subdomain}.aapnaestore.com` : `Store #${s.id}`}</div>
-              </div>
-              <i className="ti ti-chevron-right text-gray-300 group-hover:text-[#25D366]" />
-            </button>
-          ))}
+  // ── WA message bubble component ──────────────────────────────────────────
+  const WaBubble = ({ text }) => (
+    <div className="bg-[#ECE5DD] rounded-2xl p-4">
+      <div className="flex items-center gap-2 mb-3">
+        <div className="w-8 h-8 rounded-full bg-[#25D366] flex items-center justify-center">
+          <i className="ti ti-brand-whatsapp text-white text-sm" />
         </div>
+        <div>
+          <div className="text-xs font-semibold text-gray-700">Your Store</div>
+          <div className="text-xs text-gray-400">via WhatsApp</div>
+        </div>
+      </div>
+      <div className="bg-white rounded-xl rounded-tl-sm p-3 shadow-sm max-w-xs">
+        <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap break-words">{text || '…'}</p>
+        <div className="flex justify-end mt-1">
+          <span className="text-xs text-gray-400">12:00 PM ✓✓</span>
+        </div>
+      </div>
+    </div>
+  );
+
+  // ── Store picker ──────────────────────────────────────────────────────────
+  if (!loading && !selectedStoreId && stores.length > 1) return (
+    <div className="bg-white border border-gray-200 rounded-2xl p-5">
+      <h3 className="text-sm font-semibold text-gray-700 mb-1 flex items-center gap-2">
+        <i className="ti ti-building-store text-gray-400" /> Select a store
+      </h3>
+      <p className="text-xs text-gray-400 mb-4">Cart recovery is configured per store.</p>
+      <div className="space-y-2">
+        {stores.map(s => (
+          <button key={s.id} onClick={() => setSelectedStoreId(s.id)}
+            className="w-full flex items-center gap-3 p-3 rounded-xl border border-gray-200 hover:border-[#25D366] hover:bg-[#f0fdf4] text-left transition-all group">
+            <div className="w-9 h-9 rounded-lg bg-[#25D366]/10 flex items-center justify-center flex-shrink-0">
+              {s.logo_url ? <img src={s.logo_url} className="w-full h-full object-cover rounded-lg" alt="" />
+                : <i className="ti ti-building-store text-[#006d2f]" />}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-medium text-gray-800 truncate">{s.store_name || s.name}</div>
+              <div className="text-xs text-gray-400">{s.subdomain ? `${s.subdomain}.aapnaestore.com` : `Store #${s.id}`}</div>
+            </div>
+            <i className="ti ti-chevron-right text-gray-300 group-hover:text-[#25D366]" />
+          </button>
+        ))}
       </div>
     </div>
   );
@@ -1132,124 +1167,111 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
     </div>
   );
 
-  // Show store picker if multiple stores and none selected
-  if (!selectedStoreId && stores.length > 1) return <StorePicker />;
   if (!selectedStoreId && stores.length === 0) return (
     <div className="text-center py-12 text-gray-400 text-sm">No stores found. Create a store first.</div>
   );
 
   const selectedStore = stores.find(s => s.id === selectedStoreId);
+  const storeSwitcher = stores.length > 1 && (
+    <button onClick={() => { setSelectedStoreId(null); setStats(null); setEnabled(false); }}
+      className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-700 mb-3 transition-colors">
+      <i className="ti ti-arrow-left text-xs" />
+      <span className="font-medium">{selectedStore?.store_name}</span>
+      <span className="text-gray-300">· change</span>
+    </button>
+  );
 
-  // ── Feature-off education screen ──────────────────────────────────────────
+  // ── Education screen (feature off) ───────────────────────────────────────
   if (!enabled) return (
     <div className="space-y-4">
-      {/* Store switcher strip (only shown if tenant has multiple stores) */}
-      {stores.length > 1 && (
-        <button onClick={() => { setSelectedStoreId(null); setStats(null); }}
-          className="flex items-center gap-2 text-xs text-gray-500 hover:text-gray-800 transition-colors">
-          <i className="ti ti-arrow-left" />
-          {selectedStore?.store_name || `Store #${selectedStoreId}`}
-          <span className="text-gray-300">· change store</span>
-        </button>
-      )}
+      {storeSwitcher}
 
-      {/* Hero card */}
+      {/* Hero */}
       <div className="bg-gradient-to-br from-[#f0fdf4] to-[#dcfce7] border border-[#bbf7d0] rounded-2xl p-5">
-        <div className="flex items-start gap-4">
-          <div className="w-12 h-12 rounded-xl bg-[#25D366]/10 flex items-center justify-center flex-shrink-0">
-            <i className="ti ti-shopping-cart text-[#006d2f] text-2xl" />
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-10 h-10 rounded-xl bg-[#25D366]/20 flex items-center justify-center flex-shrink-0">
+            <i className="ti ti-shopping-cart text-[#006d2f] text-xl" />
           </div>
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <h2 className="text-base font-semibold text-gray-800">Abandoned Cart Recovery</h2>
-              <span className="text-xs bg-[#25D366]/10 text-[#006d2f] px-2 py-0.5 rounded-full font-medium">Auto</span>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-semibold text-gray-800">Abandoned Cart Recovery</h2>
+              <span className="text-xs bg-[#25D366]/15 text-[#006d2f] px-2 py-0.5 rounded-full font-medium">Auto</span>
             </div>
-            <p className="text-sm text-gray-600 leading-relaxed">
-              Automatically remind customers who added items to their cart but didn't complete their order — via WhatsApp, sent from your connected number.
-            </p>
+            <p className="text-xs text-gray-500 mt-0.5">Remind customers who added items but didn't order</p>
+          </div>
+        </div>
+
+        {/* How it works — 3 simple steps */}
+        <div className="flex items-start gap-2 text-xs text-gray-600 mt-3 space-y-0">
+          <div className="grid grid-cols-3 gap-2 w-full">
+            {[
+              { icon: 'ti-shopping-cart-plus', label: 'Customer adds items' },
+              { icon: 'ti-clock-x', label: 'Doesn\'t complete order' },
+              { icon: 'ti-brand-whatsapp', label: 'Auto WA reminder sent' },
+            ].map((s, i) => (
+              <div key={i} className="flex flex-col items-center text-center gap-1.5 bg-white/60 rounded-xl p-2.5">
+                <i className={`ti ${s.icon} text-[#006d2f] text-lg`} />
+                <span className="text-xs text-gray-600 leading-tight">{s.label}</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* How it works */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-5">
-        <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
-          <i className="ti ti-bulb text-amber-500" /> How it works
-        </h3>
-        <div className="space-y-3">
-          {[
-            { icon: 'ti-clock', color: 'text-blue-500', bg: 'bg-blue-50', title: 'Runs once daily at your chosen time', desc: 'Every day at 12:00 PM (or whatever time you set), the system checks for customers with items still in cart.' },
-            { icon: 'ti-filter', color: 'text-purple-500', bg: 'bg-purple-50', title: 'Only eligible carts are messaged', desc: 'Set a minimum cart value (e.g. ₹200) so you only reach out when the order is worth recovering.' },
-            { icon: 'ti-send', color: 'text-[#006d2f]', bg: 'bg-[#25D366]/10', title: 'Up to 3 reminder messages per customer', desc: 'First reminder after 24 hrs, second after 48 hrs, third after 72 hrs. Each with a different message.' },
-            { icon: 'ti-shield-check', color: 'text-orange-500', bg: 'bg-orange-50', title: 'Shares the 75/day WhatsApp limit', desc: 'Cart recovery messages count toward your 75/day cap. If the limit is hit, remaining carts are automatically pushed to the next day — no manual action needed.' },
-          ].map((step, i) => (
-            <div key={i} className="flex gap-3">
-              <div className={`w-8 h-8 rounded-lg ${step.bg} flex items-center justify-center flex-shrink-0 mt-0.5`}>
-                <i className={`ti ${step.icon} ${step.color} text-sm`} />
-              </div>
-              <div>
-                <div className="text-sm font-medium text-gray-800">{step.title}</div>
-                <div className="text-xs text-gray-500 mt-0.5">{step.desc}</div>
-              </div>
-            </div>
+      {/* Preview — what the customer actually receives */}
+      <div className="bg-white border border-gray-200 rounded-2xl p-4">
+        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">What your customer receives</div>
+        <WaBubble text={`Hi Priya! You left items worth ₹1,240 in your cart.\n\nKurti, Dupatta, +1 more — still waiting for you 🛍️\n\nComplete your order here:\nfashionhouse.aapnaestore.com`} />
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {['{name} → customer name', '{total} → cart value', '{items} → item list', '{link} → your store link'].map(h => (
+            <span key={h} className="text-xs bg-gray-50 border border-gray-100 text-gray-500 px-2 py-1 rounded-full">{h}</span>
           ))}
         </div>
       </div>
 
-      {/* Variable guide */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-5">
-        <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-          <i className="ti ti-code text-gray-400" /> Message variables
-        </h3>
-        <div className="grid grid-cols-2 gap-2">
-          {[
-            ['{name}', "Customer's first name"],
-            ['{total}', 'Cart total in ₹'],
-            ['{items}', 'Item names (first 3)'],
-            ['{link}', 'Link to your store'],
-          ].map(([v, d]) => (
-            <div key={v} className="flex items-start gap-2 bg-gray-50 rounded-lg p-2.5">
-              <code className="text-xs font-mono bg-white border border-gray-200 px-1.5 py-0.5 rounded text-[#006d2f] flex-shrink-0">{v}</code>
-              <span className="text-xs text-gray-500">{d}</span>
-            </div>
-          ))}
-        </div>
+      {/* Quick facts */}
+      <div className="bg-white border border-gray-200 rounded-2xl divide-y divide-gray-100">
+        {[
+          { icon: 'ti-clock', color: 'text-blue-500', text: 'Sends once a day at your chosen time' },
+          { icon: 'ti-messages', color: 'text-purple-500', text: 'Up to 3 reminders per customer (24hr, 48hr, 72hr)' },
+          { icon: 'ti-currency-rupee', color: 'text-orange-500', text: 'Set a minimum cart value — skip low-value carts' },
+          { icon: 'ti-refresh', color: 'text-[#006d2f]', text: 'Overflow auto-pushed to next day if 75/day limit hit' },
+        ].map((f, i) => (
+          <div key={i} className="flex items-center gap-3 px-4 py-3">
+            <i className={`ti ${f.icon} ${f.color} text-base flex-shrink-0`} />
+            <span className="text-sm text-gray-600">{f.text}</span>
+          </div>
+        ))}
       </div>
 
       {!isConnected && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center gap-2 text-sm">
-          <i className="ti ti-alert-circle text-amber-500" />
-          <span className="text-amber-700 text-xs">WhatsApp must be connected before activating cart recovery. Go to Setup → Connect.</span>
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center gap-2">
+          <i className="ti ti-alert-circle text-amber-500 flex-shrink-0" />
+          <span className="text-xs text-amber-700">WhatsApp must be connected first. Go to Setup → Connect.</span>
         </div>
       )}
 
       <button onClick={() => setEnabled(true)}
-        className="w-full bg-[#25D366] hover:bg-[#1ebe5d] text-white rounded-xl py-3 text-sm font-medium flex items-center justify-center gap-2 transition-colors">
-        <i className="ti ti-toggle-right text-lg" /> Activate Cart Recovery
+        className="w-full bg-[#25D366] hover:bg-[#1ebe5d] text-white rounded-xl py-3 text-sm font-semibold flex items-center justify-center gap-2 transition-colors">
+        <i className="ti ti-toggle-right text-lg" /> Set Up Cart Recovery
       </button>
     </div>
   );
 
   // ── Config screen (enabled) ───────────────────────────────────────────────
+  const activeReminder = reminders[activeReminderIdx] || reminders[0];
+
   return (
     <div className="space-y-4">
-      {/* Store switcher strip */}
-      {stores.length > 1 && (
-        <button onClick={() => { setSelectedStoreId(null); setStats(null); setEnabled(false); }}
-          className="flex items-center gap-2 text-xs text-gray-500 hover:text-gray-800 transition-colors">
-          <i className="ti ti-arrow-left" />
-          <span className="font-medium text-gray-700">{selectedStore?.store_name || `Store #${selectedStoreId}`}</span>
-          <span className="text-gray-300">· change store</span>
-        </button>
-      )}
+      {storeSwitcher}
 
-      {/* Stats bar */}
+      {/* Stats */}
       {stats && (
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-2">
           {[
-            { label: 'Sent today', value: stats.sent_today ?? '—', icon: 'ti-send', color: 'text-[#006d2f]' },
-            { label: 'Queued (overflow)', value: stats.queued ?? '—', icon: 'ti-clock', color: 'text-amber-600' },
-            { label: 'Total sent', value: stats.total_sent ?? '—', icon: 'ti-chart-bar', color: 'text-blue-600' },
+            { label: 'Sent today', value: stats.sent_today ?? 0, color: 'text-[#006d2f]' },
+            { label: 'Queued', value: stats.queued ?? 0, color: 'text-amber-600' },
+            { label: 'Total sent', value: stats.total_sent ?? 0, color: 'text-blue-600' },
           ].map(s => (
             <div key={s.label} className="bg-white border border-gray-200 rounded-xl p-3 text-center">
               <div className={`text-xl font-bold ${s.color}`}>{s.value}</div>
@@ -1259,139 +1281,187 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
         </div>
       )}
 
-      {/* Toggle */}
+      {/* On/Off toggle */}
       <div className="bg-white border border-gray-200 rounded-xl p-4 flex items-center justify-between">
         <div>
-          <div className="text-sm font-medium text-gray-800">Cart Recovery active</div>
-          <div className="text-xs text-gray-400 mt-0.5">Automatically message customers with abandoned carts</div>
+          <div className="text-sm font-semibold text-gray-800">Cart Recovery</div>
+          <div className="text-xs text-gray-400 mt-0.5">Reminders go out automatically every day</div>
         </div>
         <button onClick={() => setEnabled(e => !e)}
-          className={`relative w-11 h-6 rounded-full transition-colors ${enabled ? 'bg-[#25D366]' : 'bg-gray-200'}`}>
-          <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${enabled ? 'translate-x-5' : ''}`} />
+          className={`relative w-12 h-6 rounded-full transition-colors ${enabled ? 'bg-[#25D366]' : 'bg-gray-200'}`}>
+          <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${enabled ? 'translate-x-6' : ''}`} />
         </button>
       </div>
 
-      {/* Send time */}
-      <div className="bg-white border border-gray-200 rounded-xl p-4">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          <i className="ti ti-clock mr-1.5 text-gray-400" />Daily send time
-        </label>
-        <p className="text-xs text-gray-400 mb-3">Reminders go out once a day at this time (IST). If the daily limit is hit, extras are pushed to the next day.</p>
+      {/* ── Section 1: Frequency ── */}
+      <div className="bg-white border border-gray-200 rounded-2xl p-4">
+        <div className="text-sm font-semibold text-gray-800 mb-0.5">
+          <i className="ti ti-clock mr-1.5 text-gray-400" />Reminder frequency
+        </div>
+        <p className="text-xs text-gray-400 mb-4">First message goes out after this many hours from when the customer last updated their cart.</p>
+
+        <div className="flex gap-2 flex-wrap mb-4">
+          {DELAY_OPTIONS.map(opt => (
+            <button key={opt.hours}
+              onClick={() => updateReminder(0, 'delay_hours', opt.hours)}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-all
+                ${reminders[0]?.delay_hours === opt.hours
+                  ? 'bg-[#25D366] text-white border-[#25D366]'
+                  : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-[#25D366] hover:text-[#006d2f]'}`}>
+              {opt.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-2 mb-1">
+          <label className="text-xs font-medium text-gray-600">Daily send time</label>
+          <span className="text-xs text-gray-300">—</span>
+          <span className="text-xs text-gray-400">all reminders go at this time each day (IST)</span>
+        </div>
         <input type="time" value={sendTime} onChange={e => setSendTime(e.target.value)}
           className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#25D366]/30" />
       </div>
 
-      {/* Min cart value */}
-      <div className="bg-white border border-gray-200 rounded-xl p-4">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+      {/* ── Section 2: Cart value threshold ── */}
+      <div className="bg-white border border-gray-200 rounded-2xl p-4">
+        <div className="text-sm font-semibold text-gray-800 mb-0.5">
           <i className="ti ti-currency-rupee mr-1.5 text-gray-400" />Minimum cart value
-        </label>
-        <p className="text-xs text-gray-400 mb-3">Only remind customers whose cart total is at or above this amount. Set to 0 to message everyone.</p>
+        </div>
+        <p className="text-xs text-gray-400 mb-3">Only send reminders when the cart total is at least this amount. Set 0 to message everyone.</p>
+        <div className="flex gap-2 flex-wrap mb-3">
+          {[0, 100, 200, 500, 1000].map(v => (
+            <button key={v}
+              onClick={() => setMinCart(v)}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-all
+                ${parseFloat(minCart) === v
+                  ? 'bg-[#25D366] text-white border-[#25D366]'
+                  : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-[#25D366] hover:text-[#006d2f]'}`}>
+              {v === 0 ? 'All carts' : `₹${v}+`}
+            </button>
+          ))}
+        </div>
         <div className="relative">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">₹</span>
           <input type="number" min="0" value={minCart} onChange={e => setMinCart(e.target.value)}
+            placeholder="Custom amount"
             className="w-full border border-gray-200 rounded-lg pl-7 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#25D366]/30" />
         </div>
       </div>
 
-      {/* Reminder messages */}
-      <div className="bg-white border border-gray-200 rounded-xl p-4">
-        <div className="flex items-center justify-between mb-1">
-          <label className="text-sm font-medium text-gray-700">
-            <i className="ti ti-messages mr-1.5 text-gray-400" />Reminder messages
-          </label>
+      {/* ── Section 3: Message templates ── */}
+      <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+        {/* Reminder tabs */}
+        <div className="flex border-b border-gray-100 bg-gray-50">
+          {reminders.map((_, idx) => (
+            <button key={idx} onClick={() => setActiveReminderIdx(idx)}
+              className={`flex-1 py-2.5 text-xs font-medium transition-colors
+                ${activeReminderIdx === idx ? 'bg-white text-[#006d2f] border-b-2 border-[#25D366]' : 'text-gray-400 hover:text-gray-600'}`}>
+              Reminder {idx + 1}
+              <span className="ml-1 text-gray-300 font-normal">
+                {reminders[idx].delay_hours >= 24
+                  ? `(${reminders[idx].delay_hours / 24}d)`
+                  : `(${reminders[idx].delay_hours}h)`}
+              </span>
+            </button>
+          ))}
           {reminders.length < 3 && (
             <button onClick={addReminder}
-              className="text-xs text-[#006d2f] flex items-center gap-1 hover:underline">
-              <i className="ti ti-plus" /> Add reminder
+              className="px-3 py-2.5 text-xs text-[#006d2f] hover:bg-white transition-colors">
+              <i className="ti ti-plus" />
             </button>
           )}
         </div>
-        <p className="text-xs text-gray-400 mb-4">Each reminder fires after the specified delay from when the customer last updated their cart (or from the previous reminder).</p>
 
-        <div className="space-y-4">
-          {reminders.map((r, idx) => (
-            <div key={idx} className="border border-gray-100 rounded-xl p-3 bg-gray-50 relative">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-xs font-semibold text-gray-500 bg-white border border-gray-200 rounded-full w-5 h-5 flex items-center justify-center">{idx + 1}</span>
-                <span className="text-xs font-medium text-gray-700">Reminder {idx + 1}</span>
-                {reminders.length > 1 && (
-                  <button onClick={() => removeReminder(idx)}
-                    className="ml-auto text-red-400 hover:text-red-600 text-xs">
-                    <i className="ti ti-trash text-xs" />
+        <div className="p-4 space-y-4">
+          {/* Delay for this reminder */}
+          {activeReminderIdx > 0 && (
+            <div>
+              <label className="text-xs font-medium text-gray-600 mb-1.5 block">
+                Send after (hours from previous reminder)
+              </label>
+              <div className="flex gap-2 flex-wrap">
+                {DELAY_OPTIONS.map(opt => (
+                  <button key={opt.hours}
+                    onClick={() => updateReminder(activeReminderIdx, 'delay_hours', opt.hours)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all
+                      ${activeReminder.delay_hours === opt.hours
+                        ? 'bg-[#25D366] text-white border-[#25D366]'
+                        : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-[#25D366]'}`}>
+                    {opt.label}
                   </button>
-                )}
-              </div>
-
-              <div className="mb-3">
-                <label className="text-xs text-gray-500 mb-1 block">Send after (hours since cart was updated)</label>
-                <div className="flex items-center gap-2">
-                  <input type="number" min="1" max="168" value={r.delay_hours}
-                    onChange={e => updateReminder(idx, 'delay_hours', parseInt(e.target.value) || 24)}
-                    className="w-20 border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-center focus:outline-none focus:ring-2 focus:ring-[#25D366]/30 bg-white" />
-                  <span className="text-xs text-gray-400">hours</span>
-                  <span className="text-xs text-gray-300">·</span>
-                  <span className="text-xs text-gray-400">
-                    {r.delay_hours >= 24
-                      ? `${(r.delay_hours / 24).toFixed(r.delay_hours % 24 === 0 ? 0 : 1)} day${r.delay_hours / 24 > 1 ? 's' : ''}`
-                      : `${r.delay_hours}h`}
-                  </span>
-                </div>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-xs text-gray-500">Message</label>
-                  <div className="flex gap-1 flex-wrap justify-end">
-                    {VARS.map(v => (
-                      <button key={v} onClick={() => insertVar(idx, v)}
-                        className="text-xs font-mono bg-white border border-gray-200 px-1.5 py-0.5 rounded text-[#006d2f] hover:bg-[#25D366]/5 transition-colors">
-                        {v}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <textarea
-                  id={`reminder-msg-${idx}`}
-                  value={r.message}
-                  onChange={e => updateReminder(idx, 'message', e.target.value)}
-                  rows={3}
-                  placeholder="Hi {name}, you left items worth ₹{total} in your cart…"
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#25D366]/30 bg-white"
-                />
-                <div className="text-xs text-gray-300 text-right mt-0.5">{r.message?.length || 0} chars</div>
+                ))}
               </div>
             </div>
-          ))}
+          )}
+
+          {/* Message editor */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs font-medium text-gray-600">Message</label>
+              <div className="flex gap-1">
+                {['{name}', '{total}', '{items}', '{link}'].map(v => (
+                  <button key={v} onClick={() => insertVar(activeReminderIdx, v)}
+                    className="text-xs font-mono bg-[#25D366]/8 border border-[#25D366]/20 px-1.5 py-0.5 rounded text-[#006d2f] hover:bg-[#25D366]/15 transition-colors">
+                    {v}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <textarea
+              id={`reminder-msg-${activeReminderIdx}`}
+              value={activeReminder.message}
+              onChange={e => updateReminder(activeReminderIdx, 'message', e.target.value)}
+              rows={4}
+              placeholder="Type your message… use the buttons above to insert variables"
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#25D366]/30 font-normal leading-relaxed"
+            />
+            <div className="text-xs text-gray-300 text-right">{activeReminder.message?.length || 0} chars</div>
+          </div>
+
+          {/* Live preview */}
+          <div>
+            <div className="text-xs font-medium text-gray-500 mb-2 flex items-center gap-1.5">
+              <i className="ti ti-eye text-xs" /> Preview — what customer sees
+            </div>
+            <WaBubble text={previewMessage(activeReminder.message)} />
+          </div>
+
+          {/* Remove reminder */}
+          {reminders.length > 1 && (
+            <button onClick={() => removeReminder(activeReminderIdx)}
+              className="text-xs text-red-400 hover:text-red-600 flex items-center gap-1 transition-colors">
+              <i className="ti ti-trash text-xs" /> Remove this reminder
+            </button>
+          )}
         </div>
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700 flex items-center gap-2">
-          <i className="ti ti-alert-circle" /> {error}
+        <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-600 flex items-center gap-2">
+          <i className="ti ti-alert-circle flex-shrink-0" /> {error}
         </div>
       )}
       {saved && (
         <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-sm text-green-700 flex items-center gap-2">
-          <i className="ti ti-circle-check" /> Settings saved successfully
+          <i className="ti ti-circle-check flex-shrink-0" /> Settings saved
         </div>
       )}
 
       <div className="flex gap-3">
         <button onClick={save} disabled={saving}
-          className="flex-1 bg-[#25D366] hover:bg-[#1ebe5d] disabled:bg-gray-200 text-white rounded-xl py-3 text-sm font-medium flex items-center justify-center gap-2 transition-colors">
+          className="flex-1 bg-[#25D366] hover:bg-[#1ebe5d] disabled:bg-gray-100 disabled:text-gray-400 text-white rounded-xl py-3 text-sm font-semibold flex items-center justify-center gap-2 transition-colors">
           {saving ? <><i className="ti ti-loader-2 animate-spin" /> Saving…</> : <><i className="ti ti-device-floppy" /> Save settings</>}
         </button>
         <button onClick={() => setEnabled(false)}
-          className="px-4 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl text-sm font-medium transition-colors">
+          className="px-4 bg-red-50 hover:bg-red-100 text-red-500 rounded-xl text-sm font-medium transition-colors">
           Disable
         </button>
       </div>
 
       {!isConnected && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center gap-2 text-xs text-amber-700">
-          <i className="ti ti-alert-circle text-amber-500" />
-          WhatsApp is not connected. Cart recovery won't send until you reconnect.
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center gap-2">
+          <i className="ti ti-alert-circle text-amber-500 flex-shrink-0" />
+          <span className="text-xs text-amber-700">WhatsApp not connected — cart recovery won't send until you reconnect.</span>
         </div>
       )}
     </div>
