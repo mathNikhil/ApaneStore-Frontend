@@ -1350,86 +1350,106 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
 
       {/* ── Section 3: Message templates ── */}
       <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-        {/* Reminder tabs */}
-        <div className="flex border-b border-gray-100 bg-gray-50">
-          {reminders.map((_, idx) => (
-            <button key={idx} onClick={() => setActiveReminderIdx(idx)}
-              className={`flex-1 py-2.5 text-xs font-medium transition-colors
-                ${activeReminderIdx === idx ? 'bg-white text-[#006d2f] border-b-2 border-[#25D366]' : 'text-gray-400 hover:text-gray-600'}`}>
-              Reminder {idx + 1}
-              <span className="ml-1 text-gray-300 font-normal">
-                {reminders[idx].delay_hours >= 24
-                  ? `(${reminders[idx].delay_hours / 24}d)`
-                  : `(${reminders[idx].delay_hours}h)`}
-              </span>
-            </button>
-          ))}
-          {reminders.length < 3 && (
-            <button onClick={addReminder}
-              className="px-3 py-2.5 text-xs text-[#006d2f] hover:bg-white transition-colors">
-              <i className="ti ti-plus" />
-            </button>
-          )}
+
+        {/* Header */}
+        <div className="px-4 pt-4 pb-3 border-b border-gray-100">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-sm font-semibold text-gray-800">Message Templates</div>
+              <div className="text-xs text-gray-400 mt-0.5">Customise what each reminder says</div>
+            </div>
+            {reminders.length < 3 && (
+              <button onClick={addReminder}
+                className="flex items-center gap-1.5 text-xs text-[#006d2f] border border-[#25D366]/30 bg-[#25D366]/5 px-2.5 py-1.5 rounded-lg hover:bg-[#25D366]/10 transition-colors font-medium">
+                <i className="ti ti-plus text-xs" /> Add reminder
+              </button>
+            )}
+          </div>
         </div>
 
-        <div className="p-4 space-y-4">
-          {/* Delay for this reminder */}
-          {activeReminderIdx > 0 && (
-            <div>
-              <label className="text-xs font-medium text-gray-600 mb-1.5 block">
-                Send after (hours from previous reminder)
-              </label>
-              <div className="flex gap-2 flex-wrap">
-                {DELAY_OPTIONS.map(opt => (
-                  <button key={opt.hours}
-                    onClick={() => updateReminder(activeReminderIdx, 'delay_hours', opt.hours)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all
-                      ${activeReminder.delay_hours === opt.hours
-                        ? 'bg-[#25D366] text-white border-[#25D366]'
-                        : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-[#25D366]'}`}>
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+        {/* Reminder category tabs — styled like email template tabs */}
+        <div className="flex gap-2 px-4 pt-3 pb-0 overflow-x-auto">
+          {reminders.map((r, idx) => {
+            const label = idx === 0
+              ? `🛒 ${r.delay_hours >= 24 ? `After ${r.delay_hours / 24} day${r.delay_hours > 24 ? 's' : ''}` : `After ${r.delay_hours}hrs`}`
+              : idx === 1
+                ? `⏰ ${r.delay_hours >= 24 ? `After ${r.delay_hours / 24} day${r.delay_hours > 24 ? 's' : ''}` : `After ${r.delay_hours}hrs`}`
+                : `🔔 ${r.delay_hours >= 24 ? `After ${r.delay_hours / 24} day${r.delay_hours > 24 ? 's' : ''}` : `After ${r.delay_hours}hrs`}`;
+            return (
+              <button key={idx} onClick={() => setActiveReminderIdx(idx)}
+                className={`flex-shrink-0 px-3 py-2 rounded-t-lg text-xs font-medium border-b-2 transition-all whitespace-nowrap
+                  ${activeReminderIdx === idx
+                    ? 'bg-[#25D366]/8 text-[#006d2f] border-[#25D366]'
+                    : 'text-gray-400 border-transparent hover:text-gray-600 hover:border-gray-200'}`}>
+                {label}
+              </button>
+            );
+          })}
+        </div>
 
-          {/* Message editor */}
+        <div className="p-4 space-y-4 border-t border-gray-100">
+
+          {/* Timing for this reminder */}
           <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-medium text-gray-600">Message</label>
-              <div className="flex gap-1">
-                {['{name}', '{total}', '{items}', '{link}'].map(v => (
-                  <button key={v} onClick={() => insertVar(activeReminderIdx, v)}
-                    className="text-xs font-mono bg-[#25D366]/8 border border-[#25D366]/20 px-1.5 py-0.5 rounded text-[#006d2f] hover:bg-[#25D366]/15 transition-colors">
-                    {v}
-                  </button>
-                ))}
-              </div>
+            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+              {activeReminderIdx === 0 ? 'Send this reminder after cart is abandoned for' : 'Send after previous reminder by'}
             </div>
+            <div className="flex gap-2 flex-wrap">
+              {DELAY_OPTIONS.map(opt => (
+                <button key={opt.hours}
+                  onClick={() => updateReminder(activeReminderIdx, 'delay_hours', opt.hours)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all
+                    ${activeReminder.delay_hours === opt.hours
+                      ? 'bg-[#25D366] text-white border-[#25D366]'
+                      : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-[#25D366] hover:text-[#006d2f]'}`}>
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Message body */}
+          <div>
+            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">MESSAGE</div>
             <textarea
               id={`reminder-msg-${activeReminderIdx}`}
               value={activeReminder.message}
               onChange={e => updateReminder(activeReminderIdx, 'message', e.target.value)}
-              rows={4}
-              placeholder="Type your message… use the buttons above to insert variables"
+              rows={5}
+              placeholder="Write your WhatsApp message here…"
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#25D366]/30 font-normal leading-relaxed"
             />
-            <div className="text-xs text-gray-300 text-right">{activeReminder.message?.length || 0} chars</div>
+            <div className="text-xs text-gray-300 text-right mt-0.5">{activeReminder.message?.length || 0} chars</div>
           </div>
 
-          {/* Live preview */}
+          {/* Variable chips — exactly like email template modal */}
           <div>
-            <div className="text-xs font-medium text-gray-500 mb-2 flex items-center gap-1.5">
-              <i className="ti ti-eye text-xs" /> Preview — what customer sees
+            <div className="text-xs text-gray-400 mb-2">Click to insert variable:</div>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { v: '{name}',  label: '{{customer_name}}' },
+                { v: '{total}', label: '{{cart_total}}' },
+                { v: '{items}', label: '{{item_list}}' },
+                { v: '{link}',  label: '{{store_link}}' },
+              ].map(({ v, label }) => (
+                <button key={v} onClick={() => insertVar(activeReminderIdx, v)}
+                  className="text-xs font-mono bg-white border border-gray-200 text-gray-600 px-3 py-1.5 rounded-lg hover:border-[#25D366] hover:text-[#006d2f] hover:bg-[#25D366]/5 transition-all">
+                  {label}
+                </button>
+              ))}
             </div>
+          </div>
+
+          {/* Live WA preview */}
+          <div className="border-t border-gray-100 pt-4">
+            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">PREVIEW</div>
             <WaBubble text={previewMessage(activeReminder.message)} />
           </div>
 
           {/* Remove reminder */}
           {reminders.length > 1 && (
             <button onClick={() => removeReminder(activeReminderIdx)}
-              className="text-xs text-red-400 hover:text-red-600 flex items-center gap-1 transition-colors">
+              className="text-xs text-red-400 hover:text-red-600 flex items-center gap-1 transition-colors pt-1">
               <i className="ti ti-trash text-xs" /> Remove this reminder
             </button>
           )}
