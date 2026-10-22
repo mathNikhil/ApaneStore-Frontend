@@ -1258,7 +1258,7 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
       {storeSwitcher}
 
       {/* Stats — only when enabled and data exists */}
-      {enabled && stats && (
+      {stats && (
         <div className="grid grid-cols-3 gap-2">
           {[
             { label: 'Sent today', value: stats.sent_today ?? 0, color: 'text-[#006d2f]' },
@@ -1273,52 +1273,29 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
         </div>
       )}
 
-      {/* Main card — toggle + inline hint */}
-      <div className={`border rounded-2xl overflow-hidden transition-colors ${enabled ? 'border-[#25D366]/40 bg-white' : 'border-gray-200 bg-white'}`}>
-        {/* Toggle row */}
-        <div className="flex items-center justify-between px-4 py-4">
-          <div className="flex items-center gap-3">
-            <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${enabled ? 'bg-[#25D366]/15' : 'bg-gray-100'}`}>
-              <i className={`ti ti-shopping-cart text-base ${enabled ? 'text-[#006d2f]' : 'text-gray-400'}`} />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold text-gray-800">Cart Recovery</span>
-                {enabled && <span className="text-xs bg-[#25D366]/15 text-[#006d2f] px-2 py-0.5 rounded-full font-medium">Active</span>}
-              </div>
-              <p className="text-xs text-gray-400 mt-0.5">
-                {enabled ? 'Auto WhatsApp reminders for abandoned carts' : 'Send automatic reminders to customers who didn\'t order'}
-              </p>
-            </div>
-          </div>
-          <button onClick={() => setEnabled(e => !e)}
-            className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${enabled ? 'bg-[#25D366]' : 'bg-gray-200'}`}>
-            <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${enabled ? 'translate-x-6' : ''}`} />
-          </button>
+      {/* Header */}
+      <div className="flex items-center gap-3 px-1">
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-[#25D366]/15">
+          <i className="ti ti-shopping-cart text-base text-[#006d2f]" />
         </div>
-
-        {/* Collapsed hint when OFF */}
-        {!enabled && (
-          <div className="border-t border-gray-100 px-4 py-3 flex items-center gap-3 bg-gray-50/60">
-            <div className="flex items-center gap-4 text-xs text-gray-400 flex-wrap">
-              <span className="flex items-center gap-1"><i className="ti ti-clock text-gray-300" /> Set timing</span>
-              <span className="flex items-center gap-1"><i className="ti ti-currency-rupee text-gray-300" /> Min cart value</span>
-              <span className="flex items-center gap-1"><i className="ti ti-message text-gray-300" /> Edit message</span>
-            </div>
-            <span className="ml-auto text-xs text-gray-300 flex-shrink-0">Toggle to configure →</span>
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-gray-800">Cart Recovery</span>
+            <span className="text-xs bg-[#25D366]/15 text-[#006d2f] px-2 py-0.5 rounded-full font-medium">Active</span>
           </div>
-        )}
+          <p className="text-xs text-gray-400 mt-0.5">Auto WhatsApp reminders for abandoned carts</p>
+        </div>
       </div>
 
-      {!isConnected && enabled && (
+      {!isConnected && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center gap-2">
           <i className="ti ti-alert-circle text-amber-500 flex-shrink-0" />
           <span className="text-xs text-amber-700">WhatsApp not connected — reminders won't send until you reconnect.</span>
         </div>
       )}
 
-      {/* ── Config sections — only visible when enabled ── */}
-      {enabled && <>
+      {/* ── Config sections ── */}
+      {<>
 
       {/* ── Section 1+2: Frequency + Min cart value — single row ── */}
       <div className="grid grid-cols-2 gap-3">
