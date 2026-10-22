@@ -12,6 +12,11 @@ const Step3_CartConfig = () => {
   const hasPerProductGST = (productData?.categories || []).some(cat =>
     (cat.products || []).some(p => VALID_GST.includes(p.gstRate))
   );
+  const perGSTProducts = (productData?.categories || []).flatMap(cat =>
+    (cat.products || [])
+      .filter(p => VALID_GST.includes(p.gstRate))
+      .map(p => `${p.name} (${p.gstRate}%)`)
+  );
 
   const [settings, setSettings] = useState({
     enableDineIn: cartData.enableDineIn || false,
@@ -284,7 +289,12 @@ const Step3_CartConfig = () => {
 
         <div className="mb-4">
             <Toggle label="Enable GST" checked={settings.enableGST} onChange={() => !hasPerProductGST && handleToggle('enableGST')} />
-            {hasPerProductGST && <p className="text-xs text-amber-600 mt-1 ml-1">GST rate is set per product in Step 2 — global rate disabled.</p>}
+            {hasPerProductGST && (
+              <div className="mt-1 ml-1 text-xs text-amber-600 space-y-0.5">
+                <p>GST rate is set per product in Step 2 — global rate disabled.</p>
+                <p className="text-gray-400">Products with per-product GST: {perGSTProducts.join(', ')}. To use a global rate instead, set these to "None" in Step 2.</p>
+              </div>
+            )}
           </div>
         <Slider label="GST Rate (%)" value={settings.gstRate} onChange={(e) => !hasPerProductGST && handleSliderChange('gstRate', e.target.value)} valueLabel={`${settings.gstRate}%`} min={0} max={28} unit="%" className={`mb-4 ${hasPerProductGST ? 'opacity-40 pointer-events-none' : ''}`} />
 
