@@ -1001,6 +1001,8 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
   // Store selection
   const [stores, setStores]                     = useState([]);
   const [selectedStoreId, setSelectedStoreId]   = useState(null);
+  const [storeEnabledMap, setStoreEnabledMap]   = useState({});   // { storeId: bool }
+  const [togglingStoreId, setTogglingStoreId]   = useState(null); // which row is saving
   const [stats, setStats]                       = useState(null);
   const [loading, setLoading]                   = useState(true);
   const [saving, setSaving]                     = useState(false);
@@ -1031,7 +1033,7 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
       .replace(/{items}/gi, SAMPLE.items)
       .replace(/{link}/gi, SAMPLE.link);
 
-  // Load stores on mount
+  // Load stores on mount + fetch enabled state for each
   useEffect(() => {
     const headers = { Authorization: `Bearer ${getToken()}` };
     fetch(`${API_BASE}/api/stores`, { headers })
@@ -1040,8 +1042,24 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
         const list = Array.isArray(data) ? data : (data.data || data.stores || []);
         const valid = list.filter(s => s.id);
         setStores(valid);
-        if (valid.length === 1) setSelectedStoreId(valid[0].id);
-        else setLoading(false);
+        if (valid.length === 1) {
+          setSelectedStoreId(valid[0].id);
+        } else {
+          setLoading(false);
+          // Fetch enabled state for all stores in parallel
+          Promise.all(
+            valid.map(s =>
+              fetch(`${API_BASE}/api/stores/${s.id}/cart/stats`, { headers })
+                .then(r => r.json())
+                .then(d => ({ id: s.id, enabled: d?.config?.enabled || false }))
+                .catch(() => ({ id: s.id, enabled: false }))
+            )
+          ).then(results => {
+            const map = {};
+            results.forEach(r => { map[r.id] = r.enabled; });
+            setStoreEnabledMap(map);
+          });
+        }
       })
       .catch(() => setLoading(false));
   }, []);
@@ -1057,6 +1075,7 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
         if (data?.config) {
           const c = data.config;
           setEnabled(c.enabled || false);
+          setStoreEnabledMap(m => ({ ...m, [selectedStoreId]: c.enabled || false }));
           setSendTime(c.send_time || '12:00');
           setMinCart(c.min_cart_value ?? 0);
           setReminders(c.reminders?.length ? c.reminders : [
@@ -1069,6 +1088,41 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
       .catch(() => setLoading(false));
   }, [selectedStoreId]);
 
+  // Toggle enabled for a store directly from the store list
+  const toggleStoreEnabled = async (e, storeId, currentVal) => {
+    e.stopPropagation();
+    setTogglingStoreId(storeId);
+    const newVal = !currentVal;
+    try {
+      // We need the full config to do a proper save — fetch it first
+      const headers = { Authorization: `Bearer ${getToken()}` };
+      const d = await fetch(`${API_BASE}/api/stores/${storeId}/cart/stats`, { headers }).then(r => r.json());
+      const c = d?.config || {};
+      const body = {
+        enabled: newVal,
+        send_time: c.send_time || '12:00',
+        min_cart_value: c.min_cart_value ?? 0,
+        reminders: c.reminders?.length ? c.reminders : [
+          { delay_hours: 24, message: 'Hi {name}! You left ₹{total} worth of items in your cart.\n\n{items} — still waiting for you 🛍️\n\nComplete your order: {link}' }
+        ],
+      };
+      const res = await fetch(`${API_BASE}/api/stores/${storeId}/cart/config`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error('Save failed');
+      setStoreEnabledMap(m => ({ ...m, [storeId]: newVal }));
+      // If this store is currently open in the editor, sync its enabled state too
+      if (storeId === selectedStoreId) setEnabled(newVal);
+      showSuccess(newVal ? 'Cart recovery enabled' : 'Cart recovery disabled');
+    } catch (err) {
+      showError(err.message);
+    } finally {
+      setTogglingStoreId(null);
+    }
+  };
+
   const save = async () => {
     setSaving(true);
     try {
@@ -1079,6 +1133,7 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
         body: JSON.stringify(body),
       });
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Save failed');
+      setStoreEnabledMap(m => ({ ...m, [selectedStoreId]: enabled }));
       showSuccess('Settings saved');
     } catch (e) { showError(e.message); }
     finally { setSaving(false); }
@@ -1141,20 +1196,35 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
       </h3>
       <p className="text-xs text-gray-400 mb-4">Cart recovery is configured per store.</p>
       <div className="space-y-2">
-        {stores.map(s => (
-          <button key={s.id} onClick={() => setSelectedStoreId(s.id)}
-            className="w-full flex items-center gap-3 p-3 rounded-xl border border-gray-200 hover:border-[#25D366] hover:bg-[#f0fdf4] text-left transition-all group">
-            <div className="w-9 h-9 rounded-lg bg-[#25D366]/10 flex items-center justify-center flex-shrink-0">
-              {s.logo_url ? <img src={s.logo_url} className="w-full h-full object-cover rounded-lg" alt="" />
-                : <i className="ti ti-building-store text-[#006d2f]" />}
+        {stores.map(s => {
+          const isOn = !!storeEnabledMap[s.id];
+          const isToggling = togglingStoreId === s.id;
+          return (
+            <div key={s.id}
+              className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all cursor-pointer
+                ${isOn ? 'border-[#25D366]/40 bg-[#f0fdf4]' : 'border-gray-200 bg-white hover:border-gray-300'}`}
+              onClick={() => setSelectedStoreId(s.id)}>
+              <div className="w-9 h-9 rounded-lg bg-[#25D366]/10 flex items-center justify-center flex-shrink-0">
+                {s.logo_url ? <img src={s.logo_url} className="w-full h-full object-cover rounded-lg" alt="" />
+                  : <i className="ti ti-building-store text-[#006d2f]" />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-medium text-gray-800 truncate">{s.store_name || s.name}</div>
+                <div className="text-xs text-gray-400">{s.subdomain ? `${s.subdomain}.aapnaestore.com` : `Store #${s.id}`}</div>
+              </div>
+              {/* Toggle */}
+              <button
+                onClick={e => toggleStoreEnabled(e, s.id, isOn)}
+                disabled={isToggling}
+                className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 focus:outline-none
+                  ${isOn ? 'bg-[#25D366]' : 'bg-gray-200'} ${isToggling ? 'opacity-50' : ''}`}>
+                <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform
+                  ${isOn ? 'translate-x-5' : 'translate-x-0'}`} />
+              </button>
+              <i className="ti ti-chevron-right text-gray-300" />
             </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium text-gray-800 truncate">{s.store_name || s.name}</div>
-              <div className="text-xs text-gray-400">{s.subdomain ? `${s.subdomain}.aapnaestore.com` : `Store #${s.id}`}</div>
-            </div>
-            <i className="ti ti-chevron-right text-gray-300 group-hover:text-[#25D366]" />
-          </button>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
