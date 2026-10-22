@@ -1345,14 +1345,14 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
           })}
         </div>
 
-        <div className="p-4 space-y-4 border-t border-gray-100">
+        <div className="p-4 border-t border-gray-100">
 
-          {/* Timing for this reminder */}
-          <div>
+          {/* Timing chips for this reminder */}
+          <div className="mb-4">
             <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-              {activeReminderIdx === 0 ? 'Send this reminder after cart is abandoned for' : 'Send after previous reminder by'}
+              {activeReminderIdx === 0 ? 'Send after cart abandoned for' : 'Send after previous reminder by'}
             </div>
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-1.5 flex-wrap">
               {DELAY_OPTIONS.map(opt => (
                 <button key={opt.hours}
                   onClick={() => updateReminder(activeReminderIdx, 'delay_hours', opt.hours)}
@@ -1366,48 +1366,49 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
             </div>
           </div>
 
-          {/* Message body */}
-          <div>
-            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">MESSAGE</div>
-            <textarea
-              id={`reminder-msg-${activeReminderIdx}`}
-              value={activeReminder.message}
-              onChange={e => updateReminder(activeReminderIdx, 'message', e.target.value)}
-              rows={5}
-              placeholder="Write your WhatsApp message here…"
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#25D366]/30 font-normal leading-relaxed"
-            />
-            <div className="text-xs text-gray-300 text-right mt-0.5">{activeReminder.message?.length || 0} chars</div>
-          </div>
+          {/* Message + Preview side by side */}
+          <div className="grid grid-cols-2 gap-3">
 
-          {/* Variable chips — exactly like email template modal */}
-          <div>
-            <div className="text-xs text-gray-400 mb-2">Click to insert variable:</div>
-            <div className="flex flex-wrap gap-2">
-              {[
-                { v: '{name}',  label: '{{customer_name}}' },
-                { v: '{total}', label: '{{cart_total}}' },
-                { v: '{items}', label: '{{item_list}}' },
-                { v: '{link}',  label: '{{store_link}}' },
-              ].map(({ v, label }) => (
-                <button key={v} onClick={() => insertVar(activeReminderIdx, v)}
-                  className="text-xs font-mono bg-white border border-gray-200 text-gray-600 px-3 py-1.5 rounded-lg hover:border-[#25D366] hover:text-[#006d2f] hover:bg-[#25D366]/5 transition-all">
-                  {label}
-                </button>
-              ))}
+            {/* Left: editor */}
+            <div className="space-y-2">
+              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">MESSAGE</div>
+              <textarea
+                id={`reminder-msg-${activeReminderIdx}`}
+                value={activeReminder.message}
+                onChange={e => updateReminder(activeReminderIdx, 'message', e.target.value)}
+                rows={7}
+                placeholder="Write your WhatsApp message here…"
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-xs resize-none focus:outline-none focus:ring-2 focus:ring-[#25D366]/30 leading-relaxed"
+              />
+              <div className="text-xs text-gray-300 text-right">{activeReminder.message?.length || 0} chars</div>
+              <div className="text-xs text-gray-400">Click to insert:</div>
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  { v: '{name}',  label: '{{name}}' },
+                  { v: '{total}', label: '{{total}}' },
+                  { v: '{items}', label: '{{items}}' },
+                  { v: '{link}',  label: '{{link}}' },
+                ].map(({ v, label }) => (
+                  <button key={v} onClick={() => insertVar(activeReminderIdx, v)}
+                    className="text-xs font-mono bg-white border border-gray-200 text-gray-600 px-2 py-1 rounded-lg hover:border-[#25D366] hover:text-[#006d2f] hover:bg-[#25D366]/5 transition-all">
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
 
-          {/* Live WA preview */}
-          <div className="border-t border-gray-100 pt-4">
-            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">PREVIEW</div>
-            <WaBubble text={previewMessage(activeReminder.message)} />
+            {/* Right: live preview */}
+            <div className="space-y-2">
+              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">PREVIEW</div>
+              <WaBubble text={previewMessage(activeReminder.message)} />
+            </div>
+
           </div>
 
           {/* Remove reminder */}
           {reminders.length > 1 && (
             <button onClick={() => removeReminder(activeReminderIdx)}
-              className="text-xs text-red-400 hover:text-red-600 flex items-center gap-1 transition-colors pt-1">
+              className="text-xs text-red-400 hover:text-red-600 flex items-center gap-1 transition-colors mt-3">
               <i className="ti ti-trash text-xs" /> Remove this reminder
             </button>
           )}
