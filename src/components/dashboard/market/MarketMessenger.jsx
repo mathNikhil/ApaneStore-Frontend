@@ -1300,15 +1300,44 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
       {/* ── Section 1+2: Frequency + Min cart value — single row ── */}
       <div className="grid grid-cols-2 gap-3">
 
-        {/* Daily send time */}
+        {/* Send after */}
         <div className="bg-white border border-gray-200 rounded-2xl p-3">
-          <div className="flex items-center gap-1.5 mb-3">
+          <div className="flex items-center gap-1.5 mb-2">
             <i className="ti ti-clock text-gray-400 text-sm" />
-            <span className="text-xs font-semibold text-gray-700">Daily send time (IST)</span>
+            <span className="text-xs font-semibold text-gray-700">Send after</span>
           </div>
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            {DELAY_OPTIONS.map(opt => {
+              const active = reminders.some(r => r.delay_hours === opt.hours);
+              return (
+                <button key={opt.hours}
+                  onClick={() => {
+                    if (active) {
+                      // remove this reminder (keep at least 1)
+                      if (reminders.length === 1) return;
+                      const idx = reminders.findIndex(r => r.delay_hours === opt.hours);
+                      setReminders(r => r.filter((_, i) => i !== idx));
+                      setActiveReminderIdx(0);
+                    } else {
+                      // add new reminder with this delay
+                      if (reminders.length >= 3) return;
+                      const newR = { delay_hours: opt.hours, message: 'Hi {name}! You left ₹{total} worth of items in your cart.\n\n{items} — still waiting for you 🛍️\n\nComplete your order: {link}' };
+                      setReminders(r => [...r, newR].sort((a, b) => a.delay_hours - b.delay_hours));
+                      setActiveReminderIdx(reminders.length);
+                    }
+                  }}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-all
+                    ${active
+                      ? 'bg-[#25D366] text-white border-[#25D366]'
+                      : 'bg-gray-50 text-gray-500 border-gray-200 hover:border-[#25D366] hover:text-[#006d2f]'}`}>
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+          <div className="text-xs text-gray-400 mb-1">Daily time (IST)</div>
           <input type="time" value={sendTime} onChange={e => setSendTime(e.target.value)}
             className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[#25D366]/30" />
-          <p className="text-xs text-gray-400 mt-2">Reminders send at this time each day</p>
         </div>
 
         {/* Min cart value */}
@@ -1350,12 +1379,6 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
               <div className="text-sm font-semibold text-gray-800">Message Templates</div>
               <div className="text-xs text-gray-400 mt-0.5">Customise what each reminder says</div>
             </div>
-            {reminders.length < 3 && (
-              <button onClick={addReminder}
-                className="flex items-center gap-1.5 text-xs text-[#006d2f] border border-[#25D366]/30 bg-[#25D366]/5 px-2.5 py-1.5 rounded-lg hover:bg-[#25D366]/10 transition-colors font-medium">
-                <i className="ti ti-plus text-xs" /> Add reminder
-              </button>
-            )}
           </div>
         </div>
 
@@ -1439,13 +1462,6 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
 
           </div>
 
-          {/* Remove reminder */}
-          {reminders.length > 1 && (
-            <button onClick={() => removeReminder(activeReminderIdx)}
-              className="text-xs text-red-400 hover:text-red-600 flex items-center gap-1 transition-colors mt-3">
-              <i className="ti ti-trash text-xs" /> Remove this reminder
-            </button>
-          )}
         </div>
       </div>
 
