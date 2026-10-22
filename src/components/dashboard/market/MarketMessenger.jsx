@@ -1326,10 +1326,11 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
                       setActiveReminderIdx(reminders.length);
                     }
                   }}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-all
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border transition-all
                     ${active
                       ? 'bg-[#25D366] text-white border-[#25D366]'
                       : 'bg-gray-50 text-gray-500 border-gray-200 hover:border-[#25D366] hover:text-[#006d2f]'}`}>
+                  {active ? <i className="ti ti-x text-[10px]" /> : <i className="ti ti-plus text-[10px]" />}
                   {opt.label}
                 </button>
               );
