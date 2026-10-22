@@ -1113,9 +1113,10 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
       });
       if (!res.ok) throw new Error('Save failed');
       setStoreEnabledMap(m => ({ ...m, [storeId]: newVal }));
-      // If this store is currently open in the editor, sync its enabled state too
       if (storeId === selectedStoreId) setEnabled(newVal);
       showSuccess(newVal ? 'Cart recovery enabled' : 'Cart recovery disabled');
+      // Navigate into config when enabling
+      if (newVal) setSelectedStoreId(storeId);
     } catch (err) {
       showError(err.message);
     } finally {
