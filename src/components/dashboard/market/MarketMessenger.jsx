@@ -1061,7 +1061,7 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
           setSendTime(c.send_time || '12:00');
           setMinCart(c.min_cart_value ?? 0);
           setReminders(c.reminders?.length ? c.reminders : [
-            { delay_hours: 24, message: 'Hi {name}! You left items worth ₹{total} in your cart. Complete your order: {link}' }
+            { delay_hours: 24, message: 'Hi {name}! You left ₹{total} worth of items in your cart.\n\n{items} — still waiting for you 🛍️\n\nComplete your order: {link}' }
           ]);
         }
         if (data?.stats) setStats(data.stats);
