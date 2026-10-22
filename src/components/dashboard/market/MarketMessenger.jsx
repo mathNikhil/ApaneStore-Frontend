@@ -1013,7 +1013,7 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
   const [sendTime, setSendTime]   = useState('12:00');
   const [minCart, setMinCart]     = useState(0);
   const [reminders, setReminders] = useState([
-    { delay_hours: 24, message: 'Hi {name}! You left ₹{total} worth of items in your cart.\n\n{items} — still waiting for you 🛍️\n\nComplete your order: {link}' }
+    { delay_hours: 24, message: 'Hi {name}! 🛍️\n\nIt\'s been a day since you added items to your cart.\n\n{items}\n\nWorth ₹{total} — and still waiting for you.\n\nComplete your order whenever you\'re ready:\n{link}' }
   ]);
 
   const DELAY_OPTIONS = [
@@ -1079,7 +1079,7 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
           setSendTime(c.send_time || '12:00');
           setMinCart(c.min_cart_value ?? 0);
           setReminders(c.reminders?.length ? c.reminders : [
-            { delay_hours: 24, message: 'Hi {name}! You left ₹{total} worth of items in your cart.\n\n{items} — still waiting for you 🛍️\n\nComplete your order: {link}' }
+            { delay_hours: 24, message: 'Hi {name}! 🛍️\n\nIt\'s been a day since you added items to your cart.\n\n{items}\n\nWorth ₹{total} — and still waiting for you.\n\nComplete your order whenever you\'re ready:\n{link}' }
           ]);
         }
         if (data?.stats) setStats(data.stats);
@@ -1320,11 +1320,11 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
                     } else {
                       // add with a message tailored to the delay
                       const msgs = {
-                        6:  'Hi {name}! Just checking — you left ₹{total} worth of items in your cart a few hours ago.\n\n{items}\n\nStill interested? Complete your order: {link}',
-                        12: 'Hi {name}! Your cart is still waiting 🛒\n\nYou left ₹{total} worth of items behind:\n{items}\n\nComplete your order before they sell out: {link}',
-                        24: 'Hi {name}! You left ₹{total} worth of items in your cart.\n\n{items} — still waiting for you 🛍️\n\nComplete your order: {link}',
-                        48: 'Hi {name}! It\'s been 2 days since you left ₹{total} in your cart.\n\n{items}\n\nWe\'d hate for you to miss out. Order now: {link}',
-                        72: 'Hi {name}! Last reminder — your cart with ₹{total} worth of items is still saved.\n\n{items}\n\nComplete your order today: {link}',
+                        6:  'Hi {name}! 👋\n\nYou left something behind — ₹{total} worth of items are still in your cart:\n\n{items}\n\nHappen to get distracted? No worries, your cart is saved.\n\n👉 Complete your order: {link}',
+                        12: 'Hi {name}! ⏰\n\nJust a heads up — the items you picked are still available:\n\n{items}\n\nTotal: ₹{total}\n\nPopular items sell out fast. Secure yours now:\n{link}',
+                        24: 'Hi {name}! 🛍️\n\nIt\'s been a day since you added items to your cart.\n\n{items}\n\nWorth ₹{total} — and still waiting for you.\n\nComplete your order whenever you\'re ready:\n{link}',
+                        48: 'Hi {name}! 💛\n\nWe noticed you haven\'t completed your order yet.\n\n{items}\n\nTotal: ₹{total}\n\nIf you had any questions or concerns, reply here — we\'re happy to help.\n\nOr go ahead and order: {link}',
+                        72: 'Hi {name}! 🔔 Last reminder\n\nYour cart has been saved for 3 days:\n\n{items}\n\nTotal: ₹{total}\n\nWe\'ll clear it soon to make space. Order now if you still want these:\n{link}',
                       };
                       const newR = {
                         delay_hours: opt.hours,
