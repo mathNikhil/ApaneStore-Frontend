@@ -1,34 +1,361 @@
 import React from 'react';
-const S = ({ children }) => <p className="text-sm text-[#556067] mb-3">{children}</p>;
-const H = ({ children }) => <h2 className="text-base font-bold text-[#191c1e] mt-6 mb-2">{children}</h2>;
-const UL = ({ items }) => <ul className="list-disc pl-5 space-y-1 text-sm text-[#556067] mb-3">{items.map((item, i) => <li key={i}>{item}</li>)}</ul>;
-const Table = ({ rows }) => (
-  <div className="border border-[#e0e3e6] rounded-xl overflow-hidden mb-4">
-    {rows.map(([label, value], i) => (
-      <div key={i} className={`flex gap-4 px-4 py-3 text-sm ${i % 2 === 0 ? "bg-[#f8f9fb]" : "bg-white"}`}>
-        <span className="text-[#556067] font-medium w-52 flex-shrink-0">{label}</span>
-        <span className="text-[#191c1e]">{value}</span>
+
+/* ── small primitives ── */
+const Label = ({ children }) => (
+  <p className="text-xs font-bold tracking-widest uppercase text-[#006d2f] mb-2">{children}</p>
+);
+const SectionTitle = ({ children }) => (
+  <h2 className="text-2xl font-bold text-[#111a14] leading-tight mb-3">{children}</h2>
+);
+const SectionDesc = ({ children }) => (
+  <p className="text-sm text-[#556b5c] mb-8 max-w-xl">{children}</p>
+);
+
+/* ── feature card ── */
+const FeatureCard = ({ icon, title, desc, chip, chipColor }) => (
+  <div className="bg-white border border-[#c8e8d2] rounded-xl p-5 flex flex-col shadow-sm">
+    <div className="w-10 h-10 rounded-lg flex items-center justify-center text-xl mb-3 bg-[#dff5e8]">
+      {icon}
+    </div>
+    <h3 className="text-sm font-semibold text-[#111a14] mb-1">{title}</h3>
+    <p className="text-xs text-[#556b5c] leading-relaxed flex-1">{desc}</p>
+    {chip && (
+      <span className={`mt-3 self-start text-[10px] font-bold tracking-wide uppercase px-2 py-0.5 rounded ${chipColor}`}>
+        {chip}
+      </span>
+    )}
+  </div>
+);
+
+/* ── spotlight (2-col card) ── */
+const Spotlight = ({ badge, title, desc, bullets, chip, chipColor, visual, style }) => (
+  <div className="bg-white border border-[#c8e8d2] rounded-xl p-7 shadow-sm grid grid-cols-1 md:grid-cols-2 gap-8 items-center mb-4" style={style}>
+    <div>
+      <span className="inline-block bg-[#dff5e8] text-[#006d2f] text-[10px] font-bold tracking-wide uppercase px-2 py-0.5 rounded mb-3">
+        {badge}
+      </span>
+      <h3 className="text-base font-bold text-[#111a14] leading-snug mb-2">{title}</h3>
+      <p className="text-xs text-[#556b5c] leading-relaxed mb-3">{desc}</p>
+      <ul className="space-y-1.5">
+        {bullets.map((b, i) => (
+          <li key={i} className="text-xs text-[#556b5c] pl-5 relative before:content-['✓'] before:absolute before:left-0 before:text-[#25D366] before:font-bold">
+            {b}
+          </li>
+        ))}
+      </ul>
+      {chip && (
+        <span className={`mt-3 inline-block text-[10px] font-bold tracking-wide uppercase px-2 py-0.5 rounded ${chipColor}`}>
+          {chip}
+        </span>
+      )}
+    </div>
+    {visual}
+  </div>
+);
+
+/* ── WhatsApp demo chat ── */
+const WaDemo = ({ title, messages }) => (
+  <div className="bg-[#e8f5e9] rounded-xl p-4">
+    <div className="flex items-center gap-2 mb-3 text-xs font-bold text-[#1b5e20]">
+      <div className="w-2 h-2 rounded-full bg-[#25D366]" />
+      {title}
+    </div>
+    {messages.map((m, i) => (
+      <div key={i} className={`bg-white rounded-xl px-3 py-2 mb-1.5 text-xs text-[#1a1a1a] shadow-sm max-w-[88%] leading-relaxed ${m.sent ? 'ml-auto bg-[#dcf8c6] text-right rounded-br-sm' : 'rounded-bl-sm'}`}>
+        <span dangerouslySetInnerHTML={{ __html: m.text }} />
+        {m.time && <div className="text-[10px] text-gray-400 mt-1 text-right">{m.time}</div>}
       </div>
     ))}
+    <div className="text-[10px] text-[#25D366] font-bold text-right mt-1">{messages[messages.length - 1]?.label || ''}</div>
   </div>
 );
+
+/* ── decorative QR ── */
+const QrDemo = () => {
+  const pattern = [
+    [1,1,1,0,1,1,1],
+    [1,0,1,0,1,0,1],
+    [1,1,1,0,1,1,1],
+    [0,0,1,1,0,0,1],
+    [1,1,0,1,0,1,0],
+    [1,0,1,0,1,0,1],
+    [1,1,0,1,1,1,1],
+  ];
+  return (
+    <div className="bg-[#eaf6ef] border-2 border-dashed border-[#c8e8d2] rounded-xl p-6 flex flex-col items-center gap-3">
+      <div className="w-24 h-24 border-2 border-[#006d2f] rounded-lg p-2 bg-white grid gap-0.5" style={{ gridTemplateColumns: 'repeat(7,1fr)', gridTemplateRows: 'repeat(7,1fr)' }}>
+        {pattern.flat().map((cell, i) => (
+          <div key={i} className={`rounded-[1px] ${cell ? 'bg-[#006d2f]' : ''}`} />
+        ))}
+      </div>
+      <p className="text-xs font-semibold text-[#006d2f]">yourstore.aapnaestore.com</p>
+      <p className="text-[11px] text-[#556b5c] text-center">Table 4 · Dine-in · Scan to order</p>
+      <p className="text-[10px] text-[#556b5c]">↓ Real-time in your orders dashboard</p>
+    </div>
+  );
+};
+
+/* ── compare table ── */
+const compareRows = [
+  ['Branded store (your name, not theirs)',    '✓','✗','✗','✓'],
+  ['0% commission on all sales',               '✓','✓','✗','✓'],
+  ['WhatsApp auto customer sync',              '✓','✗','✗','✗'],
+  ['Abandoned cart WhatsApp recovery',         '✓','✗','✗','✗'],
+  ['QR code ordering (table / counter)',       '✓','✗','~','✗'],
+  ['Dine-in / restaurant mode',               '✓','✗','✓','✗'],
+  ['GST invoice auto-generation',             '✓','✗','~','~'],
+  ['Single POS for online + offline',         '✓','✗','✗','✗'],
+  ['Direct checkout (no DMs)',                '✓','✗','✓','✓'],
+  ['Payment direct to your account',          '✓','✗','✗','✓'],
+  ['Guided store builder wizard',             '✓','✗','✗','~'],
+];
+const cellStyle = (val, isUs) => {
+  if (isUs) return 'font-bold text-[#006d2f]';
+  if (val === '✓') return 'text-green-600';
+  if (val === '✗') return 'text-red-500';
+  return 'text-amber-600 text-xs';
+};
+
+const CompareTable = () => (
+  <div className="overflow-x-auto rounded-xl border border-[#c8e8d2] shadow-sm mb-6">
+    <table className="w-full text-xs min-w-[540px] bg-white">
+      <thead>
+        <tr className="bg-[#006d2f] text-white">
+          {['Capability','AapnaEstore','WhatsApp Biz','Zomato / Meesho','Dukaan'].map((h, i) => (
+            <th key={i} className={`px-4 py-3 font-semibold text-left ${i > 0 ? 'text-center' : ''}`}>{h}</th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {compareRows.map(([cap, ...vals], ri) => (
+          <tr key={ri} className={ri % 2 === 0 ? 'bg-[#f3faf5]' : 'bg-white'}>
+            <td className="px-4 py-3 text-[#111a14]">{cap}</td>
+            {vals.map((v, ci) => (
+              <td key={ci} className={`px-4 py-3 text-center text-sm ${cellStyle(v, ci === 0)}`}>{v}</td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+);
+
+/* ══════════════════════════════════════
+   MAIN COMPONENT
+══════════════════════════════════════ */
 const AboutSection = () => (
-  <div className="p-6 max-w-3xl">
-    <h1 className="text-2xl font-bold text-[#191c1e] mb-1">About AapnaEstore</h1>
-    <p className="text-xs text-[#8e9eab] mb-6">About the Platform</p>
-    <S>AapnaEstore is a white-label e-commerce software platform operated by <strong>NIKHIL MATHUR HUF</strong>. It enables individuals and businesses to create, customise, and operate branded online stores without developing an e-commerce website from scratch.</S>
-    <S>AapnaEstore provides technology and infrastructure for online store creation and management. Each store owner independently operates its store and remains responsible for its products, services, customers, orders, fulfilment, taxes, licences, and legal compliance.</S>
-    <H>What AapnaEstore Provides</H>
-    <UL items={["Online store creation and management.", "Product, category, pricing, and inventory management.", "Store branding and configuration, including colour themes and fonts.", "Order-management functionality.", "Domain and hosting options, including subdomains on aapnaestore.com.", "Software integrations with supported third-party payment providers (Cashfree, Razorpay, Stripe).", "Technical infrastructure and platform support via AWS EC2 with Nginx and PostgreSQL."]} />
-    <H>What AapnaEstore Does Not Do</H>
-    <UL items={["It does not sell, supply, or fulfil tenant products or services.", "It does not own or hold tenant inventory.", "It is not a marketplace for tenant products.", "It is not a payment gateway, payment aggregator, merchant of record, escrow service, or custodian of customer funds.", "It does not receive, pool, or hold customer funds for tenant transactions. Payments are processed and settled directly by the applicable payment provider."]} />
-    <H>Business Identity and Contact Details</H>
-    <Table rows={[["Legal entity", "NIKHIL MATHUR HUF"], ["Authorised representative / Karta", "NIKHIL MATHUR"], ["Principal address", "C-143 Maharana Pratap Enclave, Pitampura, New Delhi – 110034"], ["GST status", "Not GST registered"], ["Support email", "aapnaestore@gmail.com"], ["Support phone", "+91 9818410640"], ["Support hours", "09:00 AM to 6:00 PM (Monday – Saturday)"]]} />
-    <H>Grievance Contact</H>
-    <Table rows={[["Name", "NIKHIL MATHUR"], ["Designation", "Karta"], ["Email", "aapnaestore@gmail.com"], ["Phone", "+91 9818410640"], ["Address", "C-143 Maharana Pratap Enclave, Pitampura, New Delhi – 110034"], ["Working hours", "09:00 AM to 6:00 PM (Monday – Saturday)"]]} />
-    <H>Payment and Hosting Disclosure</H>
-    <S>Tenants are responsible for opening and maintaining their own accounts with supported payment providers (Cashfree, Razorpay, Stripe), completing required onboarding and verification, and complying with provider terms. Payments for purchases made through a tenant store are processed and settled by the applicable payment provider according to its terms. AapnaEstore does not receive, pool, escrow, or settle tenant customer funds.</S>
-    <S>AapnaEstore uses Amazon Web Services (AWS EC2) for hosting and infrastructure. The platform runs on Ubuntu 24.04 LTS with PostgreSQL 16 as the database, served via Nginx. Data locations may vary by service component, backup, subprocessor, or technical configuration. See the Privacy Policy for further information.</S>
+  <div className="bg-[#f3faf5] min-h-screen font-sans">
+
+    {/* ── Hero ── */}
+    <div className="max-w-4xl mx-auto px-4 pt-12 pb-8 text-center">
+      <span className="inline-block bg-[#dff5e8] text-[#006d2f] text-[10px] font-bold tracking-widest uppercase px-3 py-1 rounded-full mb-5">
+        Complete Feature Overview
+      </span>
+      <h1 className="text-3xl md:text-4xl font-bold text-[#111a14] leading-tight mb-4">
+        Everything you need<br />to sell online —{' '}
+        <span className="text-[#006d2f]">built in.</span>
+      </h1>
+      <p className="text-sm text-[#556b5c] max-w-lg mx-auto mb-7">
+        Your own branded store, WhatsApp marketing, QR ordering, GST invoicing, and a lot more.
+        No commissions. No coding. Live in 20 minutes.
+      </p>
+      <div className="flex flex-wrap gap-3 justify-center">
+        <a href="/dashboard" className="bg-[#25D366] text-white px-6 py-2.5 rounded-lg text-sm font-bold hover:bg-[#1db954] transition-colors">
+          Create Your Store Free
+        </a>
+        <a href="https://wa.me/919818410640" target="_blank" rel="noreferrer"
+           className="border border-[#c8e8d2] text-[#111a14] px-6 py-2.5 rounded-lg text-sm font-semibold hover:bg-[#eaf6ef] transition-colors">
+          Talk to Us on WhatsApp
+        </a>
+      </div>
+    </div>
+
+    {/* ── Stat strip ── */}
+    <div className="bg-white border-y border-[#c8e8d2] py-6">
+      <div className="max-w-4xl mx-auto px-4 flex flex-wrap justify-around gap-2">
+        {[
+          { num: '0%', label: 'Commission on every sale' },
+          { num: '20 min', label: 'Store live from signup' },
+          { num: '∞', label: 'Products you can list' },
+          { num: '8', label: 'Step guided store builder' },
+        ].map(({ num, label }) => (
+          <div key={label} className="text-center px-4 py-2">
+            <div className="text-2xl font-bold text-[#006d2f]">{num}</div>
+            <div className="text-[11px] text-[#556b5c] mt-1">{label}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    {/* ══ LAYER 1: Core features ══ */}
+    <div className="max-w-4xl mx-auto px-4 pt-12 pb-4">
+      <Label>Layer 1 — Core platform</Label>
+      <SectionTitle>Top eStore features</SectionTitle>
+      <SectionDesc>The foundation every seller gets — from day one, all included.</SectionDesc>
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
+        {[
+          { icon: '🏪', title: 'Branded Online Store', desc: 'Your store, your name, your logo, your colours. Customers see your brand — not a marketplace\'s. Fully custom, zero dev work.' },
+          { icon: '🛒', title: 'Direct Checkout', desc: 'Customers browse, add to cart, and pay in one flow. No DMs, no "WhatsApp karo", no back-and-forth to confirm orders.' },
+          { icon: '📦', title: 'Inventory Management', desc: 'Stock auto-updates with every sale. Get low-stock alerts before you run out. Never oversell again.' },
+          { icon: '💳', title: 'Multiple Payment Options', desc: 'Razorpay, Cashfree, or Stripe. UPI, cards, net banking — fully covered. Money lands directly in your account.' },
+          { icon: '📊', title: 'Order Management', desc: 'All orders in one dashboard. Track status, manage fulfilment, keep customers informed — no spreadsheet juggling.' },
+          { icon: '🌐', title: 'Custom Domain', desc: 'Free subdomain (yourstore.aapnaestore.com) or connect your own. Looks professional from day one.' },
+          { icon: '🎨', title: 'Store Customisation', desc: 'Choose your colour theme, upload your logo, arrange categories your way. No designer needed.' },
+          { icon: '📱', title: 'Mobile-Ready Store', desc: 'Looks great on every phone. Customers shop via WhatsApp link, Instagram bio, or a QR scan — it works everywhere.' },
+          { icon: '☁️', title: 'Reliable Cloud Hosting', desc: 'Your store runs on AWS. Fast, secure, always online — even during Diwali sale traffic spikes.' },
+          { icon: '🔐', title: 'OTP Customer Login', desc: 'Customers log in with their phone + OTP. No passwords, no friction. Higher checkout completion from returning buyers.' },
+          { icon: '↩️', title: 'Return Policy Management', desc: 'Set and display your return policy clearly on every product page. Reduce disputes and build trust upfront.' },
+          { icon: '🧙', title: '8-Step Store Builder Wizard', desc: 'Guided setup covers your store profile, products, cart, payments, delivery, and more. Get everything right from the start.', chip: 'Zero guesswork', chipColor: 'bg-[#dff5e8] text-[#006d2f]' },
+        ].map(f => <FeatureCard key={f.title} {...f} />)}
+      </div>
+    </div>
+
+    {/* ══ LAYER 2: WhatsApp ══ */}
+    <div className="bg-[#eaf6ef] border-y border-[#c8e8d2] py-12">
+      <div className="max-w-4xl mx-auto px-4">
+        <Label>Layer 2 — WhatsApp marketing system</Label>
+        <SectionTitle>WhatsApp features no competitor has</SectionTitle>
+        <SectionDesc>AapnaEstore treats WhatsApp as a first-class sales and marketing channel — not an afterthought.</SectionDesc>
+
+        <Spotlight
+          badge="Only on AapnaEstore"
+          title="Order placed → customer auto-saved to WhatsApp"
+          desc="When a customer buys from your store, their number is synced directly to your WhatsApp contact list. No copy-paste. No CSV exports. Run your next festive broadcast and your buyers are already waiting."
+          bullets={['Every buyer added automatically at checkout', 'Ready to broadcast instantly from your dashboard', 'Zero manual work — ever']}
+          visual={
+            <WaDemo title="WhatsApp — Auto-Sync" messages={[
+              { text: '🛒 New order! Priya Sharma just bought Silk Kurti' },
+              { text: '✅ Contact saved<br/><small>Priya added to broadcast list</small>', sent: true, time: 'Now' },
+            ]} />
+          }
+        />
+
+        <Spotlight
+          badge="New feature"
+          title="Abandoned cart? WhatsApp reminder sent automatically"
+          desc="When a customer adds to cart but doesn't complete checkout, AapnaEstore fires a WhatsApp reminder automatically, at the right time. Most sellers lose 60–70% of carts. Now you get them back."
+          bullets={['Automatic trigger — no manual follow-up needed', 'Message includes cart items and a direct checkout link', 'Runs 24/7 even while you sleep']}
+          chip="Recover lost revenue"
+          chipColor="bg-orange-50 text-orange-700"
+          visual={
+            <WaDemo title="WhatsApp — Cart Recovery" messages={[
+              { text: 'Hey Rahul 👋 You left something behind!<br/>• Linen Kurta — ₹1,299<br/>• Cotton Dupatta — ₹499<br/><br/>Complete your order →' },
+              { text: 'Thanks, just ordered! 🎉', sent: true, time: '2 min later' },
+            ]} />
+          }
+        />
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
+          {[
+            { icon: '📣', title: 'Broadcast to All Buyers', desc: 'New collection, sale offer, festive discount — send a WhatsApp broadcast to your entire buyer list directly from your dashboard.' },
+            { icon: '💸', title: '0% Commission, Always', desc: 'Every rupee from every order — WhatsApp driven or otherwise — goes straight to you. No platform cut. No hidden fees.' },
+            { icon: '🔔', title: 'Order Confirmation on WhatsApp', desc: 'Customers get instant order confirmation via WhatsApp. Builds trust, reduces cancellations.' },
+          ].map(f => <FeatureCard key={f.title} {...f} />)}
+        </div>
+      </div>
+    </div>
+
+    {/* ══ LAYER 3: QR / POS ══ */}
+    <div className="max-w-4xl mx-auto px-4 pt-12 pb-4">
+      <Label>Layer 3 — QR &amp; point-of-sale system</Label>
+      <SectionTitle>One QR. One POS. Online and offline, unified.</SectionTitle>
+      <SectionDesc>Whether customers are at your table, your counter, or on their phone at home — the same store, the same inventory, the same orders dashboard.</SectionDesc>
+
+      <Spotlight
+        badge="QR ordering system"
+        title="Scan → browse → order. No app download. No staff needed."
+        desc="Generate a QR code for your store, a specific table, or a product. Customers scan it on any phone and land directly in your store. Every QR order flows into the same orders dashboard as your online orders."
+        bullets={['Print QR on table cards, menu stands, or stickers', 'Table-specific QR for dine-in or counter pickup', 'Works on any phone — no app, no sign-up needed', 'Orders appear in your dashboard in real time', 'Single inventory across online + QR + POS']}
+        chip="Works offline too"
+        chipColor="bg-[#dff5e8] text-[#006d2f]"
+        visual={<QrDemo />}
+      />
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-2">
+        {[
+          { icon: '🍽️', title: 'Dine-In & Table Ordering', desc: 'Restaurants and cafés can assign QR codes per table. Customers scan and order from their seat.', chip: 'For restaurants', chipColor: 'bg-[#dff5e8] text-[#006d2f]' },
+          { icon: '🖥️', title: 'Single POS Dashboard', desc: 'Walk-in customers, online shoppers, QR orderers — all orders land in one screen. One inventory. One place.' },
+          { icon: '📍', title: 'Delivery Zone Management', desc: 'Define delivery areas and set distance-based charges. No surprises for customers at checkout.' },
+        ].map(f => <FeatureCard key={f.title} {...f} />)}
+      </div>
+    </div>
+
+    {/* ══ LAYER 4: Business tools ══ */}
+    <div className="bg-[#eaf6ef] border-y border-[#c8e8d2] py-12">
+      <div className="max-w-4xl mx-auto px-4">
+        <Label>Layer 4 — Business &amp; compliance tools</Label>
+        <SectionTitle>Run a real business. Paperwork handled.</SectionTitle>
+        <SectionDesc>GST invoices, return policies, multi-store support — the tools serious sellers need.</SectionDesc>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {[
+            { icon: '🧾', title: 'GST Invoice Generation', desc: 'Auto-generate GST-compliant invoices for every order. Customers get a proper tax invoice — instantly.', chip: 'GST ready', chipColor: 'bg-[#dff5e8] text-[#006d2f]' },
+            { icon: '🏬', title: 'Multi-Store Management', desc: 'Run multiple stores under one account. Separate inventories, separate order flows — single dashboard.' },
+            { icon: '📋', title: 'Bulk Product Import', desc: 'Import your product catalogue via CSV. Add hundreds of products in one go — no clicking one by one.' },
+            { icon: '🚀', title: 'Live in 20 Minutes', desc: 'No developer, no agency, no waiting weeks. Walk through the store builder and you\'re live — today.' },
+          ].map(f => <FeatureCard key={f.title} {...f} />)}
+        </div>
+      </div>
+    </div>
+
+    {/* ══ Comparison table ══ */}
+    <div className="max-w-4xl mx-auto px-4 pt-12 pb-4">
+      <Label>How we compare</Label>
+      <SectionTitle>AapnaEstore vs the alternatives</SectionTitle>
+      <SectionDesc>Not about price — about what each platform actually lets you do.</SectionDesc>
+      <CompareTable />
+    </div>
+
+    {/* ══ How it works ══ */}
+    <div className="max-w-4xl mx-auto px-4 pt-4 pb-10">
+      <Label>Getting started</Label>
+      <SectionTitle>From zero to live in 4 steps</SectionTitle>
+      <SectionDesc>No technical knowledge required. If you can use WhatsApp, you can build your store.</SectionDesc>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          { n: '1', title: 'Create your account', desc: 'Sign up at aapnaestore.com. Takes 2 minutes. No credit card upfront.' },
+          { n: '2', title: 'Run the store wizard', desc: '8 guided steps cover your profile, branding, products, payments, delivery zones, and more.' },
+          { n: '3', title: 'Add your products', desc: 'Upload photos, set prices, configure GST, set stock — or import via CSV for large catalogues.' },
+          { n: '4', title: 'Share your link or QR', desc: 'Post on WhatsApp and Instagram. Print your QR for your counter. Orders start flowing in.' },
+        ].map(({ n, title, desc }) => (
+          <div key={n} className="flex flex-col gap-2">
+            <div className="w-9 h-9 rounded-full bg-[#25D366] text-white flex items-center justify-center font-bold text-sm flex-shrink-0">
+              {n}
+            </div>
+            <h4 className="text-sm font-semibold text-[#111a14]">{title}</h4>
+            <p className="text-xs text-[#556b5c] leading-relaxed">{desc}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    {/* ══ CTA band ══ */}
+    <div className="bg-[#006d2f] py-14">
+      <div className="max-w-4xl mx-auto px-4 text-center flex flex-col items-center gap-4">
+        <h2 className="text-2xl md:text-3xl font-bold text-white leading-tight">
+          Stop managing orders in DM chaos.<br />Your store can be live today.
+        </h2>
+        <p className="text-sm text-green-100 max-w-md">
+          Join sellers across India who've moved their business online with AapnaEstore. Everything included, always.
+        </p>
+        <div className="flex flex-wrap gap-3 justify-center">
+          <a href="/dashboard" className="bg-white text-[#006d2f] px-6 py-2.5 rounded-lg text-sm font-bold hover:bg-green-50 transition-colors">
+            Create Your Store Free
+          </a>
+          <a href="https://wa.me/919818410640" target="_blank" rel="noreferrer"
+             className="border-2 border-white/40 text-white px-6 py-2.5 rounded-lg text-sm font-semibold hover:bg-white/10 transition-colors">
+            Talk to Us on WhatsApp
+          </a>
+        </div>
+        <p className="text-[11px] text-green-200">+91 98184 10640 · Mon–Sat 9 AM–6 PM · aapnaestore@gmail.com</p>
+      </div>
+    </div>
+
+    {/* ── Footer ── */}
+    <div className="max-w-4xl mx-auto px-4 py-7 border-t border-[#c8e8d2]">
+      <p className="text-xs text-[#556b5c]">© 2026 Nikhil Mathur HUF · AapnaEstore</p>
+    </div>
+
   </div>
 );
+
 export default AboutSection;
