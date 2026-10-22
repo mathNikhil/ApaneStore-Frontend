@@ -7,34 +7,11 @@ import Toggle from '../Common/Toggle';
 import Slider from '../Common/Slider';
 
 const Step3_CartConfig = () => {
-  const { cartData, setCartData, profileData, currentStoreId, productData, setProductData, saveStore } = useStoreBuilder();
-  const hasPerProductGST = (productData?.categories || []).some(cat => (cat.products || []).some(p => typeof p.gstRate === 'number' && p.gstRate > 0));
-  const perGSTProducts = hasPerProductGST
-    ? (productData?.categories || []).flatMap(cat =>
-        (cat.products || [])
-          .filter(p => typeof p.gstRate === 'number' && p.gstRate > 0)
-          .map(p => `${p.name} (${p.gstRate}%)`)
-      )
-    : [];
-
-  const [clearingGST, setClearingGST] = useState(false);
-  const clearAllProductGST = async () => {
-    if (!window.confirm('Clear GST rates from all products? This will save immediately.')) return;
-    setClearingGST(true);
-    try {
-      const clearedCategories = (productData?.categories || []).map(cat => ({
-        ...cat,
-        products: (cat.products || []).map(p => ({ ...p, gstRate: null })),
-      }));
-      setProductData(prev => ({ ...prev, categories: clearedCategories }));
-      // saveStore reads productData from context — pass categories directly via extraFields
-      await saveStore(null, { categories: clearedCategories });
-    } catch (e) {
-      console.error('Clear GST failed', e);
-    } finally {
-      setClearingGST(false);
-    }
-  };
+  const { cartData, setCartData, profileData, currentStoreId, productData } = useStoreBuilder();
+  const VALID_GST = [5, 12, 18, 28];
+  const hasPerProductGST = (productData?.categories || []).some(cat =>
+    (cat.products || []).some(p => VALID_GST.includes(p.gstRate))
+  );
 
   const [settings, setSettings] = useState({
     enableDineIn: cartData.enableDineIn || false,
@@ -307,19 +284,7 @@ const Step3_CartConfig = () => {
 
         <div className="mb-4">
             <Toggle label="Enable GST" checked={settings.enableGST} onChange={() => !hasPerProductGST && handleToggle('enableGST')} />
-            {hasPerProductGST && (
-              <div className="mt-1 ml-1 p-2 bg-amber-50 rounded-lg border border-amber-200">
-                <p className="text-xs text-amber-700 font-medium">Per-product GST found — global rate disabled.</p>
-                <p className="text-xs text-amber-600 mt-0.5">Products: {perGSTProducts.join(', ')}.</p>
-                <button
-                  onClick={clearAllProductGST}
-                  disabled={clearingGST}
-                  className="mt-2 text-xs px-3 py-1 rounded bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50"
-                >
-                  {clearingGST ? 'Clearing…' : 'Clear all product GST rates'}
-                </button>
-              </div>
-            )}
+            {hasPerProductGST && <p className="text-xs text-amber-600 mt-1 ml-1">GST rate is set per product in Step 2 — global rate disabled.</p>}
           </div>
         <Slider label="GST Rate (%)" value={settings.gstRate} onChange={(e) => !hasPerProductGST && handleSliderChange('gstRate', e.target.value)} valueLabel={`${settings.gstRate}%`} min={0} max={28} unit="%" className={`mb-4 ${hasPerProductGST ? 'opacity-40 pointer-events-none' : ''}`} />
 
