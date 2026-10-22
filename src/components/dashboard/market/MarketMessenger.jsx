@@ -1023,8 +1023,8 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
     fetch(`${API_BASE}/api/stores`, { headers })
       .then(r => r.json())
       .then(data => {
-        const list = Array.isArray(data) ? data : (data.stores || []);
-        const published = list.filter(s => s.status === 'published' || s.status === 'active' || s.id);
+        const list = Array.isArray(data) ? data : (data.data || data.stores || []);
+        const published = list.filter(s => s.id);
         setStores(published);
         if (published.length === 1) setSelectedStoreId(published[0].id);
         else setLoading(false); // wait for user to pick
