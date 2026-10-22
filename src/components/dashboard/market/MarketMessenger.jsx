@@ -1300,27 +1300,15 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
       {/* ── Section 1+2: Frequency + Min cart value — single row ── */}
       <div className="grid grid-cols-2 gap-3">
 
-        {/* Frequency */}
+        {/* Daily send time */}
         <div className="bg-white border border-gray-200 rounded-2xl p-3">
-          <div className="flex items-center gap-1.5 mb-1">
+          <div className="flex items-center gap-1.5 mb-3">
             <i className="ti ti-clock text-gray-400 text-sm" />
-            <span className="text-xs font-semibold text-gray-700">Send after</span>
+            <span className="text-xs font-semibold text-gray-700">Daily send time (IST)</span>
           </div>
-          <div className="flex flex-wrap gap-1.5 mb-3">
-            {DELAY_OPTIONS.map(opt => (
-              <button key={opt.hours}
-                onClick={() => updateReminder(0, 'delay_hours', opt.hours)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-all
-                  ${reminders[0]?.delay_hours === opt.hours
-                    ? 'bg-[#25D366] text-white border-[#25D366]'
-                    : 'bg-gray-50 text-gray-500 border-gray-200 hover:border-[#25D366] hover:text-[#006d2f]'}`}>
-                {opt.label}
-              </button>
-            ))}
-          </div>
-          <div className="text-xs text-gray-400 mb-1">Daily time (IST)</div>
           <input type="time" value={sendTime} onChange={e => setSendTime(e.target.value)}
             className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[#25D366]/30" />
+          <p className="text-xs text-gray-400 mt-2">Reminders send at this time each day</p>
         </div>
 
         {/* Min cart value */}
@@ -1396,7 +1384,7 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
           {/* Timing chips for this reminder */}
           <div className="mb-4">
             <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-              {activeReminderIdx === 0 ? 'Send after cart abandoned for' : 'Send after previous reminder by'}
+              {activeReminderIdx === 0 ? 'Send after cart abandoned for' : `Send after reminder ${activeReminderIdx} by`}
             </div>
             <div className="flex gap-1.5 flex-wrap">
               {DELAY_OPTIONS.map(opt => (
