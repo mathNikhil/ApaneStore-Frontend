@@ -1181,92 +1181,15 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
     </button>
   );
 
-  // ── Education screen (feature off) ───────────────────────────────────────
-  if (!enabled) return (
-    <div className="space-y-4">
-      {storeSwitcher}
-
-      {/* Hero */}
-      <div className="bg-gradient-to-br from-[#f0fdf4] to-[#dcfce7] border border-[#bbf7d0] rounded-2xl p-5">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-10 h-10 rounded-xl bg-[#25D366]/20 flex items-center justify-center flex-shrink-0">
-            <i className="ti ti-shopping-cart text-[#006d2f] text-xl" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-sm font-semibold text-gray-800">Abandoned Cart Recovery</h2>
-              <span className="text-xs bg-[#25D366]/15 text-[#006d2f] px-2 py-0.5 rounded-full font-medium">Auto</span>
-            </div>
-            <p className="text-xs text-gray-500 mt-0.5">Remind customers who added items but didn't order</p>
-          </div>
-        </div>
-
-        {/* How it works — 3 simple steps */}
-        <div className="flex items-start gap-2 text-xs text-gray-600 mt-3 space-y-0">
-          <div className="grid grid-cols-3 gap-2 w-full">
-            {[
-              { icon: 'ti-shopping-cart-plus', label: 'Customer adds items' },
-              { icon: 'ti-clock-x', label: 'Doesn\'t complete order' },
-              { icon: 'ti-brand-whatsapp', label: 'Auto WA reminder sent' },
-            ].map((s, i) => (
-              <div key={i} className="flex flex-col items-center text-center gap-1.5 bg-white/60 rounded-xl p-2.5">
-                <i className={`ti ${s.icon} text-[#006d2f] text-lg`} />
-                <span className="text-xs text-gray-600 leading-tight">{s.label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Preview — what the customer actually receives */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-4">
-        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">What your customer receives</div>
-        <WaBubble text={`Hi Priya! You left items worth ₹1,240 in your cart.\n\nKurti, Dupatta, +1 more — still waiting for you 🛍️\n\nComplete your order here:\nfashionhouse.aapnaestore.com`} />
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {['{name} → customer name', '{total} → cart value', '{items} → item list', '{link} → your store link'].map(h => (
-            <span key={h} className="text-xs bg-gray-50 border border-gray-100 text-gray-500 px-2 py-1 rounded-full">{h}</span>
-          ))}
-        </div>
-      </div>
-
-      {/* Quick facts */}
-      <div className="bg-white border border-gray-200 rounded-2xl divide-y divide-gray-100">
-        {[
-          { icon: 'ti-clock', color: 'text-blue-500', text: 'Sends once a day at your chosen time' },
-          { icon: 'ti-messages', color: 'text-purple-500', text: 'Up to 3 reminders per customer (24hr, 48hr, 72hr)' },
-          { icon: 'ti-currency-rupee', color: 'text-orange-500', text: 'Set a minimum cart value — skip low-value carts' },
-          { icon: 'ti-refresh', color: 'text-[#006d2f]', text: 'Overflow auto-pushed to next day if 75/day limit hit' },
-        ].map((f, i) => (
-          <div key={i} className="flex items-center gap-3 px-4 py-3">
-            <i className={`ti ${f.icon} ${f.color} text-base flex-shrink-0`} />
-            <span className="text-sm text-gray-600">{f.text}</span>
-          </div>
-        ))}
-      </div>
-
-      {!isConnected && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center gap-2">
-          <i className="ti ti-alert-circle text-amber-500 flex-shrink-0" />
-          <span className="text-xs text-amber-700">WhatsApp must be connected first. Go to Setup → Connect.</span>
-        </div>
-      )}
-
-      <button onClick={() => setEnabled(true)}
-        className="w-full bg-[#25D366] hover:bg-[#1ebe5d] text-white rounded-xl py-3 text-sm font-semibold flex items-center justify-center gap-2 transition-colors">
-        <i className="ti ti-toggle-right text-lg" /> Set Up Cart Recovery
-      </button>
-    </div>
-  );
-
-  // ── Config screen (enabled) ───────────────────────────────────────────────
+  // ── Config screen (always shown — toggle at top) ─────────────────────────
   const activeReminder = reminders[activeReminderIdx] || reminders[0];
 
   return (
     <div className="space-y-4">
       {storeSwitcher}
 
-      {/* Stats */}
-      {stats && (
+      {/* Stats — only when enabled and data exists */}
+      {enabled && stats && (
         <div className="grid grid-cols-3 gap-2">
           {[
             { label: 'Sent today', value: stats.sent_today ?? 0, color: 'text-[#006d2f]' },
@@ -1281,17 +1204,52 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
         </div>
       )}
 
-      {/* On/Off toggle */}
-      <div className="bg-white border border-gray-200 rounded-xl p-4 flex items-center justify-between">
-        <div>
-          <div className="text-sm font-semibold text-gray-800">Cart Recovery</div>
-          <div className="text-xs text-gray-400 mt-0.5">Reminders go out automatically every day</div>
+      {/* Main card — toggle + inline hint */}
+      <div className={`border rounded-2xl overflow-hidden transition-colors ${enabled ? 'border-[#25D366]/40 bg-white' : 'border-gray-200 bg-white'}`}>
+        {/* Toggle row */}
+        <div className="flex items-center justify-between px-4 py-4">
+          <div className="flex items-center gap-3">
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${enabled ? 'bg-[#25D366]/15' : 'bg-gray-100'}`}>
+              <i className={`ti ti-shopping-cart text-base ${enabled ? 'text-[#006d2f]' : 'text-gray-400'}`} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-gray-800">Cart Recovery</span>
+                {enabled && <span className="text-xs bg-[#25D366]/15 text-[#006d2f] px-2 py-0.5 rounded-full font-medium">Active</span>}
+              </div>
+              <p className="text-xs text-gray-400 mt-0.5">
+                {enabled ? 'Auto WhatsApp reminders for abandoned carts' : 'Send automatic reminders to customers who didn\'t order'}
+              </p>
+            </div>
+          </div>
+          <button onClick={() => setEnabled(e => !e)}
+            className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${enabled ? 'bg-[#25D366]' : 'bg-gray-200'}`}>
+            <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${enabled ? 'translate-x-6' : ''}`} />
+          </button>
         </div>
-        <button onClick={() => setEnabled(e => !e)}
-          className={`relative w-12 h-6 rounded-full transition-colors ${enabled ? 'bg-[#25D366]' : 'bg-gray-200'}`}>
-          <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${enabled ? 'translate-x-6' : ''}`} />
-        </button>
+
+        {/* Collapsed hint when OFF */}
+        {!enabled && (
+          <div className="border-t border-gray-100 px-4 py-3 flex items-center gap-3 bg-gray-50/60">
+            <div className="flex items-center gap-4 text-xs text-gray-400 flex-wrap">
+              <span className="flex items-center gap-1"><i className="ti ti-clock text-gray-300" /> Set timing</span>
+              <span className="flex items-center gap-1"><i className="ti ti-currency-rupee text-gray-300" /> Min cart value</span>
+              <span className="flex items-center gap-1"><i className="ti ti-message text-gray-300" /> Edit message</span>
+            </div>
+            <span className="ml-auto text-xs text-gray-300 flex-shrink-0">Toggle to configure →</span>
+          </div>
+        )}
       </div>
+
+      {!isConnected && enabled && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center gap-2">
+          <i className="ti ti-alert-circle text-amber-500 flex-shrink-0" />
+          <span className="text-xs text-amber-700">WhatsApp not connected — reminders won't send until you reconnect.</span>
+        </div>
+      )}
+
+      {/* ── Config sections — only visible when enabled ── */}
+      {enabled && <>
 
       {/* ── Section 1: Frequency ── */}
       <div className="bg-white border border-gray-200 rounded-2xl p-4">
@@ -1467,23 +1425,12 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
         </div>
       )}
 
-      <div className="flex gap-3">
-        <button onClick={save} disabled={saving}
-          className="flex-1 bg-[#25D366] hover:bg-[#1ebe5d] disabled:bg-gray-100 disabled:text-gray-400 text-white rounded-xl py-3 text-sm font-semibold flex items-center justify-center gap-2 transition-colors">
-          {saving ? <><i className="ti ti-loader-2 animate-spin" /> Saving…</> : <><i className="ti ti-device-floppy" /> Save settings</>}
-        </button>
-        <button onClick={() => setEnabled(false)}
-          className="px-4 bg-red-50 hover:bg-red-100 text-red-500 rounded-xl text-sm font-medium transition-colors">
-          Disable
-        </button>
-      </div>
+      <button onClick={save} disabled={saving}
+        className="w-full bg-[#25D366] hover:bg-[#1ebe5d] disabled:bg-gray-100 disabled:text-gray-400 text-white rounded-xl py-3 text-sm font-semibold flex items-center justify-center gap-2 transition-colors">
+        {saving ? <><i className="ti ti-loader-2 animate-spin" /> Saving…</> : <><i className="ti ti-device-floppy" /> Save settings</>}
+      </button>
 
-      {!isConnected && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center gap-2">
-          <i className="ti ti-alert-circle text-amber-500 flex-shrink-0" />
-          <span className="text-xs text-amber-700">WhatsApp not connected — cart recovery won't send until you reconnect.</span>
-        </div>
-      )}
+      </>}
     </div>
   );
 }
