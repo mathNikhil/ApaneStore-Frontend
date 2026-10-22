@@ -8,7 +8,7 @@ import Slider from '../Common/Slider';
 
 const Step3_CartConfig = () => {
   const { cartData, setCartData, profileData, currentStoreId, productData } = useStoreBuilder();
-  const hasPerProductGST = (productData?.categories || []).some(cat => (cat.products || []).some(p => p.gstRate != null && p.gstRate > 0));
+  const hasPerProductGST = (productData?.categories || []).some(cat => (cat.products || []).some(p => typeof p.gstRate === 'number' && p.gstRate > 0));
 
   const [settings, setSettings] = useState({
     enableDineIn: cartData.enableDineIn || false,
@@ -280,10 +280,10 @@ const Step3_CartConfig = () => {
         </div>
 
         <div className="mb-4">
-            <Toggle label="Enable GST" checked={settings.enableGST} onChange={() => !hasPerProductGST && handleToggle('enableGST')} />
-            {hasPerProductGST && <p className="text-xs text-amber-600 mt-1 ml-1">GST Rate is set per product in Step 2 — global rate disabled.</p>}
+            <Toggle label="Enable GST" checked={settings.enableGST} onChange={() => handleToggle('enableGST')} />
+            {hasPerProductGST && <p className="text-xs text-amber-600 mt-1 ml-1">Some products in Step 2 have a per-product GST rate — this global rate applies only to products without one set.</p>}
           </div>
-        <Slider label="GST Rate (%)" value={settings.gstRate} onChange={(e) => !hasPerProductGST && handleSliderChange('gstRate', e.target.value)} valueLabel={`${settings.gstRate}%`} min={0} max={28} unit="%" className={`mb-4 ${hasPerProductGST ? 'opacity-40 pointer-events-none' : ''}`} />
+        <Slider label="GST Rate (%)" value={settings.gstRate} onChange={(e) => handleSliderChange('gstRate', e.target.value)} valueLabel={`${settings.gstRate}%`} min={0} max={28} unit="%" className="mb-4" />
 
         <div className="space-y-1 mb-4">
           <label className="font-label-md text-[#3c4a3d] ml-1 text-xs uppercase tracking-wider">Tax Label</label>
