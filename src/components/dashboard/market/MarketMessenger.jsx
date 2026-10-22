@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { marketApi, DAILY_LIMIT } from './marketApi';
+import { showSuccess, showError } from '../../../utils/toast';
 
 export default function MarketMessenger({ storeId, subscription, config, onGoSetup, isSubscribed, onGoSetupTab }) {
   const [tab, setTab]               = useState('compose');
@@ -1003,8 +1004,6 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
   const [stats, setStats]                       = useState(null);
   const [loading, setLoading]                   = useState(true);
   const [saving, setSaving]                     = useState(false);
-  const [saved, setSaved]                       = useState(false);
-  const [error, setError]                       = useState('');
   const [activeReminderIdx, setActiveReminderIdx] = useState(0);
 
   // Config state
@@ -1071,7 +1070,7 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
   }, [selectedStoreId]);
 
   const save = async () => {
-    setSaving(true); setError(''); setSaved(false);
+    setSaving(true);
     try {
       const body = { enabled, send_time: sendTime, min_cart_value: parseFloat(minCart) || 0, reminders };
       const res = await fetch(`${API_BASE}/api/stores/${selectedStoreId}/cart/config`, {
@@ -1080,9 +1079,8 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
         body: JSON.stringify(body),
       });
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Save failed');
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
-    } catch (e) { setError(e.message); }
+      showSuccess('Settings saved');
+    } catch (e) { showError(e.message); }
     finally { setSaving(false); }
   };
 
@@ -1414,18 +1412,6 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
           )}
         </div>
       </div>
-
-      {/* Toast notifications */}
-      {(error || saved) && (
-        <div className={`fixed bottom-20 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg text-sm font-medium transition-all
-          ${error ? 'bg-red-600 text-white' : 'bg-[#25D366] text-white'}`}>
-          <i className={`ti ${error ? 'ti-alert-circle' : 'ti-circle-check'}`} />
-          {error || 'Settings saved'}
-          <button onClick={() => { setError(''); setSaved(false); }} className="ml-2 opacity-70 hover:opacity-100">
-            <i className="ti ti-x text-xs" />
-          </button>
-        </div>
-      )}
 
       <div className="flex justify-end">
         <button onClick={save} disabled={saving}
