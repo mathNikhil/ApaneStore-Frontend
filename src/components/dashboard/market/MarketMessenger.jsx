@@ -1012,7 +1012,7 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
   const [sendTime, setSendTime]   = useState('12:00');
   const [minCart, setMinCart]     = useState(0);
   const [reminders, setReminders] = useState([
-    { delay_hours: 24, message: 'Hi {name}! You left items worth ₹{total} in your cart. Complete your order: {link}' }
+    { delay_hours: 24, message: 'Hi {name}! You left ₹{total} worth of items in your cart.\n\n{items} — still waiting for you 🛍️\n\nComplete your order: {link}' }
   ]);
 
   const DELAY_OPTIONS = [
@@ -1415,21 +1415,24 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
         </div>
       </div>
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-600 flex items-center gap-2">
-          <i className="ti ti-alert-circle flex-shrink-0" /> {error}
-        </div>
-      )}
-      {saved && (
-        <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-sm text-green-700 flex items-center gap-2">
-          <i className="ti ti-circle-check flex-shrink-0" /> Settings saved
+      {/* Toast notifications */}
+      {(error || saved) && (
+        <div className={`fixed bottom-20 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg text-sm font-medium transition-all
+          ${error ? 'bg-red-600 text-white' : 'bg-[#25D366] text-white'}`}>
+          <i className={`ti ${error ? 'ti-alert-circle' : 'ti-circle-check'}`} />
+          {error || 'Settings saved'}
+          <button onClick={() => { setError(''); setSaved(false); }} className="ml-2 opacity-70 hover:opacity-100">
+            <i className="ti ti-x text-xs" />
+          </button>
         </div>
       )}
 
-      <button onClick={save} disabled={saving}
-        className="w-full bg-[#25D366] hover:bg-[#1ebe5d] disabled:bg-gray-100 disabled:text-gray-400 text-white rounded-xl py-3 text-sm font-semibold flex items-center justify-center gap-2 transition-colors">
-        {saving ? <><i className="ti ti-loader-2 animate-spin" /> Saving…</> : <><i className="ti ti-device-floppy" /> Save settings</>}
-      </button>
+      <div className="flex justify-end">
+        <button onClick={save} disabled={saving}
+          className="bg-[#25D366] hover:bg-[#1ebe5d] disabled:bg-gray-100 disabled:text-gray-400 text-white rounded-xl px-5 py-2 text-sm font-semibold flex items-center gap-2 transition-colors">
+          {saving ? <><i className="ti ti-loader-2 animate-spin" /> Saving…</> : <><i className="ti ti-device-floppy" /> Save</>}
+        </button>
+      </div>
 
       </>}
     </div>
