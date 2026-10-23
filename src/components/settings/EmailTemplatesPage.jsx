@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 const STATUS_LABELS = {
-    order_confirmed:   { label: 'Order Confirmed',      emoji: '🎉', color: '#4f46e5' },
+    order_confirmed:   { label: 'Order Confirmed',      emoji: '🎉', color: null }, // uses brand color
     order_packed:      { label: 'Order Packed',          emoji: '📦', color: '#0891b2' },
     out_for_delivery:  { label: 'Out for Delivery',      emoji: '🚚', color: '#d97706' },
     delivered:         { label: 'Delivered',             emoji: '✅', color: '#16a34a' },
@@ -36,10 +36,24 @@ export default function EmailTemplatesPage() {
     const [saved, setSaved] = useState(false);
     const [loading, setLoading] = useState(true);
     const [preview, setPreview] = useState(false);
+    const [brandColor, setBrandColor] = useState('#4f46e5');
 
     useEffect(() => {
         fetchTemplates();
+        fetchBrandColor();
     }, [storeId]);
+
+    const fetchBrandColor = async () => {
+        try {
+            const { data } = await axios.get(`${API_URL}/api/stores/${storeId}`, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            const primary = data?.config?.brand?.brandColors?.primary || data?.brandColors?.primary;
+            if (primary) setBrandColor(primary);
+        } catch (e) {
+            // keep default color on error
+        }
+    };
 
     useEffect(() => {
         if (templates[activeKey]) {
@@ -121,11 +135,12 @@ export default function EmailTemplatesPage() {
 
     if (loading) return (
         <div className="min-h-screen bg-[#f5f7f5] flex items-center justify-center">
-            <div className="animate-spin w-8 h-8 border-4 border-[#4f46e5] border-t-transparent rounded-full" />
+            <div className="animate-spin w-8 h-8 border-4 border-t-transparent rounded-full" style={{ borderColor: `${brandColor} transparent transparent transparent` }} />
         </div>
     );
 
     const current = STATUS_LABELS[activeKey];
+    const currentColor = current.color || brandColor;
 
     return (
         <div className="min-h-screen bg-[#f5f7f5]">
@@ -148,19 +163,25 @@ export default function EmailTemplatesPage() {
                         {Object.entries(STATUS_LABELS).map(([key, info]) => {
                             const tpl = templates[key];
                             const isOn = tpl?.is_active !== false;
+                            const isActive = activeKey === key;
                             return (
                                 <button
                                     key={key}
                                     onClick={() => setActiveKey(key)}
-                                    className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-left transition-all ${
-                                        activeKey === key
-                                            ? 'border-[#4f46e5] bg-[#eef2ff]'
-                                            : 'border-[#e0e3e6] hover:border-[#c7d2fe] bg-white'
-                                    }`}
+                                    className="flex items-center gap-2 px-3 py-2.5 rounded-xl border text-left transition-all"
+                                    style={isActive ? {
+                                        borderColor: brandColor,
+                                        background: `${brandColor}12`,
+                                    } : {
+                                        borderColor: '#e0e3e6',
+                                        background: 'white',
+                                    }}
+                                    onMouseEnter={e => { if (!isActive) e.currentTarget.style.borderColor = `${brandColor}60`; }}
+                                    onMouseLeave={e => { if (!isActive) e.currentTarget.style.borderColor = '#e0e3e6'; }}
                                 >
                                     <span className="text-base">{info.emoji}</span>
                                     <div className="flex-1 min-w-0">
-                                        <p className={`text-xs font-semibold truncate ${activeKey === key ? 'text-[#4f46e5]' : 'text-[#191c1e]'}`}>{info.label}</p>
+                                        <p className="text-xs font-semibold truncate" style={{ color: isActive ? brandColor : '#191c1e' }}>{info.label}</p>
                                         <p className={`text-[10px] ${isOn ? 'text-[#16a34a]' : 'text-[#9ca3af]'}`}>{isOn ? 'Active' : 'Off'}</p>
                                     </div>
                                 </button>
@@ -171,12 +192,12 @@ export default function EmailTemplatesPage() {
 
                 {/* Editor */}
                 <div className="bg-white rounded-2xl border border-[#e0e3e6] overflow-hidden">
-                    <div className="flex items-center justify-between px-4 py-3 border-b border-[#e0e3e6]" style={{ background: current.color + '10' }}>
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-[#e0e3e6]" style={{ background: `${currentColor}10` }}>
                         <div className="flex items-center gap-2">
                             <span className="text-lg">{current.emoji}</span>
                             <span className="text-sm font-bold text-[#191c1e]">{current.label}</span>
                             {templates[activeKey]?.is_custom && (
-                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#4f46e5] text-white font-semibold">Custom</span>
+                                <span className="text-[10px] px-2 py-0.5 rounded-full text-white font-semibold" style={{ background: brandColor }}>Custom</span>
                             )}
                         </div>
                         <div className="flex items-center gap-2">
@@ -190,7 +211,8 @@ export default function EmailTemplatesPage() {
                                 <span className="text-xs text-[#6c7b6b]">Active</span>
                                 <div
                                     onClick={() => setIsActive(!isActive)}
-                                    className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer ${isActive ? 'bg-[#4f46e5]' : 'bg-[#e0e3e6]'}`}
+                                    className="w-9 h-5 rounded-full transition-colors relative cursor-pointer"
+                                    style={{ background: isActive ? brandColor : '#e0e3e6' }}
                                 >
                                     <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${isActive ? 'translate-x-4' : 'translate-x-0.5'}`} />
                                 </div>
@@ -218,7 +240,10 @@ export default function EmailTemplatesPage() {
                                     type="text"
                                     value={editSubject}
                                     onChange={e => setEditSubject(e.target.value)}
-                                    className="w-full px-3 py-2.5 rounded-xl border border-[#e0e3e6] text-sm text-[#191c1e] focus:outline-none focus:border-[#4f46e5] bg-white"
+                                    className="w-full px-3 py-2.5 rounded-xl border border-[#e0e3e6] text-sm text-[#191c1e] focus:outline-none bg-white"
+                                    style={{ '--focus-color': brandColor }}
+                                    onFocus={e => e.target.style.borderColor = brandColor}
+                                    onBlur={e => e.target.style.borderColor = '#e0e3e6'}
                                     placeholder="Email subject..."
                                 />
                             </div>
@@ -229,7 +254,9 @@ export default function EmailTemplatesPage() {
                                     value={editBody}
                                     onChange={e => setEditBody(e.target.value)}
                                     rows={10}
-                                    className="w-full px-3 py-2.5 rounded-xl border border-[#e0e3e6] text-sm text-[#3c4a3d] focus:outline-none focus:border-[#4f46e5] bg-white font-mono resize-none"
+                                    className="w-full px-3 py-2.5 rounded-xl border border-[#e0e3e6] text-sm text-[#3c4a3d] focus:outline-none bg-white font-mono resize-none"
+                                    onFocus={e => e.target.style.borderColor = brandColor}
+                                    onBlur={e => e.target.style.borderColor = '#e0e3e6'}
                                     placeholder="Email body..."
                                 />
                             </div>
@@ -243,7 +270,16 @@ export default function EmailTemplatesPage() {
                                             key={v.token}
                                             onClick={() => insertVar(v.token)}
                                             title={v.desc}
-                                            className="px-2 py-1 text-[10px] font-mono bg-[#f5f7f5] border border-[#e0e3e6] rounded-lg text-[#4f46e5] hover:bg-[#eef2ff] hover:border-[#c7d2fe]"
+                                            className="px-2 py-1 text-[10px] font-mono bg-[#f5f7f5] border border-[#e0e3e6] rounded-lg transition-colors"
+                                            style={{ color: brandColor }}
+                                            onMouseEnter={e => {
+                                                e.currentTarget.style.background = `${brandColor}12`;
+                                                e.currentTarget.style.borderColor = `${brandColor}50`;
+                                            }}
+                                            onMouseLeave={e => {
+                                                e.currentTarget.style.background = '#f5f7f5';
+                                                e.currentTarget.style.borderColor = '#e0e3e6';
+                                            }}
                                         >
                                             {v.token}
                                         </button>
@@ -263,9 +299,10 @@ export default function EmailTemplatesPage() {
                         <button
                             onClick={handleSave}
                             disabled={saving}
-                            className={`px-5 py-2 rounded-xl text-sm font-semibold text-white transition-all ${
-                                saved ? 'bg-[#16a34a]' : 'bg-[#4f46e5] hover:bg-[#4338ca]'
-                            } disabled:opacity-50`}
+                            className="px-5 py-2 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-50"
+                            style={{ background: saved ? '#16a34a' : brandColor }}
+                            onMouseEnter={e => { if (!saving && !saved) e.currentTarget.style.filter = 'brightness(0.9)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.filter = ''; }}
                         >
                             {saving ? 'Saving...' : saved ? '✓ Saved' : 'Save Template'}
                         </button>
