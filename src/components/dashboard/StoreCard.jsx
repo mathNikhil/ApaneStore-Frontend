@@ -561,7 +561,7 @@ const StoreCard = ({ store, subscriptions = {}, onStoreUpdate }) => {
                                         </button>
                                     </div>
                                 ) : (
-                                    <button style={s.btnConnect}
+                                    <button style={{ ...s.btnConnect, background: brand.brandColors?.primary || '#4f46e5' }}
                                         onClick={() => {
                                             const token = localStorage.getItem('token');
                                             window.location.href = `${API_URL}/api/auth/gmail-notify/connect?storeId=${store.id}&token=${token}`;
@@ -570,7 +570,7 @@ const StoreCard = ({ store, subscriptions = {}, onStoreUpdate }) => {
                                     </button>
                                 )}
                             </div>
-                            <button style={s.templateRowBtn} onClick={openTemplates}>
+                            <button style={{ ...s.templateRowBtn, background: `${brand.brandColors?.primary || '#4f46e5'}12`, color: brand.brandColors?.primary || '#4f46e5', border: `1px solid ${brand.brandColors?.primary || '#4f46e5'}30` }} onClick={openTemplates}>
                                 <span>📄 Email Templates</span>
                                 <span>›</span>
                             </button>
@@ -583,7 +583,7 @@ const StoreCard = ({ store, subscriptions = {}, onStoreUpdate }) => {
                                     <button key={tab.key} onClick={() => setActiveTemplateTab(tab.key)}
                                         style={{
                                             ...s.templateTabBtn,
-                                            ...(activeTemplateTab === tab.key ? s.templateTabBtnActive : {})
+                                            ...(activeTemplateTab === tab.key ? { background: brand.brandColors?.primary || '#4f46e5', color: '#fff' } : {})
                                         }}>
                                         {tab.icon} {tab.label}
                                     </button>
@@ -603,7 +603,7 @@ const StoreCard = ({ store, subscriptions = {}, onStoreUpdate }) => {
                                                 style={{ opacity: 0, width: 0, height: 0 }} />
                                             <div style={{
                                                 width: '40px', height: '24px', borderRadius: '12px',
-                                                background: getCurrentTemplate(activeTemplateTab).is_active !== false ? '#4f46e5' : '#d1d5db',
+                                                background: getCurrentTemplate(activeTemplateTab).is_active !== false ? (brand.brandColors?.primary || '#4f46e5') : '#d1d5db',
                                                 position: 'relative', transition: 'background .2s'
                                             }}>
                                                 <div style={{
@@ -633,7 +633,7 @@ const StoreCard = ({ store, subscriptions = {}, onStoreUpdate }) => {
                                             </button>
                                         ))}
                                     </div>
-                                    <button style={{ ...s.btnPrimary, width: '100%' }} onClick={saveTemplate} disabled={templateSaving}>
+                                    <button style={{ ...s.btnPrimary, width: '100%', background: brand.brandColors?.primary || '#4f46e5' }} onClick={saveTemplate} disabled={templateSaving}>
                                         {templateSaving ? 'Saving…' : '💾 Save Template'}
                                     </button>
                                 </>
