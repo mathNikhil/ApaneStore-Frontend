@@ -99,7 +99,7 @@ export default function MarketMessenger({ storeId, subscription, config, onGoSet
         <CartAbandonedTab storeId={storeId} isConnected={isConnected} todayCount={todayCount} onGoCompose={() => setTab('compose')} />
       )}
       {tab === 'history' && (
-        <HistoryTab messages={messages.filter(m => ['sent','failed'].includes(m.status))} />
+        <HistoryTab storeId={storeId} />
       )}
     </div>
   );
@@ -549,16 +549,80 @@ function ScheduledTab({ messages, storeId, onRefresh, onEdit, subscription }) {
 }
 
 // ── HistoryTab ────────────────────────────────────────────────────────────────
-function HistoryTab({ messages }) {
-  if (!messages.length) return (
+function HistoryTab({ storeId }) {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    marketApi.getHistory(storeId)
+      .then(rows => setItems(rows || []))
+      .catch(() => setItems([]))
+      .finally(() => setLoading(false));
+  }, [storeId]);
+
+  if (loading) return <div className="text-center py-12 text-gray-400 text-sm">Loading…</div>;
+  if (!items.length) return (
     <div className="text-center py-12 text-gray-400">
       <i className="ti ti-history text-3xl block mb-2" />
       <div className="text-sm">Sent messages will appear here.</div>
     </div>
   );
+
+  const statusColors = {
+    sent: 'bg-green-50 text-green-700',
+    failed: 'bg-red-50 text-red-700',
+    pending: 'bg-amber-50 text-amber-700',
+  };
+
   return (
     <div className="space-y-3">
-      {messages.map(m => <MessageCard key={m.id} m={m} />)}
+      {items.map(item => {
+        const isCart = item.source === 'cart_recovery';
+        const dateStr = item.occurred_at
+          ? new Date(item.occurred_at).toLocaleString(navigator.language || 'en-IN', { dateStyle: 'medium', timeStyle: 'short' })
+          : '—';
+
+        if (isCart) {
+          return (
+            <div key={`cart-${item.id}`} className="bg-white rounded-xl border border-gray-200 p-4">
+              <div className="flex gap-3">
+                <div className="w-14 h-14 rounded-xl bg-[#25D366]/10 flex items-center justify-center flex-shrink-0">
+                  <i className="ti ti-shopping-cart text-[#006d2f] text-xl" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm font-medium text-gray-800 truncate">
+                      {item.customer_name || item.customer_phone || 'Cart Recovery'}
+                    </span>
+                    <div className="flex items-center gap-1.5 ml-2 flex-shrink-0">
+                      <span className="text-xs bg-[#25D366]/10 text-[#006d2f] px-1.5 py-0.5 rounded-full font-medium">Cart</span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${statusColors[item.status] || 'bg-gray-100 text-gray-500'}`}>
+                        {item.status}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="text-xs text-gray-400 mb-1">
+                    <i className="ti ti-clock text-xs mr-1" />{dateStr}
+                    {item.reminder_index != null && (
+                      <span className="ml-2">· Reminder #{item.reminder_index + 1}</span>
+                    )}
+                  </div>
+                  {item.message && (
+                    <div className="text-xs text-gray-500 truncate">{item.message}</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        }
+
+        // Compose message — use existing MessageCard shape
+        return <MessageCard key={`msg-${item.id}`} m={{
+          ...item,
+          recipients: [],
+          scheduled_at: item.occurred_at,
+        }} />;
+      })}
     </div>
   );
 }
