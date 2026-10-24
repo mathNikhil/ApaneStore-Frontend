@@ -96,7 +96,7 @@ export default function MarketMessenger({ storeId, subscription, config, onGoSet
           setGroups={setGroups} setContacts={setContacts} onRefresh={refreshAll} />
       )}
       {tab === 'cart-abandoned' && (
-        <CartAbandonedTab storeId={storeId} isConnected={isConnected} />
+        <CartAbandonedTab storeId={storeId} isConnected={isConnected} todayCount={todayCount} onGoCompose={() => setTab('compose')} />
       )}
       {tab === 'history' && (
         <HistoryTab messages={messages.filter(m => ['sent','failed'].includes(m.status))} />
@@ -994,7 +994,7 @@ function MessageCard({ m, onDelete = null, onEdit = null }) {
 
 
 // ── CartAbandonedTab ──────────────────────────────────────────────────────────
-function CartAbandonedTab({ storeId: tenantId, isConnected }) {
+function CartAbandonedTab({ storeId: tenantId, isConnected, todayCount = 0, onGoCompose }) {
   const API_BASE = import.meta.env.VITE_API_URL || 'https://api.aapnaestore.com';
   const getToken = () => localStorage.getItem('token') || '';
 
@@ -1260,6 +1260,23 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
   return (
     <div className="space-y-4">
       {storeSwitcher}
+
+      {/* Daily WA limit bar — shared with Compose */}
+      <div className="bg-white border border-gray-200 rounded-2xl px-4 py-3">
+        <div className="flex items-center justify-between mb-1.5">
+          <span className="text-xs text-gray-500">Today's limit</span>
+          <button onClick={onGoCompose} className="text-xs font-medium text-[#006d2f] hover:underline">
+            {todayCount} / {DAILY_LIMIT} sent →
+          </button>
+        </div>
+        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+          <div className={`h-full rounded-full transition-all ${todayCount >= DAILY_LIMIT ? 'bg-red-400' : todayCount >= 60 ? 'bg-amber-400' : 'bg-green-400'}`}
+            style={{ width: `${Math.min((todayCount / DAILY_LIMIT) * 100, 100)}%` }} />
+        </div>
+        <div className="text-xs text-gray-400 mt-1.5">
+          {DAILY_LIMIT - todayCount} remaining today · shared with Compose messages
+        </div>
+      </div>
 
       {/* Stats — only when enabled and data exists */}
       {stats && (
