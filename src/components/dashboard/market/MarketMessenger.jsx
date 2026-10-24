@@ -1080,6 +1080,7 @@ function CartAbandonedTab({ storeId: tenantId, isConnected, todayCount = 0, onGo
   const [reminders, setReminders] = useState([
     { message: 'Hi {name}! 🛍️\n\nIt\'s been a day since you added items to your cart.\n\n{items}\n\nWorth ₹{total} — and still waiting for you.\n\nComplete your order whenever you\'re ready:\n{link}' }
   ]);
+  const [storeCoupons, setStoreCoupons] = useState([]);
 
   const MAX_REMINDERS = 4;
   const ORDINAL = ['1st', '2nd', '3rd', '4th'];
@@ -1157,6 +1158,15 @@ function CartAbandonedTab({ storeId: tenantId, isConnected, todayCount = 0, onGo
         setLoading(false);
       })
       .catch(() => setLoading(false));
+
+    // Load this store's coupons for the dropdown
+    fetch(`${API_BASE}/api/store/${selectedStoreId}/admin/coupons`, { headers })
+      .then(r => r.json())
+      .then(data => {
+        const list = Array.isArray(data) ? data : (data.coupons || data.data || []);
+        setStoreCoupons(list.filter(c => c.status !== 'disabled'));
+      })
+      .catch(() => setStoreCoupons([]));
   }, [selectedStoreId]);
 
   // Toggle enabled for a store directly from the store list
@@ -1523,18 +1533,29 @@ function CartAbandonedTab({ storeId: tenantId, isConnected, todayCount = 0, onGo
                   </button>
                 ))}
               </div>
-              {/* Coupon code for this reminder */}
+              {/* Coupon picker for this reminder */}
               <div className="mt-3">
                 <label className="text-xs font-semibold text-gray-500 block mb-1">
-                  Coupon code <span className="font-normal text-gray-400">(optional — shown when you use {'{coupon}'} above)</span>
+                  Attach coupon <span className="font-normal text-gray-400">(optional — use {'{coupon}'} in message above)</span>
                 </label>
-                <input
-                  type="text"
-                  value={activeReminder.coupon || ''}
-                  onChange={e => updateReminder(activeReminderIdx, 'coupon', e.target.value.toUpperCase())}
-                  placeholder="e.g. SAVE10"
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-xs font-mono uppercase focus:outline-none focus:ring-2 focus:ring-[#25D366]/30 placeholder:normal-case placeholder:font-sans"
-                />
+                {storeCoupons.length === 0 ? (
+                  <div className="text-xs text-gray-400 bg-gray-50 rounded-xl px-3 py-2.5 border border-gray-200">
+                    No active coupons found. <a href="/dashboard/coupons" className="text-[#006d2f] underline">Create one →</a>
+                  </div>
+                ) : (
+                  <select
+                    value={activeReminder.coupon || ''}
+                    onChange={e => updateReminder(activeReminderIdx, 'coupon', e.target.value)}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#25D366]/30 bg-white"
+                  >
+                    <option value="">— No coupon —</option>
+                    {storeCoupons.map(c => (
+                      <option key={c.id} value={c.code}>
+                        {c.code}{c.name ? ` — ${c.name}` : ''}{c.value ? ` (${c.unit === 'percent' ? `${c.value}% off` : `₹${c.value} off`})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
             </div>
 
