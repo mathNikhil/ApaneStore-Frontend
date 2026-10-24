@@ -1017,6 +1017,7 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
   ]);
 
   const DELAY_OPTIONS = [
+    { hours: 0.083, label: '5 min 🧪' },
     { hours: 6,  label: '6 hrs' },
     { hours: 12, label: '12 hrs' },
     { hours: 24, label: '1 day' },
@@ -1397,11 +1398,12 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
         {/* Reminder category tabs — styled like email template tabs */}
         <div className="flex gap-2 px-4 pt-3 pb-0 overflow-x-auto">
           {reminders.map((r, idx) => {
-            const label = idx === 0
-              ? `🛒 ${r.delay_hours >= 24 ? `After ${r.delay_hours / 24} day${r.delay_hours > 24 ? 's' : ''}` : `After ${r.delay_hours}hrs`}`
-              : idx === 1
-                ? `⏰ ${r.delay_hours >= 24 ? `After ${r.delay_hours / 24} day${r.delay_hours > 24 ? 's' : ''}` : `After ${r.delay_hours}hrs`}`
-                : `🔔 ${r.delay_hours >= 24 ? `After ${r.delay_hours / 24} day${r.delay_hours > 24 ? 's' : ''}` : `After ${r.delay_hours}hrs`}`;
+            const delayLabel = r.delay_hours < 1
+              ? `${Math.round(r.delay_hours * 60)}min`
+              : r.delay_hours >= 24
+                ? `${r.delay_hours / 24} day${r.delay_hours > 24 ? 's' : ''}`
+                : `${r.delay_hours}hrs`;
+            const label = idx === 0 ? `🛒 After ${delayLabel}` : idx === 1 ? `⏰ After ${delayLabel}` : `🔔 After ${delayLabel}`;
             return (
               <button key={idx} onClick={() => setActiveReminderIdx(idx)}
                 className={`flex-shrink-0 px-3 py-2 rounded-t-lg text-xs font-medium border-b-2 transition-all whitespace-nowrap
