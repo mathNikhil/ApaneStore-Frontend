@@ -1079,9 +1079,13 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
           setStoreEnabledMap(m => ({ ...m, [selectedStoreId]: c.enabled || false }));
           setSendTime(c.send_time || '12:00');
           setMinCart(c.min_cart_value ?? 0);
-          setReminders(c.reminders?.length ? c.reminders : [
+          const raw = c.reminders?.length ? c.reminders : [
             { delay_hours: 24, message: 'Hi {name}! 🛍️\n\nIt\'s been a day since you added items to your cart.\n\n{items}\n\nWorth ₹{total} — and still waiting for you.\n\nComplete your order whenever you\'re ready:\n{link}' }
-          ]);
+          ];
+          // Deduplicate by delay_hours — keep last occurrence (most recently customized)
+          const seen = new Map();
+          raw.forEach(r => seen.set(Math.round(parseFloat(r.delay_hours) * 1000), r));
+          setReminders([...seen.values()].sort((a, b) => a.delay_hours - b.delay_hours));
         }
         if (data?.stats) setStats(data.stats);
         setLoading(false);
