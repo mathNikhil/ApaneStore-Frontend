@@ -1080,7 +1080,6 @@ function CartAbandonedTab({ storeId: tenantId, isConnected, todayCount = 0, onGo
   const [reminders, setReminders] = useState([
     { message: 'Hi {name}! 🛍️\n\nIt\'s been a day since you added items to your cart.\n\n{items}\n\nWorth ₹{total} — and still waiting for you.\n\nComplete your order whenever you\'re ready:\n{link}' }
   ]);
-  const [storeCoupons, setStoreCoupons] = useState([]);
 
   const MAX_REMINDERS = 4;
   const ORDINAL = ['1st', '2nd', '3rd', '4th'];
@@ -1094,13 +1093,12 @@ function CartAbandonedTab({ storeId: tenantId, isConnected, todayCount = 0, onGo
 
   const SAMPLE = { name: 'Priya', total: '1,240', items: 'Kurti, Dupatta, +1 more', link: 'fashionhouse.aapnaestore.com' };
 
-  const previewMessage = (template, coupon) =>
+  const previewMessage = (template) =>
     (template || '')
       .replace(/{name}/gi, SAMPLE.name)
       .replace(/{total}/gi, `₹${SAMPLE.total}`)
       .replace(/{items}/gi, SAMPLE.items)
-      .replace(/{link}/gi, SAMPLE.link)
-      .replace(/{coupon}/gi, coupon || 'SAVE10');
+      .replace(/{link}/gi, SAMPLE.link);
 
   // Load stores on mount + fetch enabled state for each
   useEffect(() => {
@@ -1148,25 +1146,17 @@ function CartAbandonedTab({ storeId: tenantId, isConnected, todayCount = 0, onGo
           setSendTime(c.send_time || '12:00');
           setMinCart(c.min_cart_value ?? 0);
           setTestMode(c.test_mode || false);
-          // Normalise reminders — preserve message + coupon fields
+          // Normalise reminders — strip legacy delay_hours, keep message only
           const raw = c.reminders?.length ? c.reminders : [
             { message: DEFAULT_MESSAGES[0] }
           ];
-          setReminders(raw.slice(0, MAX_REMINDERS).map((r, i) => ({ message: r.message || DEFAULT_MESSAGES[i] || '', coupon: r.coupon || '' })));
+          setReminders(raw.slice(0, MAX_REMINDERS).map((r, i) => ({ message: r.message || DEFAULT_MESSAGES[i] || '' })));
         }
         if (data?.stats) setStats(data.stats);
         setLoading(false);
       })
       .catch(() => setLoading(false));
 
-    // Load this store's coupons for the dropdown
-    fetch(`${API_BASE}/api/store/${selectedStoreId}/admin/coupons`, { headers })
-      .then(r => r.json())
-      .then(data => {
-        const list = Array.isArray(data) ? data : (data.coupons || data.data || []);
-        setStoreCoupons(list.filter(c => c.status !== 'disabled'));
-      })
-      .catch(() => setStoreCoupons([]));
   }, [selectedStoreId]);
 
   // Toggle enabled for a store directly from the store list
@@ -1186,7 +1176,7 @@ function CartAbandonedTab({ storeId: tenantId, isConnected, todayCount = 0, onGo
         enabled: newVal,
         send_time: c.send_time || '12:00',
         min_cart_value: c.min_cart_value ?? 0,
-        reminders: rawR.map(r => ({ message: r.message || '', ...(r.coupon ? { coupon: r.coupon } : {}) })),
+        reminders: rawR.map(r => ({ message: r.message || '' })),
       };
       const res = await fetch(`${API_BASE}/api/stores/${storeId}/cart/config`, {
         method: 'PUT',
@@ -1209,7 +1199,7 @@ function CartAbandonedTab({ storeId: tenantId, isConnected, todayCount = 0, onGo
   const save = async () => {
     setSaving(true);
     try {
-      const body = { enabled, send_time: sendTime, min_cart_value: parseFloat(minCart) || 0, reminders: reminders.map(r => ({ message: r.message, ...(r.coupon ? { coupon: r.coupon } : {}) })), test_mode: testMode };
+      const body = { enabled, send_time: sendTime, min_cart_value: parseFloat(minCart) || 0, reminders, test_mode: testMode };
       const res = await fetch(`${API_BASE}/api/stores/${selectedStoreId}/cart/config`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
@@ -1525,7 +1515,6 @@ function CartAbandonedTab({ storeId: tenantId, isConnected, todayCount = 0, onGo
                   { v: '{total}',  label: '{{total}}' },
                   { v: '{items}',  label: '{{items}}' },
                   { v: '{link}',   label: '{{link}}' },
-                  { v: '{coupon}', label: '{{coupon}}' },
                 ].map(({ v, label }) => (
                   <button key={v} onClick={() => insertVar(activeReminderIdx, v)}
                     className="text-xs font-mono bg-white border border-gray-200 text-gray-600 px-2 py-1 rounded-lg hover:border-[#25D366] hover:text-[#006d2f] hover:bg-[#25D366]/5 transition-all">
@@ -1533,36 +1522,12 @@ function CartAbandonedTab({ storeId: tenantId, isConnected, todayCount = 0, onGo
                   </button>
                 ))}
               </div>
-              {/* Coupon picker for this reminder */}
-              <div className="mt-3">
-                <label className="text-xs font-semibold text-gray-500 block mb-1">
-                  Attach coupon <span className="font-normal text-gray-400">(optional — use {'{coupon}'} in message above)</span>
-                </label>
-                {storeCoupons.length === 0 ? (
-                  <div className="text-xs text-gray-400 bg-gray-50 rounded-xl px-3 py-2.5 border border-gray-200">
-                    No active coupons found. <a href="/dashboard/coupons" className="text-[#006d2f] underline">Create one →</a>
-                  </div>
-                ) : (
-                  <select
-                    value={activeReminder.coupon || ''}
-                    onChange={e => updateReminder(activeReminderIdx, 'coupon', e.target.value)}
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#25D366]/30 bg-white"
-                  >
-                    <option value="">— No coupon —</option>
-                    {storeCoupons.map(c => (
-                      <option key={c.id} value={c.code}>
-                        {c.code}{c.name ? ` — ${c.name}` : ''}{c.value ? ` (${c.unit === 'percent' ? `${c.value}% off` : `₹${c.value} off`})` : ''}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
             </div>
 
             {/* Right: live preview */}
             <div className="space-y-2">
               <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">PREVIEW</div>
-              <WaBubble text={previewMessage(activeReminder.message, activeReminder.coupon)} />
+              <WaBubble text={previewMessage(activeReminder.message)} />
             </div>
 
           </div>
