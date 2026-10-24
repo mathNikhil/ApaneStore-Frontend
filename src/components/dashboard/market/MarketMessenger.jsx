@@ -1308,14 +1308,14 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
           </div>
           <div className="flex flex-wrap gap-1.5 mb-3">
             {DELAY_OPTIONS.map(opt => {
-              const active = reminders.some(r => r.delay_hours === opt.hours);
+              const active = reminders.some(r => Math.abs(parseFloat(r.delay_hours) - opt.hours) < 0.001);
               return (
                 <button key={opt.hours}
                   onClick={() => {
                     if (active) {
                       // remove — keep at least 1
                       if (reminders.length === 1) return;
-                      const idx = reminders.findIndex(r => r.delay_hours === opt.hours);
+                      const idx = reminders.findIndex(r => Math.abs(parseFloat(r.delay_hours) - opt.hours) < 0.001);
                       setReminders(r => r.filter((_, i) => i !== idx));
                       setActiveReminderIdx(0);
                     } else {
@@ -1333,7 +1333,7 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
                       };
                       setReminders(r => {
                         const updated = [...r, newR].sort((a, b) => a.delay_hours - b.delay_hours);
-                        setActiveReminderIdx(updated.findIndex(x => x.delay_hours === opt.hours));
+                        setActiveReminderIdx(updated.findIndex(x => Math.abs(parseFloat(x.delay_hours) - opt.hours) < 0.001));
                         return updated;
                       });
                     }
