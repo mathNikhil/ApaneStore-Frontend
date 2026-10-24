@@ -1009,9 +1009,10 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
   const [activeReminderIdx, setActiveReminderIdx] = useState(0);
 
   // Config state
-  const [enabled, setEnabled]     = useState(false);
-  const [sendTime, setSendTime]   = useState('12:00');
-  const [minCart, setMinCart]     = useState(0);
+  const [enabled, setEnabled]       = useState(false);
+  const [sendTime, setSendTime]     = useState('12:00');
+  const [minCart, setMinCart]       = useState(0);
+  const [testMode, setTestMode]     = useState(false);
   const [reminders, setReminders] = useState([
     { message: 'Hi {name}! 🛍️\n\nIt\'s been a day since you added items to your cart.\n\n{items}\n\nWorth ₹{total} — and still waiting for you.\n\nComplete your order whenever you\'re ready:\n{link}' }
   ]);
@@ -1080,6 +1081,7 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
           setStoreEnabledMap(m => ({ ...m, [selectedStoreId]: c.enabled || false }));
           setSendTime(c.send_time || '12:00');
           setMinCart(c.min_cart_value ?? 0);
+          setTestMode(c.test_mode || false);
           // Normalise reminders — strip legacy delay_hours, keep message only
           const raw = c.reminders?.length ? c.reminders : [
             { message: DEFAULT_MESSAGES[0] }
@@ -1132,7 +1134,7 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
   const save = async () => {
     setSaving(true);
     try {
-      const body = { enabled, send_time: sendTime, min_cart_value: parseFloat(minCart) || 0, reminders };
+      const body = { enabled, send_time: sendTime, min_cart_value: parseFloat(minCart) || 0, reminders, test_mode: testMode };
       const res = await fetch(`${API_BASE}/api/stores/${selectedStoreId}/cart/config`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
@@ -1314,6 +1316,22 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
           <p className="text-[11px] text-gray-400 mt-2 leading-relaxed">
             Every day at this time, customers with items in their cart will get the next scheduled reminder.
           </p>
+          {/* Test mode toggle */}
+          <div className={`mt-3 flex items-center justify-between rounded-lg px-2.5 py-2 border transition-colors
+            ${testMode ? 'bg-amber-50 border-amber-200' : 'bg-gray-50 border-gray-200'}`}>
+            <div>
+              <div className={`text-xs font-semibold ${testMode ? 'text-amber-700' : 'text-gray-600'}`}>
+                🧪 Test mode
+              </div>
+              <div className="text-[11px] text-gray-400">Send multiple reminders same day (20-min gap)</div>
+            </div>
+            <button onClick={() => setTestMode(v => !v)}
+              className={`relative w-9 h-5 rounded-full transition-colors flex-shrink-0 focus:outline-none
+                ${testMode ? 'bg-amber-400' : 'bg-gray-300'}`}>
+              <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform
+                ${testMode ? 'translate-x-4' : 'translate-x-0'}`} />
+            </button>
+          </div>
         </div>
 
         {/* Min cart value */}
