@@ -58,6 +58,9 @@ export const marketApi = {
   getConfig:       (tid) => request('GET',  `/api/tenants/${tid}/market/config`),
   saveConfig:      (tid, d) => request('PUT', `/api/tenants/${tid}/market/config`, d),
 
+  // Unified history (compose + cart recovery)
+  getHistory: (tid) => request('GET', `/api/tenants/${tid}/market/history`),
+
   // Addon plans
   getPlans: () => request('GET', `/api/addon-plans?addon_type=whatsapp_market`),
   subscribe:(tid, d) => request('POST', `/api/addon-plans/subscribe`, { store_id: tid, ...d }),
