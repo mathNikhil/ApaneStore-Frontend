@@ -1013,16 +1013,17 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
   const [sendTime, setSendTime]   = useState('12:00');
   const [minCart, setMinCart]     = useState(0);
   const [reminders, setReminders] = useState([
-    { delay_hours: 24, message: 'Hi {name}! 🛍️\n\nIt\'s been a day since you added items to your cart.\n\n{items}\n\nWorth ₹{total} — and still waiting for you.\n\nComplete your order whenever you\'re ready:\n{link}' }
+    { message: 'Hi {name}! 🛍️\n\nIt\'s been a day since you added items to your cart.\n\n{items}\n\nWorth ₹{total} — and still waiting for you.\n\nComplete your order whenever you\'re ready:\n{link}' }
   ]);
 
-  const DELAY_OPTIONS = [
-    { hours: 0.083, label: '5 min 🧪' },
-    { hours: 6,  label: '6 hrs' },
-    { hours: 12, label: '12 hrs' },
-    { hours: 24, label: '1 day' },
-    { hours: 48, label: '2 days' },
-    { hours: 72, label: '3 days' },
+  const MAX_REMINDERS = 4;
+  const ORDINAL = ['1st', '2nd', '3rd', '4th'];
+  const REMINDER_ICONS = ['🛒', '⏰', '💛', '🔔'];
+  const DEFAULT_MESSAGES = [
+    'Hi {name}! 🛍️\n\nIt\'s been a day since you added items to your cart.\n\n{items}\n\nWorth ₹{total} — and still waiting for you.\n\nComplete your order whenever you\'re ready:\n{link}',
+    'Hi {name}! 👋\n\nStill thinking it over? Your cart is saved:\n\n{items}\n\nTotal: ₹{total}\n\nTap here to complete your order: {link}',
+    'Hi {name}! 💛\n\nWe noticed you haven\'t completed your order yet.\n\n{items}\n\nTotal: ₹{total}\n\nIf you have any questions, just reply — we\'re happy to help!\n\nOrder here: {link}',
+    'Hi {name}! 🔔 Final reminder\n\nYour cart has been saved for a few days:\n\n{items}\n\nTotal: ₹{total}\n\nWe\'ll clear it soon. Order now if you still want these:\n{link}',
   ];
 
   const SAMPLE = { name: 'Priya', total: '1,240', items: 'Kurti, Dupatta, +1 more', link: 'fashionhouse.aapnaestore.com' };
@@ -1079,13 +1080,11 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
           setStoreEnabledMap(m => ({ ...m, [selectedStoreId]: c.enabled || false }));
           setSendTime(c.send_time || '12:00');
           setMinCart(c.min_cart_value ?? 0);
+          // Normalise reminders — strip legacy delay_hours, keep message only
           const raw = c.reminders?.length ? c.reminders : [
-            { delay_hours: 24, message: 'Hi {name}! 🛍️\n\nIt\'s been a day since you added items to your cart.\n\n{items}\n\nWorth ₹{total} — and still waiting for you.\n\nComplete your order whenever you\'re ready:\n{link}' }
+            { message: DEFAULT_MESSAGES[0] }
           ];
-          // Deduplicate by delay_hours — keep last occurrence (most recently customized)
-          const seen = new Map();
-          raw.forEach(r => seen.set(Math.round(parseFloat(r.delay_hours) * 1000), r));
-          setReminders([...seen.values()].sort((a, b) => a.delay_hours - b.delay_hours));
+          setReminders(raw.slice(0, MAX_REMINDERS).map((r, i) => ({ message: r.message || DEFAULT_MESSAGES[i] || '' })));
         }
         if (data?.stats) setStats(data.stats);
         setLoading(false);
@@ -1103,13 +1102,14 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
       const headers = { Authorization: `Bearer ${getToken()}` };
       const d = await fetch(`${API_BASE}/api/stores/${storeId}/cart/stats`, { headers }).then(r => r.json());
       const c = d?.config || {};
+      const rawR = c.reminders?.length ? c.reminders : [
+        { message: 'Hi {name}! You left ₹{total} worth of items in your cart.\n\n{items} — still waiting for you 🛍️\n\nComplete your order: {link}' }
+      ];
       const body = {
         enabled: newVal,
         send_time: c.send_time || '12:00',
         min_cart_value: c.min_cart_value ?? 0,
-        reminders: c.reminders?.length ? c.reminders : [
-          { delay_hours: 24, message: 'Hi {name}! You left ₹{total} worth of items in your cart.\n\n{items} — still waiting for you 🛍️\n\nComplete your order: {link}' }
-        ],
+        reminders: rawR.map(r => ({ message: r.message || '' })),
       };
       const res = await fetch(`${API_BASE}/api/stores/${storeId}/cart/config`, {
         method: 'PUT',
@@ -1149,11 +1149,9 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
     setReminders(prev => prev.map((r, i) => i === idx ? { ...r, [field]: val } : r));
 
   const addReminder = () => {
+    if (reminders.length >= MAX_REMINDERS) return;
     const newIdx = reminders.length;
-    setReminders(prev => [...prev, {
-      delay_hours: prev[prev.length - 1]?.delay_hours + 24 || 48,
-      message: 'Hi {name}, still thinking? Your cart has ₹{total} worth of items waiting: {link}'
-    }]);
+    setReminders(prev => [...prev, { message: DEFAULT_MESSAGES[newIdx] || '' }]);
     setActiveReminderIdx(newIdx);
   };
 
@@ -1301,60 +1299,21 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
       {/* ── Config sections ── */}
       {<>
 
-      {/* ── Section 1+2: Frequency + Min cart value — single row ── */}
+      {/* ── Section 1+2: Daily reminder time + Min cart value ── */}
       <div className="grid grid-cols-2 gap-3">
 
-        {/* Send after */}
+        {/* Daily reminder time */}
         <div className="bg-white border border-gray-200 rounded-2xl p-3">
-          <div className="flex items-center gap-1.5 mb-2">
+          <div className="flex items-center gap-1.5 mb-3">
             <i className="ti ti-clock text-gray-400 text-sm" />
-            <span className="text-xs font-semibold text-gray-700">Send after</span>
+            <span className="text-xs font-semibold text-gray-700">Set reminder time daily</span>
           </div>
-          <div className="flex flex-wrap gap-1.5 mb-3">
-            {DELAY_OPTIONS.map(opt => {
-              const active = reminders.some(r => Math.abs(parseFloat(r.delay_hours) - opt.hours) < 0.001);
-              return (
-                <button key={opt.hours}
-                  onClick={() => {
-                    if (active) {
-                      // remove — keep at least 1
-                      if (reminders.length === 1) return;
-                      const idx = reminders.findIndex(r => Math.abs(parseFloat(r.delay_hours) - opt.hours) < 0.001);
-                      setReminders(r => r.filter((_, i) => i !== idx));
-                      setActiveReminderIdx(0);
-                    } else {
-                      // add with a message tailored to the delay
-                      const msgs = {
-                        6:  'Hi {name}! 👋\n\nYou left something behind — ₹{total} worth of items are still in your cart:\n\n{items}\n\nHappen to get distracted? No worries, your cart is saved.\n\n👉 Complete your order: {link}',
-                        12: 'Hi {name}! ⏰\n\nJust a heads up — the items you picked are still available:\n\n{items}\n\nTotal: ₹{total}\n\nPopular items sell out fast. Secure yours now:\n{link}',
-                        24: 'Hi {name}! 🛍️\n\nIt\'s been a day since you added items to your cart.\n\n{items}\n\nWorth ₹{total} — and still waiting for you.\n\nComplete your order whenever you\'re ready:\n{link}',
-                        48: 'Hi {name}! 💛\n\nWe noticed you haven\'t completed your order yet.\n\n{items}\n\nTotal: ₹{total}\n\nIf you had any questions or concerns, reply here — we\'re happy to help.\n\nOr go ahead and order: {link}',
-                        72: 'Hi {name}! 🔔 Last reminder\n\nYour cart has been saved for 3 days:\n\n{items}\n\nTotal: ₹{total}\n\nWe\'ll clear it soon to make space. Order now if you still want these:\n{link}',
-                      };
-                      const newR = {
-                        delay_hours: opt.hours,
-                        message: msgs[opt.hours] || msgs[24],
-                      };
-                      setReminders(r => {
-                        const updated = [...r, newR].sort((a, b) => a.delay_hours - b.delay_hours);
-                        setActiveReminderIdx(updated.findIndex(x => Math.abs(parseFloat(x.delay_hours) - opt.hours) < 0.001));
-                        return updated;
-                      });
-                    }
-                  }}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border transition-all
-                    ${active
-                      ? 'bg-[#25D366] text-white border-[#25D366]'
-                      : 'bg-gray-50 text-gray-500 border-gray-200 hover:border-[#25D366] hover:text-[#006d2f]'}`}>
-                  {active ? <i className="ti ti-x text-[10px]" /> : <i className="ti ti-plus text-[10px]" />}
-                  {opt.label}
-                </button>
-              );
-            })}
-          </div>
-          <div className="text-xs text-gray-400 mb-1">Daily time (IST)</div>
+          <div className="text-xs text-gray-400 mb-1">Time (IST)</div>
           <input type="time" value={sendTime} onChange={e => setSendTime(e.target.value)}
             className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[#25D366]/30" />
+          <p className="text-[11px] text-gray-400 mt-2 leading-relaxed">
+            Every day at this time, customers with items in their cart will get the next scheduled reminder.
+          </p>
         </div>
 
         {/* Min cart value */}
@@ -1393,53 +1352,46 @@ function CartAbandonedTab({ storeId: tenantId, isConnected }) {
         <div className="px-4 pt-4 pb-3 border-b border-gray-100">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-sm font-semibold text-gray-800">Message Templates</div>
-              <div className="text-xs text-gray-400 mt-0.5">Customise what each reminder says</div>
+              <div className="text-sm font-semibold text-gray-800">Reminder Messages</div>
+              <div className="text-xs text-gray-400 mt-0.5">
+                Day 1 → 1st reminder · Day 2 → 2nd reminder · and so on
+              </div>
             </div>
+            {reminders.length < MAX_REMINDERS && (
+              <button onClick={addReminder}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-[#25D366]/10 text-[#006d2f] hover:bg-[#25D366]/20 transition-colors">
+                <i className="ti ti-plus text-[10px]" />
+                Add reminder
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Reminder category tabs — styled like email template tabs */}
+        {/* Reminder tabs — ordinal labels */}
         <div className="flex gap-2 px-4 pt-3 pb-0 overflow-x-auto">
-          {reminders.map((r, idx) => {
-            const delayLabel = r.delay_hours < 1
-              ? `${Math.round(r.delay_hours * 60)}min`
-              : r.delay_hours >= 24
-                ? `${r.delay_hours / 24} day${r.delay_hours > 24 ? 's' : ''}`
-                : `${r.delay_hours}hrs`;
-            const label = idx === 0 ? `🛒 After ${delayLabel}` : idx === 1 ? `⏰ After ${delayLabel}` : `🔔 After ${delayLabel}`;
-            return (
-              <button key={idx} onClick={() => setActiveReminderIdx(idx)}
-                className={`flex-shrink-0 px-3 py-2 rounded-t-lg text-xs font-medium border-b-2 transition-all whitespace-nowrap
-                  ${activeReminderIdx === idx
-                    ? 'bg-[#25D366]/8 text-[#006d2f] border-[#25D366]'
-                    : 'text-gray-400 border-transparent hover:text-gray-600 hover:border-gray-200'}`}>
-                {label}
-              </button>
-            );
-          })}
+          {reminders.map((r, idx) => (
+            <button key={idx} onClick={() => setActiveReminderIdx(idx)}
+              className={`flex-shrink-0 px-3 py-2 rounded-t-lg text-xs font-medium border-b-2 transition-all whitespace-nowrap
+                ${activeReminderIdx === idx
+                  ? 'bg-[#25D366]/8 text-[#006d2f] border-[#25D366]'
+                  : 'text-gray-400 border-transparent hover:text-gray-600 hover:border-gray-200'}`}>
+              {REMINDER_ICONS[idx]} {ORDINAL[idx]} Reminder
+            </button>
+          ))}
         </div>
 
         <div className="p-4 border-t border-gray-100">
 
-          {/* Timing chips for this reminder */}
-          <div className="mb-4">
-            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-              {activeReminderIdx === 0 ? 'Send after cart abandoned for' : `Send after reminder ${activeReminderIdx} by`}
+          {/* Remove button for non-first reminders */}
+          {activeReminderIdx > 0 && (
+            <div className="flex justify-end mb-3">
+              <button onClick={() => removeReminder(activeReminderIdx)}
+                className="flex items-center gap-1 text-xs text-red-400 hover:text-red-600 transition-colors">
+                <i className="ti ti-trash text-[11px]" />
+                Remove this reminder
+              </button>
             </div>
-            <div className="flex gap-1.5 flex-wrap">
-              {DELAY_OPTIONS.map(opt => (
-                <button key={opt.hours}
-                  onClick={() => updateReminder(activeReminderIdx, 'delay_hours', opt.hours)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all
-                    ${activeReminder.delay_hours === opt.hours
-                      ? 'bg-[#25D366] text-white border-[#25D366]'
-                      : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-[#25D366] hover:text-[#006d2f]'}`}>
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </div>
+          )}
 
           {/* Message + Preview side by side */}
           <div className="grid grid-cols-2 gap-3">
