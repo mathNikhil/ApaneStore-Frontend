@@ -1260,7 +1260,7 @@ Continue?`;
 
               <div className="text-center mb-8">
                 <h1 className="text-2xl font-bold" style={{ color: previewColors.fontHeader }}>Your Store</h1>
-                <p style={{ color: previewColors.fontBody }}>Preview your products</p>
+                <p style={{ color: previewColors.fontBody }}>{effectiveStoreType === "service" ? "Preview your services" : "Preview your products"}</p>
               </div>
 
               {categories.length === 0 ? (
@@ -1273,7 +1273,7 @@ Continue?`;
                   <div key={category.id} className="mb-8">
                     <h2 className="text-xl font-bold mb-4" style={{ color: previewColors.fontHeader }}>{category.name}</h2>
                     {category.products.length === 0 ? (
-                      <p className="text-sm" style={{ color: previewColors.fontBody }}>No products in this category</p>
+                      <p className="text-sm" style={{ color: previewColors.fontBody }}>{effectiveStoreType === "service" ? "No services in this category" : "No products in this category"}</p>
                     ) : (
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                         {category.products.map((product) => {
@@ -1608,7 +1608,7 @@ Continue?`;
             placeholder="Add to Cart"
             className="bg-surface-container"
           />
-          <p className="text-xs text-[#8e9eab] italic">This text appears on the product card button. Default: "Add to Cart"</p>
+          <p className="text-xs text-[#8e9eab] italic">This text appears on the {effectiveStoreType === "service" ? "service" : "product"} card button. Default: "Add to Cart"</p>
         </div>
         <div className="mt-3 flex gap-2 flex-wrap">
           {['Add to Cart', 'Buy Now', 'Order Now', 'Shop Now', 'Get It'].map(label => (
@@ -1914,7 +1914,7 @@ Continue?`;
                               <div className="grid grid-cols-3 gap-1 w-24">
                                 {product.images && product.images.map((img) => (
                                   <div key={img.id} className="relative aspect-square rounded bg-[#f2f4f7] border border-[#bbcbb9] overflow-hidden group">
-                                    <img src={img.url} alt="Product" className="w-full h-full object-cover" />
+                                    <img src={img.url} alt={effectiveStoreType === "service" ? "Service" : "Product"} className="w-full h-full object-cover" />
                                     <button
                                       onClick={() => removeImage(category.id, product.id, img.id)}
                                       className="absolute top-0 right-0 bg-black/50 text-white p-0.5 rounded-bl hover:bg-black/70 transition-colors"
@@ -2006,7 +2006,7 @@ Continue?`;
                                   value={product.description}
                                   onChange={(e) => setCategories(categories.map(cat => cat.id === category.id ? { ...cat, products: cat.products.map(p => p.id === product.id ? { ...p, description: e.target.value } : p) } : cat))}
                                   className="w-full px-3 py-2 bg-[#f2f4f7] rounded-lg border border-[#bbcbb9] font-body-md text-body-md outline-none focus:ring-2 focus:ring-[#25D366] focus:border-[#006d2f] min-h-[60px]"
-                                  placeholder="Enter product description..."
+                                  placeholder={effectiveStoreType === "service" ? "Enter service description..." : "Enter product description..."}
                                 />
                               </div>
                               <div className="flex flex-wrap items-center gap-4">
