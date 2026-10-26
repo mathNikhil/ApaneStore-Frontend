@@ -1351,55 +1351,56 @@ Continue?`;
           <div className="mb-4">
             <label className="font-label-md text-[#3c4a3d] text-xs uppercase tracking-wider mb-2 block">Service Type</label>
             <div className="flex gap-3">
-              {['inshop','homevisit'].map(type => (
-                <button key={type} type="button"
-                  onClick={() => setBookingSettings(prev => ({...prev, serviceType: type}))}
-                  className={`flex-1 py-2 px-3 rounded-lg border-2 text-sm font-medium transition-all ${bookingSettings.serviceType === type ? 'border-[#006d2f] bg-[#f0faf4] text-[#006d2f]' : 'border-[#e0e3e6] text-[#556067]'}`}>
-                  {type === 'inshop' ? '🏪 In-shop' : '🚗 Home visit'}
+              {[
+                { value: 'inshop',    label: '🏪 In-shop',    desc: 'Customer visits store' },
+                { value: 'homevisit', label: '🚗 Home visit',  desc: 'Staff visits customer' },
+                { value: 'both',      label: '🔄 Both',        desc: 'Customer chooses at booking' },
+              ].map(type => (
+                <button key={type.value} type="button"
+                  onClick={() => setBookingSettings(prev => ({...prev, serviceType: type.value}))}
+                  className={`flex-1 py-2 px-2 rounded-lg border-2 text-xs font-medium transition-all text-center ${bookingSettings.serviceType === type.value ? 'border-[#006d2f] bg-[#f0faf4] text-[#006d2f]' : 'border-[#e0e3e6] text-[#556067]'}`}>
+                  <div className="font-semibold">{type.label}</div>
+                  <div className="text-[10px] opacity-70 mt-0.5">{type.desc}</div>
                 </button>
               ))}
             </div>
           </div>
+          {/* Working Days + Advance Booking — same row, both are day-related */}
           <div className="mb-4">
             <label className="font-label-md text-[#3c4a3d] text-xs uppercase tracking-wider mb-2 block">Working Days</label>
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap">
               {['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(day => (
                 <button key={day} type="button"
                   onClick={() => setBookingSettings(prev => ({...prev, workingDays: prev.workingDays.includes(day) ? prev.workingDays.filter(d => d !== day) : [...prev.workingDays, day]}))}
-                  className={`px-3 py-1.5 rounded-lg border-2 text-xs font-semibold transition-all ${bookingSettings.workingDays.includes(day) ? 'border-[#006d2f] bg-[#006d2f] text-white' : 'border-[#e0e3e6] text-[#556067]'}`}>
+                  className={`px-2.5 py-1.5 rounded-lg border-2 text-xs font-semibold transition-all ${bookingSettings.workingDays.includes(day) ? 'border-[#006d2f] bg-[#006d2f] text-white' : 'border-[#e0e3e6] text-[#556067]'}`}>
                   {day}
                 </button>
               ))}
+              <div className="ml-auto flex items-center gap-1.5 flex-shrink-0">
+                <input type="number" min="1" max="90" value={bookingSettings.advanceDays} onChange={e => setBookingSettings(prev => ({...prev, advanceDays: Number(e.target.value)}))} className="border border-[#bbcbb9] rounded-lg px-2 py-1.5 text-sm w-16 text-center" />
+                <span className="text-xs text-[#556067] whitespace-nowrap">days advance</span>
+              </div>
             </div>
           </div>
-          <div className="mb-4">
-            <label className="font-label-md text-[#3c4a3d] text-xs uppercase tracking-wider mb-2 block">Working Hours</label>
-            <div className="flex items-center gap-3">
-              <input type="time" value={bookingSettings.workStart} onChange={e => setBookingSettings(prev => ({...prev, workStart: e.target.value}))} className="border border-[#bbcbb9] rounded-lg px-3 py-2 text-sm flex-1" />
-              <span className="text-[#556067] text-sm">to</span>
-              <input type="time" value={bookingSettings.workEnd} onChange={e => setBookingSettings(prev => ({...prev, workEnd: e.target.value}))} className="border border-[#bbcbb9] rounded-lg px-3 py-2 text-sm flex-1" />
-            </div>
-          </div>
-          <div className="mb-4">
-            <label className="font-label-md text-[#3c4a3d] text-xs uppercase tracking-wider mb-2 block">Break Time (optional)</label>
-            <div className="flex items-center gap-3">
-              <input type="time" value={bookingSettings.breakStart} onChange={e => setBookingSettings(prev => ({...prev, breakStart: e.target.value}))} className="border border-[#bbcbb9] rounded-lg px-3 py-2 text-sm flex-1" />
-              <span className="text-[#556067] text-sm">to</span>
-              <input type="time" value={bookingSettings.breakEnd} onChange={e => setBookingSettings(prev => ({...prev, breakEnd: e.target.value}))} className="border border-[#bbcbb9] rounded-lg px-3 py-2 text-sm flex-1" />
-            </div>
-          </div>
-          <div className="mb-4">
-            <label className="font-label-md text-[#3c4a3d] text-xs uppercase tracking-wider mb-1 block">Gap Between Appointments</label>
+
+          {/* Working Hours + Break + Gap — all time-related, compact 3-row block */}
+          <div className="mb-4 bg-[#f8faf8] rounded-xl p-3 space-y-2">
             <div className="flex items-center gap-2">
-              <input type="number" min="0" max="60" value={bookingSettings.gapBetween} onChange={e => setBookingSettings(prev => ({...prev, gapBetween: Number(e.target.value)}))} className="border border-[#bbcbb9] rounded-lg px-3 py-2 text-sm w-24" />
-              <span className="text-sm text-[#556067]">minutes between slots</span>
+              <span className="text-xs text-[#556067] w-20 flex-shrink-0">Work hours</span>
+              <input type="time" value={bookingSettings.workStart} onChange={e => setBookingSettings(prev => ({...prev, workStart: e.target.value}))} className="border border-[#bbcbb9] rounded-lg px-2 py-1.5 text-sm flex-1 bg-white" />
+              <span className="text-[#bbcbb9] text-xs">–</span>
+              <input type="time" value={bookingSettings.workEnd} onChange={e => setBookingSettings(prev => ({...prev, workEnd: e.target.value}))} className="border border-[#bbcbb9] rounded-lg px-2 py-1.5 text-sm flex-1 bg-white" />
             </div>
-          </div>
-          <div className="mb-4">
-            <label className="font-label-md text-[#3c4a3d] text-xs uppercase tracking-wider mb-1 block">Advance Booking</label>
             <div className="flex items-center gap-2">
-              <input type="number" min="1" max="90" value={bookingSettings.advanceDays} onChange={e => setBookingSettings(prev => ({...prev, advanceDays: Number(e.target.value)}))} className="border border-[#bbcbb9] rounded-lg px-3 py-2 text-sm w-24" />
-              <span className="text-sm text-[#556067]">days in advance</span>
+              <span className="text-xs text-[#556067] w-20 flex-shrink-0">Break time</span>
+              <input type="time" value={bookingSettings.breakStart} onChange={e => setBookingSettings(prev => ({...prev, breakStart: e.target.value}))} className="border border-[#bbcbb9] rounded-lg px-2 py-1.5 text-sm flex-1 bg-white" />
+              <span className="text-[#bbcbb9] text-xs">–</span>
+              <input type="time" value={bookingSettings.breakEnd} onChange={e => setBookingSettings(prev => ({...prev, breakEnd: e.target.value}))} className="border border-[#bbcbb9] rounded-lg px-2 py-1.5 text-sm flex-1 bg-white" />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-[#556067] w-20 flex-shrink-0">Gap between</span>
+              <input type="number" min="0" max="60" value={bookingSettings.gapBetween} onChange={e => setBookingSettings(prev => ({...prev, gapBetween: Number(e.target.value)}))} className="border border-[#bbcbb9] rounded-lg px-2 py-1.5 text-sm w-20 bg-white text-center" />
+              <span className="text-xs text-[#556067]">min between slots</span>
             </div>
           </div>
 
@@ -1423,27 +1424,20 @@ Continue?`;
               </div>
             )}
 
-            {/* Staff list */}
-            <div className="space-y-2 mb-2">
+            {/* Staff list — single row per member */}
+            <div className="space-y-1.5 mb-2">
               {staffMembers.map((staff, idx) => (
-                <div key={staff.id || idx} className="flex items-center gap-3 bg-[#f2f4f7] rounded-lg px-3 py-2">
-                  <div className="w-8 h-8 rounded-full bg-[#006d2f]/15 flex items-center justify-center flex-shrink-0">
-                    <span className="material-symbols-outlined text-[#006d2f] text-sm">person</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-[#191c1e] text-sm truncate">{staff.name}</p>
-                    <p className="text-xs text-[#8e9eab]">
-                      {staff.phone && <span>{staff.phone} · </span>}
-                      {staff.premiumPercent > 0
-                        ? <span className="text-[#006d2f] font-medium">+{staff.premiumPercent}% premium</span>
-                        : <span>Base rate</span>
-                      }
-                    </p>
-                  </div>
+                <div key={staff.id || idx} className="flex items-center gap-2 bg-[#f2f4f7] rounded-lg px-3 py-2">
+                  <span className="material-symbols-outlined text-[#006d2f] text-sm flex-shrink-0">person</span>
+                  <span className="font-semibold text-[#191c1e] text-sm flex-[2] truncate">{staff.name}</span>
+                  <span className="text-xs text-[#8e9eab] flex-[2] truncate">{staff.phone || '—'}</span>
+                  <span className={`text-xs font-medium flex-shrink-0 ${staff.premiumPercent > 0 ? 'text-[#006d2f]' : 'text-[#8e9eab]'}`}>
+                    {staff.premiumPercent > 0 ? `+${staff.premiumPercent}%` : 'Base'}
+                  </span>
                   <button
                     type="button"
                     onClick={() => setStaffMembers(prev => prev.filter((_, i) => i !== idx))}
-                    className="text-[#ba1a1a] hover:bg-[#ffdad6]/50 p-1.5 rounded-lg transition-colors flex-shrink-0"
+                    className="text-[#ba1a1a] hover:bg-[#ffdad6]/50 p-1 rounded-lg transition-colors flex-shrink-0"
                   >
                     <span className="material-symbols-outlined text-sm">delete</span>
                   </button>
@@ -1451,65 +1445,64 @@ Continue?`;
               ))}
             </div>
 
-            {/* Add staff form */}
+            {/* Add staff form — single row */}
             {showAddStaff && (
-              <div className="border border-[#006d2f]/30 bg-[#f0faf4] rounded-lg p-3 space-y-2">
-                <p className="text-xs font-semibold text-[#006d2f] mb-2">New Staff Member</p>
-                <input
-                  type="text"
-                  placeholder="Full name *"
-                  value={newStaff.name}
-                  onChange={e => setNewStaff(p => ({ ...p, name: e.target.value }))}
-                  className="w-full border border-[#bbcbb9] rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:border-[#006d2f]"
-                />
-                <input
-                  type="tel"
-                  placeholder="Phone (optional)"
-                  value={newStaff.phone}
-                  onChange={e => setNewStaff(p => ({ ...p, phone: e.target.value }))}
-                  className="w-full border border-[#bbcbb9] rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:border-[#006d2f]"
-                />
-                <div className="flex items-center gap-2">
+              <div className="border border-[#006d2f]/30 bg-[#f0faf4] rounded-lg p-2.5">
+                <div className="flex items-center gap-2 flex-wrap">
                   <input
-                    type="number"
-                    min="0"
-                    max="200"
-                    step="0.5"
-                    placeholder="Premium %"
-                    value={newStaff.premiumPercent}
-                    onChange={e => setNewStaff(p => ({ ...p, premiumPercent: e.target.value }))}
-                    className="w-28 border border-[#bbcbb9] rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:border-[#006d2f]"
+                    type="text"
+                    placeholder="Full name *"
+                    value={newStaff.name}
+                    onChange={e => setNewStaff(p => ({ ...p, name: e.target.value }))}
+                    className="border border-[#bbcbb9] rounded-lg px-2.5 py-2 text-sm bg-white focus:outline-none focus:border-[#006d2f] flex-[2] min-w-[100px]"
                   />
-                  <span className="text-xs text-[#556067] flex-1">% added on top of service base price (0 = standard rate)</span>
-                </div>
-                <div className="flex gap-2 pt-1">
+                  <input
+                    type="tel"
+                    placeholder="Phone"
+                    value={newStaff.phone}
+                    onChange={e => setNewStaff(p => ({ ...p, phone: e.target.value }))}
+                    className="border border-[#bbcbb9] rounded-lg px-2.5 py-2 text-sm bg-white focus:outline-none focus:border-[#006d2f] flex-[2] min-w-[90px]"
+                  />
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <input
+                      type="number"
+                      min="0"
+                      max="200"
+                      step="0.5"
+                      placeholder="0"
+                      value={newStaff.premiumPercent}
+                      onChange={e => setNewStaff(p => ({ ...p, premiumPercent: e.target.value }))}
+                      className="border border-[#bbcbb9] rounded-lg px-2 py-2 text-sm bg-white focus:outline-none focus:border-[#006d2f] w-16 text-center"
+                    />
+                    <span className="text-xs text-[#556067]">% premium</span>
+                  </div>
                   <button
                     type="button"
                     onClick={() => {
                       const name = newStaff.name.trim();
                       if (!name) return;
-                      const entry = {
+                      setStaffMembers(prev => [...prev, {
                         id: Date.now(),
                         name,
                         phone: newStaff.phone.trim(),
                         premiumPercent: parseFloat(newStaff.premiumPercent) || 0,
-                      };
-                      setStaffMembers(prev => [...prev, entry]);
+                      }]);
                       setShowAddStaff(false);
                       setNewStaff({ name: '', phone: '', premiumPercent: '' });
                     }}
-                    className="flex-1 bg-[#006d2f] text-white rounded-lg py-2 text-sm font-semibold hover:brightness-105 active:scale-[0.98] transition-all"
+                    className="bg-[#006d2f] text-white rounded-lg px-3 py-2 text-sm font-semibold hover:brightness-105 transition-all flex-shrink-0"
                   >
                     Add
                   </button>
                   <button
                     type="button"
                     onClick={() => setShowAddStaff(false)}
-                    className="px-4 bg-white border border-[#bbcbb9] text-[#556067] rounded-lg py-2 text-sm hover:bg-[#f2f4f7] transition-all"
+                    className="bg-white border border-[#bbcbb9] text-[#556067] rounded-lg px-3 py-2 text-sm hover:bg-[#f2f4f7] transition-all flex-shrink-0"
                   >
                     Cancel
                   </button>
                 </div>
+                <p className="text-[10px] text-[#8e9eab] mt-1.5 px-0.5">Premium % is added on top of service base price at checkout (0 = standard rate)</p>
               </div>
             )}
           </div>
