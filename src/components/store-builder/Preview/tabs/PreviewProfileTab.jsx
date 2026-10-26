@@ -66,7 +66,8 @@ const PreviewProfileTab = ({
   isFirstTime,
   onProfileSaved,
 }) => {
-  const { profile, brand, address } = data || {};
+  const { profile, brand, address, storeType } = data || {};
+  const isService = storeType === 'service';
   const brandColors = brand?.colors || {};
   const brandFonts = brand?.fonts || { heading: 'Inter', body: 'Inter' };
 
@@ -798,7 +799,7 @@ const PreviewProfileTab = ({
               </p>
             </div>
           </div>
-          {(profile?.storeLocations || []).filter(loc => loc.name && loc.address).map(function(loc) {
+          {!isService && (profile?.storeLocations || []).filter(loc => loc.name && loc.address).map(function(loc) {
             return (
               <div key={loc.id} className="flex items-start gap-2 mt-3 pt-3 border-t border-[#e0e3e6]">
                 <span className="material-symbols-outlined text-base mt-0.5" style={{ color: brandColors.primary }}>store</span>
