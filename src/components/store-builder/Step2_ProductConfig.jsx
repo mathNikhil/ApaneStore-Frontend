@@ -1598,7 +1598,7 @@ Continue?`;
       <Card className="mb-6">
         <div className="flex items-center gap-2 mb-4">
           <span className="material-symbols-outlined text-[#006d2f]">shopping_cart</span>
-          <h2 className="font-label-md text-label-md text-[#556067] uppercase tracking-wider text-xs">Product CTA Button</h2>
+          <h2 className="font-label-md text-label-md text-[#556067] uppercase tracking-wider text-xs">{effectiveStoreType === "service" ? "Service CTA Button" : "Product CTA Button"}</h2>
         </div>
         <div className="space-y-1">
           <label className="font-label-md text-label-md text-[#3c4a3d] text-xs uppercase tracking-wider">Button Label</label>
@@ -1705,7 +1705,7 @@ Continue?`;
               ) : (
                 <div className="flex-1 flex items-center gap-2">
                   <span className="font-semibold text-[#191c1e]">{category.name || 'Untitled Category'}</span>
-                  <span className="text-xs text-[#8e9eab]">({category.products.length} product{category.products.length === 1 ? '' : 's'})</span>
+                  <span className="text-xs text-[#8e9eab]">({category.products.length} {effectiveStoreType === "service" ? (category.products.length === 1 ? 'service' : 'services') : (category.products.length === 1 ? 'product' : 'products')})</span>
                 </div>
               )}
 
@@ -2109,7 +2109,7 @@ Continue?`;
                                 <>
                                 {/* Variation Image — pick from product images */}
                                 <div className="mt-2">
-                                  <p className="text-xs text-[#556067] mb-1.5 font-medium">Link variant to a product image</p>
+                                  <p className="text-xs text-[#556067] mb-1.5 font-medium">{effectiveStoreType === "service" ? "Link variant to a service image" : "Link variant to a product image"}</p>
                                   {product.images && product.images.length > 0 ? (
                                     <div className="flex flex-wrap gap-2">
                                       {/* No image option */}
