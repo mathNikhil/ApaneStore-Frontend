@@ -2167,7 +2167,7 @@ Continue?`;
                                 {/* Sizes */}
                                 <div className="mt-2 pl-4">
                                   <div className="grid grid-cols-12 gap-2 items-center text-xs text-[#556067] uppercase font-semibold mb-1">
-                                    <div className="col-span-3">{effectiveStoreType === "service" ? "Name" : "Size"}</div>
+                                    <div className="col-span-3">{effectiveStoreType === "service" ? "Staff" : "Size"}</div>
                                     <div className="col-span-3">{effectiveStoreType === "service" ? "Duration" : "Unit"}</div>
                                     <div className="col-span-5">Price</div>
                                     <div className="col-span-1"></div>
@@ -2180,41 +2180,85 @@ Continue?`;
 
                                     return (
                                       <div key={size.id} className="grid grid-cols-12 gap-2 items-center mb-1">
-                                        <Input
-                                          className="col-span-3"
-                                          value={size.size}
-                                          placeholder={effectiveStoreType === "service" ? "e.g. 30" : "e.g. 5"}
-                                          onChange={(e) => setCategories(categories.map(cat => {
-                                            if (cat.id === category.id) {
-                                              return {
-                                                ...cat,
-                                                products: cat.products.map(p => {
-                                                  if (p.id === product.id) {
-                                                    return {
-                                                      ...p,
-                                                      variations: p.variations.map(v => {
-                                                        if (v.id === variation.id) {
-                                                          return {
-                                                            ...v,
-                                                            sizes: v.sizes.map(s => {
-                                                              if (s.id === size.id) {
-                                                                return { ...s, size: e.target.value };
-                                                              }
-                                                              return s;
-                                                            })
-                                                          };
-                                                        }
-                                                        return v;
-                                                      })
-                                                    };
-                                                  }
-                                                  return p;
-                                                })
-                                              };
-                                            }
-                                            return cat;
-                                          }))}
-                                        />
+                                        {effectiveStoreType === "service" ? (
+                                          <select
+                                            className="col-span-3 border border-[#bbcbb9] rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:border-[#006d2f] text-[#191c1e]"
+                                            value={size.size}
+                                            onChange={(e) => setCategories(categories.map(cat => {
+                                              if (cat.id === category.id) {
+                                                return {
+                                                  ...cat,
+                                                  products: cat.products.map(p => {
+                                                    if (p.id === product.id) {
+                                                      return {
+                                                        ...p,
+                                                        variations: p.variations.map(v => {
+                                                          if (v.id === variation.id) {
+                                                            return {
+                                                              ...v,
+                                                              sizes: v.sizes.map(s => {
+                                                                if (s.id === size.id) {
+                                                                  return { ...s, size: e.target.value };
+                                                                }
+                                                                return s;
+                                                              })
+                                                            };
+                                                          }
+                                                          return v;
+                                                        })
+                                                      };
+                                                    }
+                                                    return p;
+                                                  })
+                                                };
+                                              }
+                                              return cat;
+                                            }))}
+                                          >
+                                            <option value="">Any staff</option>
+                                            {staffMembers.map(staff => (
+                                              <option key={staff.id} value={staff.name}>
+                                                {staff.name}{staff.premiumPercent > 0 ? ` (+${staff.premiumPercent}%)` : ''}
+                                              </option>
+                                            ))}
+                                          </select>
+                                        ) : (
+                                          <Input
+                                            className="col-span-3"
+                                            value={size.size}
+                                            placeholder="e.g. 5"
+                                            onChange={(e) => setCategories(categories.map(cat => {
+                                              if (cat.id === category.id) {
+                                                return {
+                                                  ...cat,
+                                                  products: cat.products.map(p => {
+                                                    if (p.id === product.id) {
+                                                      return {
+                                                        ...p,
+                                                        variations: p.variations.map(v => {
+                                                          if (v.id === variation.id) {
+                                                            return {
+                                                              ...v,
+                                                              sizes: v.sizes.map(s => {
+                                                                if (s.id === size.id) {
+                                                                  return { ...s, size: e.target.value };
+                                                                }
+                                                                return s;
+                                                              })
+                                                            };
+                                                          }
+                                                          return v;
+                                                        })
+                                                      };
+                                                    }
+                                                    return p;
+                                                  })
+                                                };
+                                              }
+                                              return cat;
+                                            }))}
+                                          />
+                                        )}
                                         <Input
                                           className="col-span-3"
                                           value={size.unit}
