@@ -2215,7 +2215,7 @@ Continue?`;
                                               return cat;
                                             }))}
                                           >
-                                            <option value="">Any staff</option>
+                                            <option value="All Staff">All Staff</option>
                                             {staffMembers.map(staff => (
                                               <option key={staff.id} value={staff.name}>
                                                 {staff.name}{staff.premiumPercent > 0 ? ` (+${staff.premiumPercent}%)` : ''}
