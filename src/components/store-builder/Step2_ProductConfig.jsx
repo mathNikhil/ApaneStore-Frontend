@@ -1349,23 +1349,6 @@ Continue?`;
             <span className="material-symbols-outlined text-[#006d2f]">calendar_month</span>
             <h2 className="font-label-md text-label-md text-[#556067] uppercase tracking-wider text-xs">Booking Settings</h2>
           </div>
-          <div className="mb-4">
-            <label className="font-label-md text-[#3c4a3d] text-xs uppercase tracking-wider mb-2 block">Service Type</label>
-            <div className="flex gap-3">
-              {[
-                { value: 'inshop',    label: '🏪 In-shop',    desc: 'Customer visits store' },
-                { value: 'homevisit', label: '🚗 Home visit',  desc: 'Staff visits customer' },
-                { value: 'both',      label: '🔄 Both',        desc: 'Customer chooses at booking' },
-              ].map(type => (
-                <button key={type.value} type="button"
-                  onClick={() => setBookingSettings(prev => ({...prev, serviceType: type.value}))}
-                  className={`flex-1 py-2 px-2 rounded-lg border-2 text-xs font-medium transition-all text-center ${bookingSettings.serviceType === type.value ? 'border-[#006d2f] bg-[#f0faf4] text-[#006d2f]' : 'border-[#e0e3e6] text-[#556067]'}`}>
-                  <div className="font-semibold">{type.label}</div>
-                  <div className="text-[10px] opacity-70 mt-0.5">{type.desc}</div>
-                </button>
-              ))}
-            </div>
-          </div>
           {/* Working Days + Advance Booking — same row, both are day-related */}
           <div className="mb-4">
             <label className="font-label-md text-[#3c4a3d] text-xs uppercase tracking-wider mb-2 block">Working Days</label>
