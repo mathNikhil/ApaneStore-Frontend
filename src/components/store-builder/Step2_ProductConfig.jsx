@@ -1626,7 +1626,7 @@ Continue?`;
       {/* Categories Section */}
       <Card className="mb-6">
         <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-          <h2 className="font-title-lg text-title-lg text-[#191c1e]">Categories & Products</h2>
+          <h2 className="font-title-lg text-title-lg text-[#191c1e]">{effectiveStoreType === "service" ? "Categories & Services" : "Categories & Products"}</h2>
           <div className="flex items-center gap-2 flex-wrap">
             <input type="file" id="csv-upload" accept=".csv,.xlsx,.xls" onChange={handleCSVUpload} className="hidden" />
             <button onClick={downloadCSVTemplate} className="flex items-center gap-1 border border-[#bbcbb9] text-[#556067] px-3 py-2 rounded-full text-xs font-semibold hover:bg-[#f2f4f7] transition-all">
@@ -1634,11 +1634,11 @@ Continue?`;
             </button>
             {categories.length > 0 && (
               <button onClick={downloadCurrentProducts} className="flex items-center gap-1 border border-[#006d2f] text-[#006d2f] px-3 py-2 rounded-full text-xs font-semibold hover:bg-[#f0fff4] transition-all">
-                <span className="material-symbols-outlined text-sm">download</span> Download Products
+                <span className="material-symbols-outlined text-sm">download</span> {effectiveStoreType === "service" ? "Download Services" : "Download Products"}
               </button>
             )}
             <button onClick={() => document.getElementById('csv-upload').click()} className="flex items-center gap-1 border border-[#006d2f] text-[#006d2f] px-3 py-2 rounded-full text-xs font-semibold hover:bg-[#f0fff4] transition-all">
-              <span className="material-symbols-outlined text-sm">upload_file</span> Upload Products
+              <span className="material-symbols-outlined text-sm">upload_file</span> {effectiveStoreType === "service" ? "Upload Services" : "Upload Products"}
             </button>
             <button onClick={() => setShowAddCategory(true)} className="flex items-center gap-1 bg-[#25D366] text-[#005523] px-4 py-2 rounded-full font-bold text-sm hover:brightness-105 active:scale-[0.98] transition-all">
               <span className="material-symbols-outlined text-base">add</span> Add Category
@@ -2151,10 +2151,10 @@ Continue?`;
                                       })}
                                     </div>
                                   ) : (
-                                    <p className="text-[10px] text-[#8e9eab]">Add product images above first, then link them to variants here.</p>
+                                    <p className="text-[10px] text-[#8e9eab]">{effectiveStoreType === "service" ? "Add service images above first, then link them to variants here." : "Add product images above first, then link them to variants here."}</p>
                                   )}
                                   <div>
-                                    <p className="text-[10px] text-[#8e9eab] mt-1">Selected image will show when customer picks this variant</p>
+                                    <p className="text-[10px] text-[#8e9eab] mt-1">{effectiveStoreType === "service" ? "Selected image will show when customer picks this service" : "Selected image will show when customer picks this variant"}</p>
                                     {variantError && (
                                       <div className="mt-1 text-xs text-red-600 bg-red-50 px-2 py-0.5 rounded border border-red-200 flex items-start gap-0.5">
                                         <span className="material-symbols-outlined text-sm">error</span>
