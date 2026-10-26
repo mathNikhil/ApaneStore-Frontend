@@ -70,6 +70,7 @@ const Step2_ProductConfig = () => {
   );
   const [showAddStaff, setShowAddStaff] = React.useState(false);
   const [newStaff, setNewStaff] = React.useState({ name: '', phone: '', premiumPercent: '' });
+  const [editingStaffIdx, setEditingStaffIdx] = React.useState(null);
   const [staffSaving, setStaffSaving] = React.useState(false);
 
   // Sync staffMembers into bookingSettings context
@@ -1436,6 +1437,17 @@ Continue?`;
                   </span>
                   <button
                     type="button"
+                    onClick={() => {
+                      setEditingStaffIdx(idx);
+                      setNewStaff({ name: staff.name, phone: staff.phone || '', premiumPercent: staff.premiumPercent || '' });
+                      setShowAddStaff(true);
+                    }}
+                    className="text-[#006d2f] hover:bg-[#006d2f]/10 p-1 rounded-lg transition-colors flex-shrink-0"
+                  >
+                    <span className="material-symbols-outlined text-sm">edit</span>
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => setStaffMembers(prev => prev.filter((_, i) => i !== idx))}
                     className="text-[#ba1a1a] hover:bg-[#ffdad6]/50 p-1 rounded-lg transition-colors flex-shrink-0"
                   >
@@ -1481,22 +1493,29 @@ Continue?`;
                     onClick={() => {
                       const name = newStaff.name.trim();
                       if (!name) return;
-                      setStaffMembers(prev => [...prev, {
-                        id: Date.now(),
-                        name,
-                        phone: newStaff.phone.trim(),
-                        premiumPercent: parseFloat(newStaff.premiumPercent) || 0,
-                      }]);
+                      if (editingStaffIdx !== null) {
+                        setStaffMembers(prev => prev.map((s, i) => i === editingStaffIdx ? {
+                          ...s, name, phone: newStaff.phone.trim(),
+                          premiumPercent: parseFloat(newStaff.premiumPercent) || 0,
+                        } : s));
+                        setEditingStaffIdx(null);
+                      } else {
+                        setStaffMembers(prev => [...prev, {
+                          id: Date.now(), name,
+                          phone: newStaff.phone.trim(),
+                          premiumPercent: parseFloat(newStaff.premiumPercent) || 0,
+                        }]);
+                      }
                       setShowAddStaff(false);
                       setNewStaff({ name: '', phone: '', premiumPercent: '' });
                     }}
                     className="bg-[#006d2f] text-white rounded-lg px-3 py-2 text-sm font-semibold hover:brightness-105 transition-all flex-shrink-0"
                   >
-                    Add
+                    {editingStaffIdx !== null ? 'Save' : 'Add'}
                   </button>
                   <button
                     type="button"
-                    onClick={() => setShowAddStaff(false)}
+                    onClick={() => { setShowAddStaff(false); setEditingStaffIdx(null); setNewStaff({ name: '', phone: '', premiumPercent: '' }); }}
                     className="bg-white border border-[#bbcbb9] text-[#556067] rounded-lg px-3 py-2 text-sm hover:bg-[#f2f4f7] transition-all flex-shrink-0"
                   >
                     Cancel
