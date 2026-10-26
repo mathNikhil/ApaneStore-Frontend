@@ -81,7 +81,7 @@ const Step2_ProductConfig = () => {
   }, [staffMembers]);
 
   React.useEffect(() => {
-    setProductData(prev => ({ ...prev, bookingSettings }));
+    setProductData(prev => ({ ...prev, bookingSettings: { ...bookingSettings, staffMembers } }));
   }, [bookingSettings]);
   
   // ✅ Track upload status per product/variation
@@ -1460,7 +1460,7 @@ Continue?`;
                     type="tel"
                     placeholder="Phone"
                     value={newStaff.phone}
-                    onChange={e => setNewStaff(p => ({ ...p, phone: e.target.value }))}
+                    onChange={e => { const v = e.target.value.replace(/\D/g, "").slice(0, 10); setNewStaff(p => ({ ...p, phone: v })); }}
                     className="border border-[#bbcbb9] rounded-lg px-2.5 py-2 text-sm bg-white focus:outline-none focus:border-[#006d2f] flex-[2] min-w-[90px]"
                   />
                   <div className="flex items-center gap-1 flex-shrink-0">
