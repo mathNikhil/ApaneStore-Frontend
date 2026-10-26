@@ -61,9 +61,24 @@ const Step2_ProductConfig = () => {
     breakStart: productData.bookingSettings?.breakStart || '',
     breakEnd: productData.bookingSettings?.breakEnd || '',
     gapBetween: productData.bookingSettings?.gapBetween || 15,
-    staffCount: productData.bookingSettings?.staffCount || 2,
     advanceDays: productData.bookingSettings?.advanceDays || 7,
   });
+
+  // Staff members state (service stores only)
+  const [staffMembers, setStaffMembers] = React.useState(
+    productData.bookingSettings?.staffMembers || []
+  );
+  const [showAddStaff, setShowAddStaff] = React.useState(false);
+  const [newStaff, setNewStaff] = React.useState({ name: '', phone: '', premiumPercent: '' });
+  const [staffSaving, setStaffSaving] = React.useState(false);
+
+  // Sync staffMembers into bookingSettings context
+  React.useEffect(() => {
+    setProductData(prev => ({
+      ...prev,
+      bookingSettings: { ...prev.bookingSettings, staffMembers }
+    }));
+  }, [staffMembers]);
 
   React.useEffect(() => {
     setProductData(prev => ({ ...prev, bookingSettings }));
@@ -174,6 +189,23 @@ const Step2_ProductConfig = () => {
     }
     if (currentStoreId && productData.autoSlideProductImages !== undefined) {
       setAutoSlideProductImages(productData.autoSlideProductImages || false);
+    }
+    if (currentStoreId && productData.bookingSettings) {
+      const bs = productData.bookingSettings;
+      setBookingSettings(prev => ({
+        ...prev,
+        serviceType: bs.serviceType || prev.serviceType,
+        workingDays: bs.workingDays || prev.workingDays,
+        workStart: bs.workStart || prev.workStart,
+        workEnd: bs.workEnd || prev.workEnd,
+        breakStart: bs.breakStart ?? prev.breakStart,
+        breakEnd: bs.breakEnd ?? prev.breakEnd,
+        gapBetween: bs.gapBetween ?? prev.gapBetween,
+        advanceDays: bs.advanceDays ?? prev.advanceDays,
+      }));
+      if (Array.isArray(bs.staffMembers)) {
+        setStaffMembers(bs.staffMembers);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStoreId]);
@@ -1356,29 +1388,135 @@ Continue?`;
               <input type="time" value={bookingSettings.breakEnd} onChange={e => setBookingSettings(prev => ({...prev, breakEnd: e.target.value}))} className="border border-[#bbcbb9] rounded-lg px-3 py-2 text-sm flex-1" />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3 mb-4">
-            <div>
-              <label className="font-label-md text-[#3c4a3d] text-xs uppercase tracking-wider mb-1 block">Gap Between</label>
-              <div className="flex items-center gap-1">
-                <input type="number" min="0" max="60" value={bookingSettings.gapBetween} onChange={e => setBookingSettings(prev => ({...prev, gapBetween: Number(e.target.value)}))} className="border border-[#bbcbb9] rounded-lg px-2 py-2 text-sm w-full" />
-                <span className="text-xs text-[#556067]">min</span>
-              </div>
-            </div>
-            <div>
-              <label className="font-label-md text-[#3c4a3d] text-xs uppercase tracking-wider mb-1 block">Staff Count</label>
-              <input type="number" min="1" max="20" value={bookingSettings.staffCount} onChange={e => setBookingSettings(prev => ({...prev, staffCount: Number(e.target.value)}))} className="border border-[#bbcbb9] rounded-lg px-2 py-2 text-sm w-full" />
+          <div className="mb-4">
+            <label className="font-label-md text-[#3c4a3d] text-xs uppercase tracking-wider mb-1 block">Gap Between Appointments</label>
+            <div className="flex items-center gap-2">
+              <input type="number" min="0" max="60" value={bookingSettings.gapBetween} onChange={e => setBookingSettings(prev => ({...prev, gapBetween: Number(e.target.value)}))} className="border border-[#bbcbb9] rounded-lg px-3 py-2 text-sm w-24" />
+              <span className="text-sm text-[#556067]">minutes between slots</span>
             </div>
           </div>
-          <div className="mb-2">
+          <div className="mb-4">
             <label className="font-label-md text-[#3c4a3d] text-xs uppercase tracking-wider mb-1 block">Advance Booking</label>
             <div className="flex items-center gap-2">
               <input type="number" min="1" max="90" value={bookingSettings.advanceDays} onChange={e => setBookingSettings(prev => ({...prev, advanceDays: Number(e.target.value)}))} className="border border-[#bbcbb9] rounded-lg px-3 py-2 text-sm w-24" />
               <span className="text-sm text-[#556067]">days in advance</span>
             </div>
           </div>
+
+          {/* ── Staff Members ── */}
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <label className="font-label-md text-[#3c4a3d] text-xs uppercase tracking-wider">Staff Members</label>
+              <button
+                type="button"
+                onClick={() => { setShowAddStaff(true); setNewStaff({ name: '', phone: '', premiumPercent: '' }); }}
+                className="flex items-center gap-1 text-[#006d2f] text-xs font-semibold hover:underline"
+              >
+                <span className="material-symbols-outlined text-sm">person_add</span> Add Staff
+              </button>
+            </div>
+
+            {staffMembers.length === 0 && !showAddStaff && (
+              <div className="border-2 border-dashed border-[#bbcbb9] rounded-lg p-4 text-center text-[#8e9eab] text-sm">
+                <span className="material-symbols-outlined block text-2xl mb-1 text-[#bbcbb9]">group</span>
+                No staff added yet. Add staff to enable booking by name.
+              </div>
+            )}
+
+            {/* Staff list */}
+            <div className="space-y-2 mb-2">
+              {staffMembers.map((staff, idx) => (
+                <div key={staff.id || idx} className="flex items-center gap-3 bg-[#f2f4f7] rounded-lg px-3 py-2">
+                  <div className="w-8 h-8 rounded-full bg-[#006d2f]/15 flex items-center justify-center flex-shrink-0">
+                    <span className="material-symbols-outlined text-[#006d2f] text-sm">person</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-[#191c1e] text-sm truncate">{staff.name}</p>
+                    <p className="text-xs text-[#8e9eab]">
+                      {staff.phone && <span>{staff.phone} · </span>}
+                      {staff.premiumPercent > 0
+                        ? <span className="text-[#006d2f] font-medium">+{staff.premiumPercent}% premium</span>
+                        : <span>Base rate</span>
+                      }
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setStaffMembers(prev => prev.filter((_, i) => i !== idx))}
+                    className="text-[#ba1a1a] hover:bg-[#ffdad6]/50 p-1.5 rounded-lg transition-colors flex-shrink-0"
+                  >
+                    <span className="material-symbols-outlined text-sm">delete</span>
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* Add staff form */}
+            {showAddStaff && (
+              <div className="border border-[#006d2f]/30 bg-[#f0faf4] rounded-lg p-3 space-y-2">
+                <p className="text-xs font-semibold text-[#006d2f] mb-2">New Staff Member</p>
+                <input
+                  type="text"
+                  placeholder="Full name *"
+                  value={newStaff.name}
+                  onChange={e => setNewStaff(p => ({ ...p, name: e.target.value }))}
+                  className="w-full border border-[#bbcbb9] rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:border-[#006d2f]"
+                />
+                <input
+                  type="tel"
+                  placeholder="Phone (optional)"
+                  value={newStaff.phone}
+                  onChange={e => setNewStaff(p => ({ ...p, phone: e.target.value }))}
+                  className="w-full border border-[#bbcbb9] rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:border-[#006d2f]"
+                />
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min="0"
+                    max="200"
+                    step="0.5"
+                    placeholder="Premium %"
+                    value={newStaff.premiumPercent}
+                    onChange={e => setNewStaff(p => ({ ...p, premiumPercent: e.target.value }))}
+                    className="w-28 border border-[#bbcbb9] rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:border-[#006d2f]"
+                  />
+                  <span className="text-xs text-[#556067] flex-1">% added on top of service base price (0 = standard rate)</span>
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const name = newStaff.name.trim();
+                      if (!name) return;
+                      const entry = {
+                        id: Date.now(),
+                        name,
+                        phone: newStaff.phone.trim(),
+                        premiumPercent: parseFloat(newStaff.premiumPercent) || 0,
+                      };
+                      setStaffMembers(prev => [...prev, entry]);
+                      setShowAddStaff(false);
+                      setNewStaff({ name: '', phone: '', premiumPercent: '' });
+                    }}
+                    className="flex-1 bg-[#006d2f] text-white rounded-lg py-2 text-sm font-semibold hover:brightness-105 active:scale-[0.98] transition-all"
+                  >
+                    Add
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddStaff(false)}
+                    className="px-4 bg-white border border-[#bbcbb9] text-[#556067] rounded-lg py-2 text-sm hover:bg-[#f2f4f7] transition-all"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="bg-[#f2f4f7] rounded-lg p-3 text-xs text-[#556067] mt-3">
-            <p className="font-semibold text-[#191c1e] mb-1">📅 Slot Preview</p>
-            <p>Working: {bookingSettings.workStart} – {bookingSettings.workEnd} • Gap: {bookingSettings.gapBetween}min • Staff: {bookingSettings.staffCount}</p>
+            <p className="font-semibold text-[#191c1e] mb-1">📅 Summary</p>
+            <p>Working: {bookingSettings.workStart} – {bookingSettings.workEnd} · Gap: {bookingSettings.gapBetween}min · {staffMembers.length} staff</p>
             {bookingSettings.breakStart && <p>Break: {bookingSettings.breakStart} – {bookingSettings.breakEnd}</p>}
           </div>
         </Card>
