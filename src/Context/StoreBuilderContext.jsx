@@ -638,7 +638,12 @@ export const StoreBuilderProvider = ({ children }) => {
                 if (config.return) {
                     setReturnData(prev => ({ ...prev, ...config.return }));
                 }
-                
+
+                // Populate booking settings (service stores)
+                if (config.booking) {
+                    setProductData(prev => ({ ...prev, bookingSettings: config.booking }));
+                }
+
                 // Populate Images
                 if (config.images) {
                     setUploadedImages(prev => ({ ...prev, ...config.images }));
