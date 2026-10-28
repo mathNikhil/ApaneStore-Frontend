@@ -479,7 +479,30 @@ export const StoreBuilderProvider = ({ children }) => {
             console.log('✅ Store saved successfully:', response.data);
             console.log('📌 Current Tenant ID:', tenantId);
             console.log('📌 Current Store ID:', currentStoreId);
-            
+
+            // ── Sync staff members to service.staff_members ──────────────────────
+            // The Store Builder only saves staff to the config JSON blob.
+            // service.staff_members is a separate table the slot engine and
+            // appointments scheduler read from. Without this sync, any staff added
+            // in Step 2 never make it to that table, so bookings can't resolve
+            // staff_id and end up showing as "Unassigned" in the admin view.
+            try {
+                const savedStoreId = effectiveStoreId || response.data?.data?.id || response.data?.data?.store_id;
+                const staffMembers = productData?.bookingSettings?.staffMembers || [];
+                if (savedStoreId) {
+                    await axios.put(
+                        `${API_URL}/api/stores/${savedStoreId}/staff/sync`,
+                        { staffMembers },
+                        { headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } }
+                    );
+                    console.log('✅ Staff synced to service.staff_members:', staffMembers.length, 'member(s)');
+                }
+            } catch (staffSyncErr) {
+                // Non-fatal: store save already succeeded; log and continue
+                console.warn('⚠️ Staff sync failed (non-fatal):', staffSyncErr.message);
+            }
+            // ─────────────────────────────────────────────────────────────────────
+
             return { success: true, data: response.data };
 
         } catch (error) {

@@ -65,7 +65,8 @@ export const storeAPI = {
     saveDomainConfig: (id, data) => apiRequest(`/api/stores/${id}/domain-config`, 'PUT', data),
     verifyDns: (id) => apiRequest(`/api/stores/${id}/domain-config/verify-dns`, 'POST'),
     getDnsConfig: (id) => apiRequest(`/api/stores/${id}/dns-config`, 'GET'),
-    completePayment: (id, paymentMethod, billingCycle, termsAccepted) => apiRequest(`/api/stores/${id}/payment`, 'POST', { paymentMethod, billingCycle, termsAccepted }),
+    completePayment: (id, paymentMethod, billingCycle, termsAccepted, platformCouponCode = null) => apiRequest(`/api/stores/${id}/payment`, 'POST', { paymentMethod, billingCycle, termsAccepted, platformCouponCode }),
+    validatePlatformCoupon: (id, code, triggerType = 'store_publish') => apiRequest(`/api/stores/${id}/validate-platform-coupon`, 'POST', { code, trigger_type: triggerType }),
 };
 
 export const pricingAPI = {

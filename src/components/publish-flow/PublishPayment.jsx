@@ -40,6 +40,10 @@ const PublishPayment = () => {
     const [isTestTenant, setIsTestTenant] = useState(false);
     const [discountInfo, setDiscountInfo] = useState(null);
     const [allCycleDiscounts, setAllCycleDiscounts] = useState({});
+    const [couponCode, setCouponCode] = useState('');
+    const [couponValidating, setCouponValidating] = useState(false);
+    const [couponApplied, setCouponApplied] = useState(null); // { coupon_id, name, code, unit, value }
+    const [couponError, setCouponError] = useState('');
 
     useEffect(() => {
         const load = async () => {
@@ -155,6 +159,46 @@ const PublishPayment = () => {
         if (allCycleDiscounts[selectedCycle]) setDiscountInfo(allCycleDiscounts[selectedCycle]);
     }, [selectedCycle, allCycleDiscounts]);
 
+    const handleApplyCoupon = async () => {
+        if (!couponCode.trim()) return;
+        setCouponValidating(true);
+        setCouponError('');
+        setCouponApplied(null);
+        try {
+            const token = localStorage.getItem('token');
+            const API = import.meta.env.VITE_API_URL || 'https://api.aapnaestore.com';
+            const res = await fetch(`${API}/api/stores/${storeId}/validate-platform-coupon`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ code: couponCode.trim(), trigger_type: 'store_publish' }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setCouponApplied(data.data);
+            } else {
+                setCouponError(data.error || 'Invalid coupon code');
+            }
+        } catch (e) {
+            setCouponError('Failed to validate coupon');
+        } finally {
+            setCouponValidating(false);
+        }
+    };
+
+    const handleRemoveCoupon = () => {
+        setCouponApplied(null);
+        setCouponCode('');
+        setCouponError('');
+    };
+
+    // Compute coupon discount amount
+    const getCouponDiscount = (baseTotal) => {
+        if (!couponApplied) return 0;
+        if (couponApplied.unit === 'percent') return baseTotal * (couponApplied.value / 100);
+        if (couponApplied.unit === 'flat') return Math.min(couponApplied.value, baseTotal);
+        return 0;
+    };
+
     const handlePay = async () => {
         if (!termsAccepted) {
             showError('Please read and accept the Terms & Conditions to continue.');
@@ -170,7 +214,12 @@ const PublishPayment = () => {
                 const res = await fetch(`${API}/api/stores/${storeId}/payment/initiate-cashfree`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                    body: JSON.stringify({ billingCycle: selectedCycle, termsAccepted, discountAmount: discountInfo?.discountAmount || 0 }),
+                    body: JSON.stringify({
+                        billingCycle: selectedCycle,
+                        termsAccepted,
+                        discountAmount: discountInfo?.discountAmount || 0,
+                        platformCouponCode: couponApplied?.code || null,
+                    }),
                 });
                 const data = await res.json();
                 if (!data.success) {
@@ -209,7 +258,7 @@ const PublishPayment = () => {
             }
 
             // UPI or other methods
-            const result = await storeAPI.completePayment(storeId, paymentMethod, selectedCycle, termsAccepted);
+            const result = await storeAPI.completePayment(storeId, paymentMethod, selectedCycle, termsAccepted, couponApplied?.code || null);
             if (result.success) {
                 navigate(`/store-builder/publish/success?storeId=${storeId}`);
             } else {
@@ -270,7 +319,9 @@ const PublishPayment = () => {
     const baseAmount = parseFloat(plan.base_amount);
     const taxAmount = baseAmount * (parseFloat(plan.tax_percentage) / 100);
     const totalAmount = baseAmount + taxAmount;
-    const finalAmount = discountInfo ? discountInfo.finalAmount : totalAmount;
+    const preDiscountFinal = discountInfo ? discountInfo.finalAmount : totalAmount;
+    const couponDiscount = getCouponDiscount(preDiscountFinal);
+    const finalAmount = Math.max(0, preDiscountFinal - couponDiscount);
     const perDay = (finalAmount / (plan.validity_days || 365)).toFixed(2);
 
     const backPath = domainConfig?.dns_status === 'verified'
@@ -379,10 +430,20 @@ const PublishPayment = () => {
                             ₹{taxAmount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                         </span>
                     </div>
+                    {couponApplied && couponDiscount > 0 && (
+                        <div className="flex justify-between text-sm mb-2">
+                            <span className="text-green-700 flex items-center gap-1">
+                                🎟️ Coupon ({couponApplied.code})
+                            </span>
+                            <span className="text-green-700 font-semibold">
+                                -₹{couponDiscount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                            </span>
+                        </div>
+                    )}
                     <div className="flex justify-between items-center">
                         <span className="font-semibold text-[#191c1e]">Total Amount</span>
                         <div className="text-right">
-                            {discountInfo && discountInfo.totalDiscountPercent > 0 && (
+                            {(discountInfo?.totalDiscountPercent > 0 || couponDiscount > 0) && (
                                 <div className="text-sm text-[#556067] line-through">₹{totalAmount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</div>
                             )}
                             <span className="text-xl font-bold text-[#006d2f]">₹{finalAmount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
@@ -417,6 +478,56 @@ const PublishPayment = () => {
                         </div>
                     )}
                     </div>
+                </div>
+
+                {/* Platform Coupon Code */}
+                <div className="bg-white rounded-2xl border border-[#e0e3e6] p-5 mb-4">
+                    <h3 className="font-semibold text-[#191c1e] mb-3 flex items-center gap-2">
+                        <span className="material-symbols-outlined text-[#006d2f]">confirmation_number</span>
+                        Have a Coupon Code?
+                    </h3>
+                    {!couponApplied ? (
+                        <>
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    value={couponCode}
+                                    onChange={e => { setCouponCode(e.target.value.toUpperCase()); setCouponError(''); }}
+                                    onKeyDown={e => e.key === 'Enter' && handleApplyCoupon()}
+                                    placeholder="Enter coupon code"
+                                    className="flex-1 border border-[#e0e3e6] rounded-xl px-3 py-2.5 text-sm font-mono tracking-widest text-[#191c1e] focus:outline-none focus:border-[#006d2f]"
+                                />
+                                <button
+                                    onClick={handleApplyCoupon}
+                                    disabled={!couponCode.trim() || couponValidating}
+                                    className="px-4 py-2.5 bg-[#006d2f] text-white text-sm font-semibold rounded-xl hover:brightness-110 disabled:opacity-50 transition-all"
+                                >
+                                    {couponValidating ? '...' : 'Apply'}
+                                </button>
+                            </div>
+                            {couponError && (
+                                <p className="text-xs text-red-500 mt-2">{couponError}</p>
+                            )}
+                        </>
+                    ) : (
+                        <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-xl">
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-green-700 font-bold text-sm font-mono">{couponApplied.code}</span>
+                                    <span className="text-xs text-white bg-green-600 px-2 py-0.5 rounded-full font-semibold">Applied</span>
+                                </div>
+                                <p className="text-xs text-green-700 mt-0.5">
+                                    {couponApplied.name} — {couponApplied.unit === 'percent' ? `${couponApplied.value}% off` : `₹${couponApplied.value} off`}
+                                </p>
+                            </div>
+                            <button
+                                onClick={handleRemoveCoupon}
+                                className="text-xs text-red-500 hover:text-red-700 font-semibold"
+                            >
+                                Remove
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 <h4 className="text-xs font-semibold text-[#8e9eab] uppercase tracking-wide mb-2">Select Payment Method</h4>
