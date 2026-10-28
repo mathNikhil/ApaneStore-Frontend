@@ -1411,6 +1411,12 @@ Continue?`;
               </div>
             )}
 
+            {/* Staff photo size hint */}
+            <p className="text-[10px] text-[#8e9eab] mb-1.5 flex items-center gap-1">
+              <span className="material-symbols-outlined text-xs">info</span>
+              Profile photos are saved at 120×120px WebP (~5KB). Upload any JPG/PNG up to 5MB.
+            </p>
+
             {/* Hidden file input for staff photo upload */}
             <input
               ref={staffPhotoInputRef}
@@ -1422,6 +1428,14 @@ Continue?`;
                 e.target.value = '';
                 const idx = activeStaffPhotoIdx;
                 if (!file || idx === null) return;
+
+                // Client-side guard: reject files over 5MB before uploading
+                if (file.size > 5 * 1024 * 1024) {
+                  showError('Photo too large. Maximum upload size is 5MB.');
+                  setActiveStaffPhotoIdx(null);
+                  return;
+                }
+
                 setStaffPhotoUploading(prev => ({ ...prev, [idx]: true }));
                 try {
                   const result = await imageService.uploadImage(
@@ -1434,9 +1448,11 @@ Continue?`;
                   const photoUrl = result?.data?.url || result?.url || null;
                   if (photoUrl) {
                     setStaffMembers(prev => prev.map((s, i) => i === idx ? { ...s, photoUrl } : s));
+                    showSuccess('Photo uploaded successfully');
                   }
                 } catch (err) {
                   console.error('Staff photo upload failed:', err);
+                  showError('Photo upload failed. Please try again.');
                 } finally {
                   setStaffPhotoUploading(prev => ({ ...prev, [idx]: false }));
                   setActiveStaffPhotoIdx(null);
