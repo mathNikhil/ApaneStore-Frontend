@@ -1464,21 +1464,37 @@ Continue?`;
             <div className="space-y-1.5 mb-2">
               {staffMembers.map((staff, idx) => (
                 <div key={staff.id || idx} className="flex items-center gap-2 bg-[#f2f4f7] rounded-lg px-3 py-2">
-                  {/* Photo circle — click to upload */}
-                  <div
-                    className="relative flex-shrink-0 w-8 h-8 rounded-full overflow-hidden cursor-pointer border-2 border-[#bbcbb9] hover:border-[#006d2f] transition-colors bg-white flex items-center justify-center"
-                    title="Click to upload photo"
-                    onClick={() => {
-                      setActiveStaffPhotoIdx(idx);
-                      setTimeout(() => staffPhotoInputRef.current?.click(), 0);
-                    }}
-                  >
-                    {staffPhotoUploading[idx] ? (
-                      <span className="material-symbols-outlined text-[#006d2f] text-xs" style={{ animation: 'spin 1s linear infinite' }}>progress_activity</span>
-                    ) : staff.photoUrl ? (
-                      <img src={staff.photoUrl} alt={staff.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="material-symbols-outlined text-[#bbcbb9] text-xs">add_a_photo</span>
+                  {/* Photo circle — click to upload; ✕ overlay to remove */}
+                  <div className="relative flex-shrink-0 w-8 h-8 group">
+                    <div
+                      className="w-8 h-8 rounded-full overflow-hidden cursor-pointer border-2 border-[#bbcbb9] hover:border-[#006d2f] transition-colors bg-white flex items-center justify-center"
+                      title={staff.photoUrl ? 'Click to replace photo' : 'Click to upload photo'}
+                      onClick={() => {
+                        setActiveStaffPhotoIdx(idx);
+                        setTimeout(() => staffPhotoInputRef.current?.click(), 0);
+                      }}
+                    >
+                      {staffPhotoUploading[idx] ? (
+                        <span className="material-symbols-outlined text-[#006d2f] text-xs" style={{ animation: 'spin 1s linear infinite' }}>progress_activity</span>
+                      ) : staff.photoUrl ? (
+                        <img src={staff.photoUrl} alt={staff.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="material-symbols-outlined text-[#bbcbb9] text-xs">add_a_photo</span>
+                      )}
+                    </div>
+                    {/* Delete overlay — only shows when photo exists */}
+                    {staff.photoUrl && !staffPhotoUploading[idx] && (
+                      <button
+                        type="button"
+                        title="Remove photo"
+                        className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setStaffMembers(prev => prev.map((s, i) => i === idx ? { ...s, photoUrl: null } : s));
+                        }}
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: '10px' }}>close</span>
+                      </button>
                     )}
                   </div>
                   <span className="font-semibold text-[#191c1e] text-sm flex-[2] truncate">{staff.name}</span>
