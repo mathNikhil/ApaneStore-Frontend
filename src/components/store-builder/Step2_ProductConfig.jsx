@@ -1414,7 +1414,7 @@ Continue?`;
             {/* Staff photo size hint */}
             <p className="text-[10px] text-[#8e9eab] mb-1.5 flex items-center gap-1">
               <span className="material-symbols-outlined text-xs">info</span>
-              Profile photos are saved at 120×120px WebP (~5KB). Upload any JPG/PNG up to 5MB.
+              Profile photos are saved at 120×120px WebP (~5KB). Upload any JPG/PNG up to 2MB.
             </p>
 
             {/* Hidden file input for staff photo upload */}
@@ -1429,9 +1429,9 @@ Continue?`;
                 const idx = activeStaffPhotoIdx;
                 if (!file || idx === null) return;
 
-                // Client-side guard: reject files over 5MB before uploading
-                if (file.size > 5 * 1024 * 1024) {
-                  showError('Photo too large. Maximum upload size is 5MB.');
+                // Client-side guard: reject files over 2MB before uploading
+                if (file.size > 2 * 1024 * 1024) {
+                  showError('Photo too large. Maximum upload size is 2MB.');
                   setActiveStaffPhotoIdx(null);
                   return;
                 }
