@@ -140,6 +140,60 @@ const CompareTable = () => (
   </div>
 );
 
+/* ── appointment booking demo visual ── */
+const BookingDemo = () => (
+  <div className="bg-white border border-[#c8e8d2] rounded-xl p-4 shadow-sm">
+    <div className="flex items-center gap-2 mb-3">
+      <div className="w-7 h-7 rounded-full bg-[#dff5e8] flex items-center justify-center text-sm">💆</div>
+      <div>
+        <div className="text-xs font-bold text-[#111a14]">Book Deep Tissue Massage</div>
+        <div className="text-[10px] text-[#556b5c]">60 mins · ₹1,200</div>
+      </div>
+    </div>
+    {/* date strip */}
+    <div className="flex gap-1.5 mb-3 overflow-x-auto">
+      {[['Thu','30 Oct'],['Fri','31 Oct'],['Sat','1 Nov']].map(([d, dt], i) => (
+        <div key={d} className={`flex-shrink-0 flex flex-col items-center px-3 py-1.5 rounded-lg border text-[10px] font-semibold ${i === 1 ? 'border-[#006d2f] bg-[#dff5e8] text-[#006d2f]' : 'border-[#e0e3e6] text-[#556b5c]'}`}>
+          <span>{d}</span><span className="opacity-70 font-normal">{dt}</span>
+        </div>
+      ))}
+    </div>
+    {/* staff tabs */}
+    <div className="flex gap-1.5 mb-2">
+      {['Any Staff','Sunil','Prakhar'].map((s, i) => (
+        <span key={s} className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${i === 2 ? 'bg-[#006d2f] text-white border-[#006d2f]' : 'text-[#556b5c] border-[#e0e3e6]'}`}>{s}</span>
+      ))}
+    </div>
+    {/* slot grid */}
+    <div className="grid grid-cols-3 gap-1.5 mb-3">
+      {[['10:00','available'],['11:00','picked'],['12:00','available'],['13:00','held'],['14:00','available'],['15:00','available']].map(([t, state]) => (
+        <div key={t} className={`text-center py-1.5 rounded-lg text-[10px] font-semibold border
+          ${state === 'picked'   ? 'bg-[#006d2f] text-white border-[#006d2f]' :
+            state === 'held'    ? 'bg-[#fee2e2] text-[#991b1b] border-[#fca5a5]' :
+                                  'bg-[#f3faf5] text-[#111a14] border-[#c8e8d2]'}`}>
+          {t}{state === 'held' ? ' 🔒' : state === 'picked' ? ' ✓' : ''}
+        </div>
+      ))}
+    </div>
+    <div className="text-[10px] text-[#556b5c] flex items-center gap-3">
+      <span><span className="inline-block w-2 h-2 rounded-sm bg-[#006d2f] mr-1"/>Selected</span>
+      <span><span className="inline-block w-2 h-2 rounded-sm bg-[#fee2e2] border border-[#fca5a5] mr-1"/>Held by another</span>
+    </div>
+    <div className="mt-3 bg-[#006d2f] text-white text-xs font-bold py-2 rounded-lg text-center">
+      Confirm Booking → Pay ₹1,200
+    </div>
+  </div>
+);
+
+/* ── how booking works steps ── */
+const bookingSteps = [
+  { n: '1', icon: '🏪', title: 'Customer opens your store', desc: 'They visit your branded URL — yourname.aapnaestore.com — from a WhatsApp link, Instagram bio, or QR scan.' },
+  { n: '2', icon: '📅', title: 'Picks a service, date & staff', desc: 'They choose the service, pick a date from your working calendar, select a staff member if your store has multiple, and tap a time slot.' },
+  { n: '3', icon: '🔒', title: 'Slot is held for 10 minutes', desc: 'The moment they select a slot it is locked for them — other customers see it as unavailable. If they don\'t pay in 10 minutes, it releases automatically.' },
+  { n: '4', icon: '💳', title: 'They pay & confirm', desc: 'Checkout with UPI, card or any Razorpay method. Booking is confirmed, a WhatsApp confirmation fires to them.' },
+  { n: '5', icon: '📋', title: 'You manage from store-admin', desc: 'Every appointment appears in your Appointments dashboard — filter by date, staff, or status. Download the daily schedule as a PDF for your team.' },
+];
+
 /* ══════════════════════════════════════
    MAIN COMPONENT
 ══════════════════════════════════════ */
@@ -156,7 +210,7 @@ const AboutSection = () => (
         <span className="text-[#006d2f]">built in.</span>
       </h1>
       <p className="text-sm text-[#556b5c] max-w-lg mx-auto mb-7">
-        Your own branded store, WhatsApp marketing, QR ordering, GST invoicing, and a lot more.
+        Your own branded store, WhatsApp marketing, QR ordering, appointment booking, and a lot more.
         No commissions. No coding. Live in 20 minutes.
       </p>
       <div className="flex flex-wrap gap-3 justify-center">
@@ -167,6 +221,88 @@ const AboutSection = () => (
            className="border border-[#c8e8d2] text-[#111a14] px-6 py-2.5 rounded-lg text-sm font-semibold hover:bg-[#eaf6ef] transition-colors">
           Talk to Us on WhatsApp
         </a>
+      </div>
+    </div>
+
+    {/* ══ SERVICE INDUSTRY SECTION ══ */}
+    <div className="bg-white border-y border-[#c8e8d2] py-14">
+      <div className="max-w-4xl mx-auto px-4">
+        <Label>Built for service businesses</Label>
+        <SectionTitle>Appointment booking — without Practo, Fresha, or any commission app</SectionTitle>
+        <SectionDesc>
+          If you run a salon, clinic, spa, therapy centre, fitness studio, or any service business —
+          AapnaEstore gives you a complete online booking system on your own branded storefront.
+          Customers book directly. No middleman. No booking fees taken from your earnings.
+        </SectionDesc>
+
+        {/* who it's for */}
+        <div className="flex flex-wrap gap-2 mb-8">
+          {['💇 Salons & spas','🏥 Clinics & therapists','🧘 Yoga & fitness studios','💆 Wellness centres','🦷 Dental practices','👶 Pediatric & child care','🎨 Grooming & beauty services','🐾 Pet grooming & vet clinics','📸 Photography studios','🎓 Coaching & tutoring'].map(tag => (
+            <span key={tag} className="text-[11px] font-medium px-3 py-1 rounded-full bg-[#f3faf5] border border-[#c8e8d2] text-[#111a14]">{tag}</span>
+          ))}
+        </div>
+
+        {/* spotlight: booking system */}
+        <Spotlight
+          badge="Appointment system"
+          title="Real-time slot booking — staff-wise, live inventory, 10-min hold"
+          desc="Customers pick a service, choose a date, select a staff member, and tap an available slot. The moment they pick it, it's locked for 10 minutes so two customers can't accidentally book the same appointment. No phone calls. No WhatsApp back-and-forth."
+          bullets={[
+            'Staff-specific scheduling — each team member has their own calendar',
+            'Slot holds prevent double-bookings in real time',
+            'Works across multiple services in one cart',
+            'Countdown timer shows customers how long their hold lasts',
+            'Auto-releases if payment isn\'t completed — slot goes back to inventory',
+          ]}
+          chip="Zero double-bookings"
+          chipColor="bg-[#dff5e8] text-[#006d2f]"
+          visual={<BookingDemo />}
+        />
+
+        {/* feature cards: service biz */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-4 mb-8">
+          {[
+            { icon: '👥', title: 'Staff Member Management', desc: 'Add each staff member with their own profile. Customers can filter slots by staff name and see real availability per person.' },
+            { icon: '⏱️', title: 'Custom Service Durations', desc: 'Set the exact duration for each service. A 30-min haircut and a 90-min deep tissue massage are handled separately — no overlap.' },
+            { icon: '📅', title: 'Working Hours & Break Times', desc: 'Define your store\'s working hours, lunch breaks, and gap time between appointments. The slot grid enforces it automatically.' },
+            { icon: '📋', title: 'Appointments Dashboard', desc: 'See every booking by date and staff. Filter by today, tomorrow, or any date range. Know exactly who\'s coming in at what time.', chip: 'Store-admin only', chipColor: 'bg-[#dff5e8] text-[#006d2f]' },
+            { icon: '🖨️', title: 'Daily Schedule PDF', desc: 'Download your team\'s full appointment schedule as a PDF — ready to print and hand to front desk staff every morning.' },
+            { icon: '🔔', title: 'Booking Confirmation on WhatsApp', desc: 'Customer gets a WhatsApp confirmation the moment they book. Reduces no-shows and builds trust before they even walk in.' },
+          ].map(f => <FeatureCard key={f.title} {...f} />)}
+        </div>
+
+        {/* how booking works */}
+        <Label>How it works</Label>
+        <SectionTitle>A customer books in under 2 minutes</SectionTitle>
+        <SectionDesc>No app download. No account creation headache. Just your link — and a slot picked and paid.</SectionDesc>
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
+          {bookingSteps.map(({ n, icon, title, desc }) => (
+            <div key={n} className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-[#25D366] text-white flex items-center justify-center font-bold text-sm flex-shrink-0">{n}</div>
+                <span className="text-lg">{icon}</span>
+              </div>
+              <h4 className="text-xs font-semibold text-[#111a14]">{title}</h4>
+              <p className="text-[11px] text-[#556b5c] leading-relaxed">{desc}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* service vs product callout */}
+        <div className="bg-[#f3faf5] border border-[#c8e8d2] rounded-xl p-5 mt-6">
+          <p className="text-xs font-bold text-[#006d2f] uppercase tracking-wider mb-2">One platform, two business types</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <p className="text-sm font-semibold text-[#111a14] mb-1">🛍️ Product business (e-commerce)</p>
+              <p className="text-xs text-[#556b5c]">Customers add items to cart, pay, and you ship. Inventory tracked per product. QR ordering for walk-ins. Bulk CSV import. GST invoices generated.</p>
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-[#111a14] mb-1">📅 Service business (appointments)</p>
+              <p className="text-xs text-[#556b5c]">Customers pick a service, choose a date and staff slot, pay — and show up at their appointment time. Your admin shows who's booked with whom, when.</p>
+            </div>
+          </div>
+          <p className="text-[11px] text-[#006d2f] font-semibold mt-3">You can run both from the same store — a gym selling protein supplements and booking fitness sessions in one checkout.</p>
+        </div>
       </div>
     </div>
 
