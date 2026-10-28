@@ -20,6 +20,7 @@ const IMAGE_TYPE_ROUTE_SEGMENTS = {
     VARIANT: 'variants',
     CATEGORY: 'categories',
     RETURN: 'returns',
+    STAFF_PHOTO: 'staff',
 };
 
 const getImageTypeSegment = (imageType) => {

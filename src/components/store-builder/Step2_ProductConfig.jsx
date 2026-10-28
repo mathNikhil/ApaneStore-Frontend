@@ -72,6 +72,9 @@ const Step2_ProductConfig = () => {
   const [newStaff, setNewStaff] = React.useState({ name: '', phone: '', premiumPercent: '' });
   const [editingStaffIdx, setEditingStaffIdx] = React.useState(null);
   const [staffSaving, setStaffSaving] = React.useState(false);
+  const [staffPhotoUploading, setStaffPhotoUploading] = React.useState({});
+  const [activeStaffPhotoIdx, setActiveStaffPhotoIdx] = React.useState(null);
+  const staffPhotoInputRef = React.useRef(null);
 
   // Sync staffMembers into bookingSettings context
   React.useEffect(() => {
@@ -1408,11 +1411,60 @@ Continue?`;
               </div>
             )}
 
+            {/* Hidden file input for staff photo upload */}
+            <input
+              ref={staffPhotoInputRef}
+              type="file"
+              accept="image/*"
+              hidden
+              onChange={async (e) => {
+                const file = e.target.files[0];
+                e.target.value = '';
+                const idx = activeStaffPhotoIdx;
+                if (!file || idx === null) return;
+                setStaffPhotoUploading(prev => ({ ...prev, [idx]: true }));
+                try {
+                  const result = await imageService.uploadImage(
+                    currentStoreId,
+                    tenantId,
+                    'STAFF_PHOTO',
+                    file,
+                    `staff_${idx}`
+                  );
+                  const photoUrl = result?.data?.url || result?.url || null;
+                  if (photoUrl) {
+                    setStaffMembers(prev => prev.map((s, i) => i === idx ? { ...s, photoUrl } : s));
+                  }
+                } catch (err) {
+                  console.error('Staff photo upload failed:', err);
+                } finally {
+                  setStaffPhotoUploading(prev => ({ ...prev, [idx]: false }));
+                  setActiveStaffPhotoIdx(null);
+                }
+              }}
+            />
+
             {/* Staff list — single row per member */}
             <div className="space-y-1.5 mb-2">
               {staffMembers.map((staff, idx) => (
                 <div key={staff.id || idx} className="flex items-center gap-2 bg-[#f2f4f7] rounded-lg px-3 py-2">
-                  <span className="material-symbols-outlined text-[#006d2f] text-sm flex-shrink-0">person</span>
+                  {/* Photo circle — click to upload */}
+                  <div
+                    className="relative flex-shrink-0 w-8 h-8 rounded-full overflow-hidden cursor-pointer border-2 border-[#bbcbb9] hover:border-[#006d2f] transition-colors bg-white flex items-center justify-center"
+                    title="Click to upload photo"
+                    onClick={() => {
+                      setActiveStaffPhotoIdx(idx);
+                      setTimeout(() => staffPhotoInputRef.current?.click(), 0);
+                    }}
+                  >
+                    {staffPhotoUploading[idx] ? (
+                      <span className="material-symbols-outlined text-[#006d2f] text-xs" style={{ animation: 'spin 1s linear infinite' }}>progress_activity</span>
+                    ) : staff.photoUrl ? (
+                      <img src={staff.photoUrl} alt={staff.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="material-symbols-outlined text-[#bbcbb9] text-xs">add_a_photo</span>
+                    )}
+                  </div>
                   <span className="font-semibold text-[#191c1e] text-sm flex-[2] truncate">{staff.name}</span>
                   <span className="text-xs text-[#8e9eab] flex-[2] truncate">{staff.phone || '—'}</span>
                   <span className={`text-xs font-medium flex-shrink-0 ${staff.premiumPercent > 0 ? 'text-[#006d2f]' : 'text-[#8e9eab]'}`}>
