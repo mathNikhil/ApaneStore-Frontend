@@ -95,8 +95,42 @@ const QrDemo = () => {
   );
 };
 
-/* ── compare table ── */
-const compareRows = [
+/* ── compare tables ── */
+const cellStyle = (val, isUs) => {
+  if (isUs) return 'font-bold text-[#006d2f]';
+  if (val === '✓') return 'text-green-600';
+  if (val === '✗') return 'text-red-500';
+  return 'text-amber-600 text-xs';
+};
+
+const CompareTableBlock = ({ label, headers, rows }) => (
+  <div className="mb-8">
+    <p className="text-[10px] font-bold tracking-widest uppercase text-[#006d2f] mb-2">{label}</p>
+    <div className="overflow-x-auto rounded-xl border border-[#c8e8d2] shadow-sm">
+      <table className="w-full text-xs min-w-[540px] bg-white">
+        <thead>
+          <tr className="bg-[#006d2f] text-white">
+            {headers.map((h, i) => (
+              <th key={i} className={`px-4 py-3 font-semibold text-left ${i > 0 ? 'text-center' : ''}`}>{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(([cap, ...vals], ri) => (
+            <tr key={ri} className={ri % 2 === 0 ? 'bg-[#f3faf5]' : 'bg-white'}>
+              <td className="px-4 py-3 text-[#111a14]">{cap}</td>
+              {vals.map((v, ci) => (
+                <td key={ci} className={`px-4 py-3 text-center text-sm ${cellStyle(v, ci === 0)}`}>{v}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+);
+
+const productCompareRows = [
   ['Branded store (your name, not theirs)',    '✓','✗','✗','✓'],
   ['0% commission on all sales',               '✓','✓','✗','✓'],
   ['WhatsApp auto customer sync',              '✓','✗','✗','✗'],
@@ -109,36 +143,19 @@ const compareRows = [
   ['Payment direct to your account',          '✓','✗','✗','✓'],
   ['Guided store builder wizard',             '✓','✗','✗','~'],
 ];
-const cellStyle = (val, isUs) => {
-  if (isUs) return 'font-bold text-[#006d2f]';
-  if (val === '✓') return 'text-green-600';
-  if (val === '✗') return 'text-red-500';
-  return 'text-amber-600 text-xs';
-};
 
-const CompareTable = () => (
-  <div className="overflow-x-auto rounded-xl border border-[#c8e8d2] shadow-sm mb-6">
-    <table className="w-full text-xs min-w-[540px] bg-white">
-      <thead>
-        <tr className="bg-[#006d2f] text-white">
-          {['Capability','AapnaEstore','WhatsApp Biz','Zomato / Meesho','Dukaan'].map((h, i) => (
-            <th key={i} className={`px-4 py-3 font-semibold text-left ${i > 0 ? 'text-center' : ''}`}>{h}</th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {compareRows.map(([cap, ...vals], ri) => (
-          <tr key={ri} className={ri % 2 === 0 ? 'bg-[#f3faf5]' : 'bg-white'}>
-            <td className="px-4 py-3 text-[#111a14]">{cap}</td>
-            {vals.map((v, ci) => (
-              <td key={ci} className={`px-4 py-3 text-center text-sm ${cellStyle(v, ci === 0)}`}>{v}</td>
-            ))}
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  </div>
-);
+const serviceCompareRows = [
+  ['Your own branded booking page',              '✓','✗','✗','✗'],
+  ['Zero booking commission',                    '✓','✗','✓','✓'],
+  ['Real-time slot booking',                     '✓','✓','✗','✗'],
+  ['10-min slot hold (no double-booking)',        '✓','~','✗','✗'],
+  ['Staff-specific calendars',                   '✓','✓','✗','✗'],
+  ['Custom service durations & working hours',   '✓','✓','✗','✗'],
+  ['WhatsApp booking confirmation',              '✓','✗','~','✗'],
+  ['Daily schedule PDF (print-ready)',           '✓','~','✗','✓'],
+  ['Payment at time of booking (UPI/card)',      '✓','✓','✗','✗'],
+  ['You own the customer relationship',          '✓','✗','✓','✓'],
+];
 
 /* ── appointment booking demo visual ── */
 const BookingDemo = () => (
@@ -501,12 +518,21 @@ const AboutSection = () => (
       </div>
     </div>
 
-    {/* ══ Comparison table ══ */}
+    {/* ══ Comparison tables ══ */}
     <div className="max-w-4xl mx-auto px-4 pt-12 pb-4">
       <Label>How we compare</Label>
       <SectionTitle>AapnaEstore vs the alternatives</SectionTitle>
-      <SectionDesc>Not about price — about what each platform actually lets you do.</SectionDesc>
-      <CompareTable />
+      <SectionDesc>Both store types — product and service — compared against the tools most Indian sellers already know.</SectionDesc>
+      <CompareTableBlock
+        label="🛍️ Product Store"
+        headers={['Capability','AapnaEstore','WhatsApp Biz','Zomato / Meesho','Dukaan']}
+        rows={productCompareRows}
+      />
+      <CompareTableBlock
+        label="📅 Service Store"
+        headers={['Capability','AapnaEstore','Practo / Fresha','WhatsApp Biz','Manual / Excel']}
+        rows={serviceCompareRows}
+      />
     </div>
 
     {/* ══ How it works ══ */}
