@@ -280,11 +280,11 @@ const AboutSection = () => (
         </div>
 
         {/* Service Store card */}
-        <div className="bg-white border-2 border-[#c8e8d2] rounded-2xl p-6 flex flex-col shadow-sm">
+        <div className="bg-white border-2 border-[#006d2f] rounded-2xl p-6 flex flex-col shadow-sm">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-11 h-11 rounded-xl bg-[#dff5e8] flex items-center justify-center text-2xl">📅</div>
             <div>
-              <div className="text-[10px] font-bold tracking-widest uppercase text-[#556b5c] mb-0.5">Store Type 2</div>
+              <div className="text-[10px] font-bold tracking-widest uppercase text-[#006d2f] mb-0.5">Store Type 2</div>
               <h3 className="text-base font-bold text-[#111a14]">Service Store</h3>
             </div>
           </div>
@@ -293,7 +293,7 @@ const AboutSection = () => (
           </p>
           <div className="flex flex-wrap gap-1.5 mb-4">
             {['💇 Salons','🏥 Clinics','🧘 Yoga','💆 Spas','🦷 Dental','📸 Studios','🎓 Coaching'].map(t=>(
-              <span key={t} className="text-[10px] bg-[#f3faf5] text-[#556b5c] border border-[#c8e8d2] px-2 py-0.5 rounded-full font-medium">{t}</span>
+              <span key={t} className="text-[10px] bg-[#f3faf5] text-[#006d2f] border border-[#c8e8d2] px-2 py-0.5 rounded-full font-medium">{t}</span>
             ))}
           </div>
           <ul className="space-y-1.5 mb-5">
@@ -301,7 +301,7 @@ const AboutSection = () => (
               <li key={b} className="text-xs text-[#556b5c] pl-5 relative before:content-[\'✓\'] before:absolute before:left-0 before:text-[#25D366] before:font-bold">{b}</li>
             ))}
           </ul>
-          <a href="#service-store" className="mt-auto inline-block text-center border border-[#006d2f] text-[#006d2f] text-xs font-bold px-4 py-2 rounded-lg hover:bg-[#eaf6ef] transition-colors">
+          <a href="#service-store" className="mt-auto inline-block text-center bg-[#006d2f] text-white text-xs font-bold px-4 py-2 rounded-lg hover:bg-[#004d22] transition-colors">
             See all service store features ↓
           </a>
         </div>
