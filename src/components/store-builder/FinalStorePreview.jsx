@@ -28,7 +28,6 @@ const FinalStorePreview = () => {
 
     // ✅ Build complete builderData object - THIS IS THE ONLY PLACE DATA IS MAPPED
     const getAllBuilderData = () => {
-        console.log('🎯 getAllBuilderData - productData:', JSON.stringify({
             categoryImageShape: productData?.categoryImageShape,
             categoryImageSize: productData?.categoryImageSize,
             autoSlide: productData?.autoSlideProductImages

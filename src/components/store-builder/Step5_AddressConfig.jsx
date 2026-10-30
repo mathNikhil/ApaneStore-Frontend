@@ -28,7 +28,6 @@ const Step5_AddressConfig = () => {
 
   // Save to context on every change
   useEffect(() => {
-    console.log('Saving Step 5 data:', settings); // Debug log
     setAddressData(settings);
   }, [settings]);
 

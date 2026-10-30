@@ -487,7 +487,7 @@ function ComposeTab({ storeId, mode, groups, contacts, todayCount, isConnected, 
             {editingMessage ? 'Update & schedule' : 'Schedule message'}
           </button>
         ) : (
-          <button onClick={() => { console.log('Activate clicked, onGoSetup:', typeof onGoSetup); if (onGoSetup) onGoSetup(); }}
+          <button onClick={() => { if (onGoSetup) onGoSetup(); }}
             className="text-sm bg-[#25D366] text-white rounded-xl px-5 py-2.5 hover:bg-[#1db954] flex items-center gap-1.5">
             <i className="ti ti-lock" /> Activate to schedule
           </button>

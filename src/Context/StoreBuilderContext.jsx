@@ -274,7 +274,6 @@ export const StoreBuilderProvider = ({ children }) => {
 
     // ✅ START NEW STORE
     const startNewStore = () => {
-        console.log('🆕 Starting new store');
         localStorage.removeItem('currentStoreId');
         setCurrentStoreId(null);
         // ✅ FIX: tenantId comes from the logged-in user's session, not from
@@ -336,14 +335,12 @@ export const StoreBuilderProvider = ({ children }) => {
             // last-resort fallback for shapes that don't include a real id.
             const tenant = user.id || user.tenant_id || user.tenantId || user.current_tenant_id || user.default_tenant_id;
             if (tenant) {
-                console.log('✅ Found tenant ID from user:', tenant);
                 return tenant;
             }
             
             // Try to get from user's tenant list
             if (user.tenants && user.tenants.length > 0) {
                 const firstTenant = user.tenants[0].id || user.tenants[0].tenant_id;
-                console.log('✅ Found tenant ID from user tenants:', firstTenant);
                 return firstTenant;
             }
             
@@ -427,12 +424,10 @@ export const StoreBuilderProvider = ({ children }) => {
                 ...extraFields,
             };
 
-            console.log('📝 Saving store data:', storeData);
 
             let response;
             
             if (effectiveStoreId) {
-                console.log('🔄 Updating existing store:', effectiveStoreId);
                 response = await axios.put(
                     `${API_URL}/api/stores/${effectiveStoreId}`,
                     storeData,

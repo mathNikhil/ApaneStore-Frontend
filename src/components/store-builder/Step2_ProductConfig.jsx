@@ -636,7 +636,6 @@ Continue?`;
       setCategories(updatedCategories);
       pendingInventoryUpdates.current = inventorySnapshot;
 
-      console.log('Inventory updates queued:', inventorySnapshot.length, inventorySnapshot);
 
       // Sync inventory after save
       if (inventorySnapshot.length > 0 && currentStoreId) {
@@ -644,14 +643,12 @@ Continue?`;
         const storeId = currentStoreId;
         const doSync = async () => {
           try {
-            console.log('Calling sync-csv with', inventorySnapshot.length, 'updates for store', storeId);
             const resp = await fetch(`https://api.aapnaestore.com/api/store/${storeId}/inventory/sync-csv`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
               body: JSON.stringify({ updates: inventorySnapshot })
             });
             const data = await resp.json();
-            console.log('Inventory sync result:', data);
           } catch(err) {
             console.error('Inventory sync failed:', err);
           }
@@ -773,13 +770,11 @@ Continue?`;
         if (saveStore) saveStore().catch(err => console.error('Save after delete failed:', err));
       }, 500);
       const token = localStorage.getItem('token');
-      console.log('Delete attempt:', { currentStoreId, hasProd: !!prod, prodId: prod?.id, token: !!token });
       if (currentStoreId && token && prod) {
         fetch(`https://api.aapnaestore.com/api/store/${currentStoreId}/inventory/delete-product`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify({ productId: prod.id })
-        }).then(r => r.json()).then(d => console.log('Delete result:', d)).catch(err => console.error('Delete failed:', err));
       }
     }
   };

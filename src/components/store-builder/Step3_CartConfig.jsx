@@ -43,7 +43,6 @@ const Step3_CartConfig = () => {
 
   // Save to context on every change
   useEffect(() => {
-    console.log('Saving Step 3 data:', settings); // Debug log
     setCartData(settings);
   }, [settings]);
 

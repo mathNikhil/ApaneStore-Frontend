@@ -31,24 +31,18 @@ const StoreBuilderRouter = () => {
     const isNew = searchParams.get('new') === 'true';
 
     useEffect(() => {
-        console.log('🔍 StoreBuilderRouter - storeId from URL:', storeId);
-        console.log('🔍 StoreBuilderRouter - currentStoreId in Context:', currentStoreId);
 
         if (isNew) {
-            console.log('🆕 New store requested');
             startNewStore();
         } else if (storeId && storeId !== 'null' && storeId !== 'undefined') {
             if (storeId !== currentStoreId) {
-                console.log('📡 Loading store:', storeId);
                 loadStore(storeId);
             }
         } else {
             // CRITICAL FIX: Only start a new store if there is NO existing store running.
             if (!currentStoreId) {
-                console.log('🆕 Starting new store');
                 startNewStore();
             } else {
-                console.log('⏸️ Keeping existing store loaded:', currentStoreId);
             }
         }
     }, [storeId, currentStoreId]);

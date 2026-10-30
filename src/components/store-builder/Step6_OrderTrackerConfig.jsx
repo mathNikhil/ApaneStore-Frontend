@@ -22,7 +22,6 @@ const Step6_OrderTrackerConfig = () => {
 
   // Save to context on every change
   useEffect(() => {
-    console.log('Saving Step 6 data:', settings); // Debug log
     setOrderData(settings);
   }, [settings]);
 

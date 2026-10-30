@@ -15,7 +15,6 @@ import { DeviceFrameContext } from './DeviceFrameContext';
 // exact same component in both places: what the tenant tests is what their
 // customers get, byte for byte.
 const StorefrontApp = ({ builderData, storeId, device = 'desktop', className = '', style = {} }) => {
-    console.log('🔍 StorefrontApp builderData.products:', JSON.stringify({
         categoryImageShape: builderData?.products?.categoryImageShape,
         categoryImageSize: builderData?.products?.categoryImageSize,
         autoSlide: builderData?.products?.autoSlideProductImages,
@@ -93,7 +92,6 @@ const StorefrontApp = ({ builderData, storeId, device = 'desktop', className = '
   useEffect(() => {
     const heading = builderData?.brand?.fonts?.body || builderData?.brand?.fonts?.heading || builderData?.bodyFont || 'Inter';
     const body = builderData?.brand?.fonts?.body || builderData?.bodyFont || 'Inter';
-    console.log('🔤 Loading fonts:', heading, body);
     const fonts = [...new Set([heading, body])].map(f => f.replace(/ /g, '+') + ':wght@400;500;600;700').join('&family=');
     const linkId = 'store-google-fonts';
     let link = document.getElementById(linkId);

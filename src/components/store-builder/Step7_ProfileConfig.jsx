@@ -135,7 +135,6 @@ const Step7_ProfileConfig = () => {
   };
 
   var handleCloseAndSaveDraft = function() {
-    console.log('Close & Save - draft saved');
     navigate('/dashboard');
   };
 

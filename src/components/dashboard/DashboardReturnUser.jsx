@@ -40,8 +40,6 @@ const DashboardReturnUser = ({ stores = [], subscriptions = {}, onStoreUpdate })
         inactive: stores.filter(s => s.status === 'inactive').length,
     };
 
-    console.log('🔄 DashboardReturnUser - All Stores:', stores.length);
-    console.log('📊 Stats:', stats);
 
     return (
         <div className="min-h-screen bg-[#f7f9fc] pb-24 lg:pb-0">

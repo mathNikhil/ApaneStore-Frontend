@@ -286,10 +286,8 @@ const Step1_BrandSetup = () => {
     // and Continue would be permanently blocked for first-time tenants.
     if (tenantId) {
       setIsReady(true);
-      console.log('✅ Step 1 is ready! Store:', currentStoreId || '(new)', 'Tenant:', tenantId);
     } else {
       setIsReady(false);
-      console.log('⏳ Step 1 waiting for tenant ID...');
     }
   }, [currentStoreId, tenantId]);
 
@@ -391,7 +389,6 @@ const Step1_BrandSetup = () => {
       // one, like an image upload. The previous order uploaded the logo
       // first using currentStoreId — which is null for a new store, since
       // nothing has created it yet — permanently blocking first-time setup.
-      console.log('💾 Saving brand data to backend...');
       let saveResult = await saveStore();
 
       if (!saveResult.success) {
@@ -404,7 +401,6 @@ const Step1_BrandSetup = () => {
 
       // Only upload if a NEW file was actually selected.
       if (logoData && logoData.file) {
-        console.log('📤 Uploading new logo to backend...');
         const response = await imageService.uploadImage(
           savedStoreId,
           tenantId,
@@ -419,7 +415,6 @@ const Step1_BrandSetup = () => {
         }
 
         setLogoPreview(response.data.url);
-        console.log('✅ Logo uploaded successfully.');
 
         // Save again to persist the new logo URL now that we have it.
         // Passing savedStoreId explicitly avoids saveStore() mistaking this
@@ -432,7 +427,6 @@ const Step1_BrandSetup = () => {
           return;
         }
       } else {
-        console.log('ℹ️ No new logo selected. Skipping upload.');
       }
 
       navigate(`/store-builder/step/2?storeId=${saveResult.data?.data?.id || savedStoreId}`);
