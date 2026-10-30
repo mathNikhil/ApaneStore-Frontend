@@ -224,8 +224,76 @@ const AboutSection = () => (
       </div>
     </div>
 
+    {/* ══ TWO STORE TYPES ══ */}
+    <div className="max-w-4xl mx-auto px-4 pt-10 pb-2">
+      <div className="text-center mb-6">
+        <Label>Two types of stores</Label>
+        <SectionTitle>What kind of business are you?</SectionTitle>
+        <p className="text-sm text-[#556b5c] max-w-lg mx-auto">
+          AapnaEstore works for both — products you ship, and services you book. See what's built for your type.
+        </p>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-2">
+
+        {/* Product Store card */}
+        <div className="bg-white border-2 border-[#006d2f] rounded-2xl p-6 flex flex-col shadow-sm">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-11 h-11 rounded-xl bg-[#dff5e8] flex items-center justify-center text-2xl">🛍️</div>
+            <div>
+              <div className="text-[10px] font-bold tracking-widest uppercase text-[#006d2f] mb-0.5">Store Type 1</div>
+              <h3 className="text-base font-bold text-[#111a14]">Product Store</h3>
+            </div>
+          </div>
+          <p className="text-xs text-[#556b5c] leading-relaxed mb-4">
+            Sell physical products online. Customers browse, add to cart, pay — you ship. Built for fashion, food, electronics, grocery, handicrafts, and any product-based business.
+          </p>
+          <div className="flex flex-wrap gap-1.5 mb-4">
+            {['👗 Fashion','🍱 Food','📱 Electronics','🛒 Grocery','🎁 Gifts','🏪 Any product'].map(t=>(
+              <span key={t} className="text-[10px] bg-[#f3faf5] text-[#006d2f] border border-[#c8e8d2] px-2 py-0.5 rounded-full font-medium">{t}</span>
+            ))}
+          </div>
+          <ul className="space-y-1.5 mb-5">
+            {['Branded online storefront','Inventory & stock management','UPI, cards, net banking payments','WhatsApp auto-sync & cart recovery','QR ordering + dine-in mode','GST invoice auto-generation','Bulk product import via CSV'].map(b=>(
+              <li key={b} className="text-xs text-[#556b5c] pl-5 relative before:content-[\'✓\'] before:absolute before:left-0 before:text-[#25D366] before:font-bold">{b}</li>
+            ))}
+          </ul>
+          <a href="#product-store" className="mt-auto inline-block text-center bg-[#006d2f] text-white text-xs font-bold px-4 py-2 rounded-lg hover:bg-[#004d22] transition-colors">
+            See all product store features ↓
+          </a>
+        </div>
+
+        {/* Service Store card */}
+        <div className="bg-white border-2 border-[#c8e8d2] rounded-2xl p-6 flex flex-col shadow-sm">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-11 h-11 rounded-xl bg-[#dff5e8] flex items-center justify-center text-2xl">📅</div>
+            <div>
+              <div className="text-[10px] font-bold tracking-widest uppercase text-[#556b5c] mb-0.5">Store Type 2</div>
+              <h3 className="text-base font-bold text-[#111a14]">Service Store</h3>
+            </div>
+          </div>
+          <p className="text-xs text-[#556b5c] leading-relaxed mb-4">
+            Sell your time and expertise. Customers book appointments directly — no Practo, no Fresha, no commission. Built for salons, clinics, studios, and any service-based business.
+          </p>
+          <div className="flex flex-wrap gap-1.5 mb-4">
+            {['💇 Salons','🏥 Clinics','🧘 Yoga','💆 Spas','🦷 Dental','📸 Studios','🎓 Coaching'].map(t=>(
+              <span key={t} className="text-[10px] bg-[#f3faf5] text-[#556b5c] border border-[#c8e8d2] px-2 py-0.5 rounded-full font-medium">{t}</span>
+            ))}
+          </div>
+          <ul className="space-y-1.5 mb-5">
+            {['Real-time slot booking with 10-min hold','Staff-specific scheduling & calendars','Custom service durations & working hours','Appointments dashboard (by date & staff)','WhatsApp booking confirmation','Daily schedule PDF — print-ready','Zero booking commission, ever'].map(b=>(
+              <li key={b} className="text-xs text-[#556b5c] pl-5 relative before:content-[\'✓\'] before:absolute before:left-0 before:text-[#25D366] before:font-bold">{b}</li>
+            ))}
+          </ul>
+          <a href="#service-store" className="mt-auto inline-block text-center border border-[#006d2f] text-[#006d2f] text-xs font-bold px-4 py-2 rounded-lg hover:bg-[#eaf6ef] transition-colors">
+            See all service store features ↓
+          </a>
+        </div>
+
+      </div>
+    </div>
+
     {/* ══ SERVICE INDUSTRY SECTION ══ */}
-    <div className="bg-white border-y border-[#c8e8d2] py-14">
+    <div id="service-store" className="bg-white border-y border-[#c8e8d2] py-14">
       <div className="max-w-4xl mx-auto px-4">
         <Label>Built for service businesses</Label>
         <SectionTitle>Appointment booking — without Practo, Fresha, or any commission app</SectionTitle>
@@ -324,7 +392,7 @@ const AboutSection = () => (
     </div>
 
     {/* ══ LAYER 1: Core features ══ */}
-    <div className="max-w-4xl mx-auto px-4 pt-12 pb-4">
+    <div id="product-store" className="max-w-4xl mx-auto px-4 pt-12 pb-4">
       <Label>Layer 1 — Core platform</Label>
       <SectionTitle>Top eStore features</SectionTitle>
       <SectionDesc>The foundation every seller gets — from day one, all included.</SectionDesc>
