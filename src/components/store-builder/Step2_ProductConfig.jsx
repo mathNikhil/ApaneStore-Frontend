@@ -777,6 +777,7 @@ Continue?`;
           body: JSON.stringify({ productId: prod.id })
         }).catch(err => console.error('Delete from inventory failed:', err));
       }
+    }
   };
 
   const addVariation = (categoryId, productId) => {
