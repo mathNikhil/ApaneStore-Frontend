@@ -54,7 +54,7 @@ const LoginPage = () => {
       if (data.success && !data.isNewTenant) {
         saveAndRedirect(data.token, data.tenant);
       } else if (data.success && data.isNewTenant) {
-        setGoogleProfile(data);
+        setGoogleProfile({ ...data, credential });  // SECURITY: keep credential for /google/complete
         setCompanyName(data.name || '');
         setShowLinkPhone(true);
       } else {
@@ -119,7 +119,7 @@ const LoginPage = () => {
     try {
       const res = await fetch(API + '/api/auth/google/complete', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ googleId: googleProfile.googleId, email: googleProfile.email, name: googleProfile.name, company_name: companyName, business_type: businessType, phone: businessPhone })
+        body: JSON.stringify({ credential: googleProfile.credential, name: googleProfile.name, company_name: companyName, business_type: businessType, phone: businessPhone })
       });
       const data = await res.json();
       if (data.success) { saveAndRedirect(data.token, data.tenant); }
