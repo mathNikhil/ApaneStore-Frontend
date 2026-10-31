@@ -28,10 +28,6 @@ const FinalStorePreview = () => {
 
     // ✅ Build complete builderData object - THIS IS THE ONLY PLACE DATA IS MAPPED
     const getAllBuilderData = () => {
-            categoryImageShape: productData?.categoryImageShape,
-            categoryImageSize: productData?.categoryImageSize,
-            autoSlide: productData?.autoSlideProductImages
-        }));
         return {
             brand: {
                 brandName: brandData.brandName || '',
