@@ -15,11 +15,6 @@ import { DeviceFrameContext } from './DeviceFrameContext';
 // exact same component in both places: what the tenant tests is what their
 // customers get, byte for byte.
 const StorefrontApp = ({ builderData, storeId, device = 'desktop', className = '', style = {} }) => {
-        categoryImageShape: builderData?.products?.categoryImageShape,
-        categoryImageSize: builderData?.products?.categoryImageSize,
-        autoSlide: builderData?.products?.autoSlideProductImages,
-        addToCartLabel: builderData?.products?.addToCartLabel
-    }));
   const [activeTab, setActiveTab] = useState('home');
   // ✅ Real customer session (was just the phone string before, from a fake
   // login). Persisted per-store in localStorage so a returning customer
