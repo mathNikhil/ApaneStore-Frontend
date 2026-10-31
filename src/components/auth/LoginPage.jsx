@@ -89,7 +89,8 @@ const LoginPage = () => {
     try {
       const res = await fetch(API + '/api/auth/google/link-phone', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ googleId: googleProfile.isFacebook ? null : googleProfile.googleId, facebookId: googleProfile.isFacebook ? googleProfile.facebookId : null, email: googleProfile.email, name: googleProfile.name, phone: linkPhone })
+        // SECURITY: send credential (idToken) not raw googleId — backend re-verifies with Google
+        body: JSON.stringify({ credential: googleProfile.credential, phone: linkPhone })
       });
       const data = await res.json();
       if (data.success && data.linked) {
