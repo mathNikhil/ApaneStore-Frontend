@@ -1,27 +1,19 @@
-import { showSuccess, showError } from '../../utils/toast';
+import { showError } from '../../utils/toast';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import TopAppBar from '../Common/TopAppBar';
-import Input from '../Common/Input';
-import { useAuth } from '../../Context/AuthContext';
 import logo from '../../assets/images/Apnaestore-Logo.png';
 
 const API = import.meta.env.VITE_API_URL || 'https://api.aapnaestore.com';
 
-// Test-user mobile login — only rendered when VITE_TEST_MOBILES is set and
-// the entered phone matches. Hidden from all real users; primary auth is Google.
-const TEST_MOBILES = (import.meta.env.VITE_TEST_MOBILES || '').split(',').map(m => m.trim()).filter(Boolean);
-const TEST_PASSWORD = import.meta.env.VITE_TEST_PASSWORD || '';
+const DEMO_PHONE = '6666666666';
+const DEMO_OTP = '201807';
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const { sendOTP } = useAuth();
 
-  const [mobile, setMobile] = useState('');
-  const [testPassword, setTestPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  // OTP form is only surfaced for test mobiles — not a public login path
-  const [showOtpForm, setShowOtpForm] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
 
   // Google states
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -125,30 +117,21 @@ const LoginPage = () => {
     setGoogleLoading(false);
   };
 
-  const handleOtpSubmit = async (e) => {
-    e.preventDefault();
-    if (mobile.length !== 10) { showError('Please enter a valid 10-digit mobile number'); return; }
-    setLoading(true);
+  const handleDemoLogin = async () => {
+    setDemoLoading(true);
     try {
-      if (TEST_MOBILES.includes(mobile)) {
-        if (!testPassword) { showError('Please enter your password'); setLoading(false); return; }
-        if (testPassword !== TEST_PASSWORD) { showError('Invalid password'); setLoading(false); return; }
-        await sendOTP(mobile, 'login');
-        navigate('/verify-otp', { state: { mobile, devOtp: '201807' } });
-        setLoading(false); return;
+      const res = await fetch(API + '/api/auth/otp/verify', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: DEMO_PHONE, otp: DEMO_OTP })
+      });
+      const data = await res.json();
+      if (data.success) {
+        saveAndRedirect(data.data.token, data.data.tenant);
+      } else {
+        showError(data.message || 'Demo login failed');
       }
-      const savedToken = localStorage.getItem('token');
-      const savedMobile = localStorage.getItem('lastMobile');
-      const savedFingerprint = localStorage.getItem('deviceFingerprint');
-      const loginTime = parseInt(localStorage.getItem('loginTime') || '0');
-      const twelveHours = 12 * 60 * 60 * 1000;
-      if (savedToken && savedMobile === mobile && savedFingerprint === getDeviceFingerprint() && Date.now() - loginTime < twelveHours) {
-        navigate('/dashboard'); setLoading(false); return;
-      }
-      await sendOTP(mobile, 'login');
-      navigate('/verify-otp', { state: { mobile } });
-    } catch(e) { showError(e.message || 'Failed to send OTP'); }
-    setLoading(false);
+    } catch(e) { showError('Demo login failed'); }
+    setDemoLoading(false);
   };
 
   React.useEffect(() => {
@@ -292,38 +275,13 @@ const LoginPage = () => {
             Continue with Facebook
           </button>
 
-          {/* OTP toggle — only rendered when VITE_TEST_MOBILES is set (dev/staging).
-              In production the env var is empty so this entire block disappears. */}
-          {TEST_MOBILES.length > 0 && (
-            <div className="text-center mt-4">
-              <button type="button" onClick={() => setShowOtpForm(f => !f)}
-                className="text-sm text-[#8e9eab] underline hover:text-[#556067]">
-                {showOtpForm ? 'Hide mobile login' : 'Login with mobile number instead'}
-              </button>
-            </div>
-          )}
-
-          {TEST_MOBILES.length > 0 && showOtpForm && (
-            <div className="mt-4 pt-4 border-t border-[#e0e3e6]">
-              <form onSubmit={handleOtpSubmit} className="space-y-4">
-                <Input label="Mobile Number" prefix="+91" placeholder="Enter mobile number"
-                  maxLength={10} type="tel" inputMode="numeric" pattern="[0-9]*"
-                  value={mobile} onChange={(e) => setMobile(e.target.value.replace(/\D/g, ''))} required />
-                {mobile.length === 10 && TEST_MOBILES.includes(mobile) && (
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold text-[#3c4a3d] uppercase tracking-wider">Password</label>
-                    <input type="password" value={testPassword} onChange={e => setTestPassword(e.target.value)}
-                      placeholder="Enter password"
-                      className="w-full border border-[#bbcbb9] rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#006d2f]" />
-                  </div>
-                )}
-                <button type="submit" disabled={loading}
-                  className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#25D366] text-[#005523] font-bold text-base rounded-xl hover:brightness-105 active:scale-[0.98] transition-all disabled:opacity-50">
-                  {loading ? <span className="material-symbols-outlined animate-spin">progress_activity</span> : <>Get OTP <span className="material-symbols-outlined text-xl">arrow_forward</span></>}
-                </button>
-              </form>
-            </div>
-          )}
+          {/* Demo login — one-click, no OTP step, hardcoded test account */}
+          <div className="text-center mt-3">
+            <button type="button" onClick={handleDemoLogin} disabled={demoLoading}
+              className="text-xs text-[#aab4bb] hover:text-[#556067] transition-colors disabled:opacity-50">
+              {demoLoading ? 'Signing in...' : 'Demo Login'}
+            </button>
+          </div>
 
           <div className="mt-6 pt-4 border-t border-[#bbcbb9] text-center">
             <p className="text-xs text-[#3c4a3d]">
