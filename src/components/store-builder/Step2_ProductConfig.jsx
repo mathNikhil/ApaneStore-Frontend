@@ -775,8 +775,8 @@ Continue?`;
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify({ productId: prod.id })
+        }).catch(err => console.error('Delete from inventory failed:', err));
       }
-    }
   };
 
   const addVariation = (categoryId, productId) => {
