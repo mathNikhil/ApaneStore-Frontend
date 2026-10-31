@@ -14,7 +14,10 @@ const FacebookAuthPopup = () => {
 
   const sendToParent = (data) => {
     if (window.opener) {
-      window.opener.postMessage({ type: 'FACEBOOK_AUTH_RESULT', ...data }, '*');
+      // SEC-032: Use specific origin instead of '*' so auth tokens can't be
+      // intercepted by a malicious page that opened this popup.
+      const targetOrigin = window.opener.location?.origin || 'https://aapnaestore.com';
+      window.opener.postMessage({ type: 'FACEBOOK_AUTH_RESULT', ...data }, targetOrigin);
       setTimeout(() => window.close(), 300);
     }
   };

@@ -1,2 +1,7 @@
 node_modules/
 dist/
+
+# SEC-019: Environment files with secrets must not be committed
+.env
+.env.local
+.env.*.local
