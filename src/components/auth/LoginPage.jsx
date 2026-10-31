@@ -6,24 +6,21 @@ import Input from '../Common/Input';
 import { useAuth } from '../../Context/AuthContext';
 import logo from '../../assets/images/Apnaestore-Logo.png';
 
-const getDeviceFingerprint = () => {
-  const raw = [navigator.userAgent, screen.width + 'x' + screen.height, Intl.DateTimeFormat().resolvedOptions().timeZone, navigator.language].join('|');
-  let hash = 0;
-  for (let i = 0; i < raw.length; i++) { hash = ((hash << 5) - hash) + raw.charCodeAt(i); hash |= 0; }
-  return String(Math.abs(hash));
-};
-
 const API = import.meta.env.VITE_API_URL || 'https://api.aapnaestore.com';
+
+// Test-user mobile login — only rendered when VITE_TEST_MOBILES is set and
+// the entered phone matches. Hidden from all real users; primary auth is Google.
+const TEST_MOBILES = (import.meta.env.VITE_TEST_MOBILES || '').split(',').map(m => m.trim()).filter(Boolean);
+const TEST_PASSWORD = import.meta.env.VITE_TEST_PASSWORD || '';
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const { sendOTP } = useAuth();
-  const TEST_MOBILES = (import.meta.env.VITE_TEST_MOBILES || '').split(',').map(m => m.trim());
-  const TEST_PASSWORD = import.meta.env.VITE_TEST_PASSWORD || '';
 
   const [mobile, setMobile] = useState('');
   const [testPassword, setTestPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  // OTP form is only surfaced for test mobiles — not a public login path
   const [showOtpForm, setShowOtpForm] = useState(false);
 
   // Google states
@@ -295,8 +292,8 @@ const LoginPage = () => {
             Continue with Facebook
           </button>
 
-          {/* OTP — Secondary */}
-          {showOtpForm && (
+          {/* OTP form — only visible to test mobiles, hidden from real users */}
+          {TEST_MOBILES.length > 0 && showOtpForm && (
             <div className="mt-4 pt-4 border-t border-[#e0e3e6]">
               <form onSubmit={handleOtpSubmit} className="space-y-4">
                 <Input label="Mobile Number" prefix="+91" placeholder="Enter mobile number"
@@ -317,13 +314,6 @@ const LoginPage = () => {
               </form>
             </div>
           )}
-
-          <div className="text-center mt-4">
-            <button type="button" onClick={() => setShowOtpForm(f => !f)}
-              className="text-sm text-[#8e9eab] underline hover:text-[#556067]">
-              {showOtpForm ? 'Hide mobile login' : 'Login with mobile number instead'}
-            </button>
-          </div>
 
           <div className="mt-6 pt-4 border-t border-[#bbcbb9] text-center">
             <p className="text-xs text-[#3c4a3d]">
