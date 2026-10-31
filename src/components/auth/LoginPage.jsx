@@ -14,6 +14,8 @@ const LoginPage = () => {
 
   const [loading, setLoading] = useState(false);
   const [demoLoading, setDemoLoading] = useState(false);
+  const [showDemoModal, setShowDemoModal] = useState(false);
+  const [demoPassword, setDemoPassword] = useState('');
 
   // Google states
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -117,7 +119,13 @@ const LoginPage = () => {
     setGoogleLoading(false);
   };
 
-  const handleDemoLogin = async () => {
+  const handleDemoLogin = async (e) => {
+    e.preventDefault();
+    const DEMO_PASS = import.meta.env.VITE_TEST_PASSWORD || '';
+    if (!DEMO_PASS || demoPassword !== DEMO_PASS) {
+      showError('Incorrect password');
+      return;
+    }
     setDemoLoading(true);
     try {
       const res = await fetch(API + '/api/auth/otp/verify', {
@@ -132,6 +140,7 @@ const LoginPage = () => {
       }
     } catch(e) { showError('Demo login failed'); }
     setDemoLoading(false);
+    setShowDemoModal(false);
   };
 
   React.useEffect(() => {
@@ -275,13 +284,42 @@ const LoginPage = () => {
             Continue with Facebook
           </button>
 
-          {/* Demo login — one-click, no OTP step, hardcoded test account */}
+          {/* Demo login trigger */}
           <div className="text-center mt-3">
-            <button type="button" onClick={handleDemoLogin} disabled={demoLoading}
-              className="text-xs text-[#aab4bb] hover:text-[#556067] transition-colors disabled:opacity-50">
-              {demoLoading ? 'Signing in...' : 'Demo Login'}
+            <button type="button" onClick={() => { setDemoPassword(''); setShowDemoModal(true); }}
+              className="text-xs text-[#aab4bb] hover:text-[#556067] transition-colors">
+              Demo Login
             </button>
           </div>
+
+          {/* Demo login modal */}
+          {showDemoModal && (
+            <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4"
+              onClick={(e) => { if (e.target === e.currentTarget) setShowDemoModal(false); }}>
+              <div className="bg-white rounded-xl shadow-xl w-full max-w-xs p-6">
+                <h2 className="font-semibold text-[#191c1e] mb-1">Demo Access</h2>
+                <p className="text-xs text-[#556067] mb-4">Enter the demo password to continue.</p>
+                <form onSubmit={handleDemoLogin} className="space-y-3">
+                  <input
+                    type="password"
+                    value={demoPassword}
+                    onChange={e => setDemoPassword(e.target.value)}
+                    placeholder="Password"
+                    autoFocus
+                    className="w-full border border-[#bbcbb9] rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#006d2f]"
+                  />
+                  <button type="submit" disabled={demoLoading}
+                    className="w-full py-3 bg-[#25D366] text-[#005523] font-bold rounded-xl hover:brightness-105 disabled:opacity-50 text-sm">
+                    {demoLoading ? 'Signing in...' : 'Enter'}
+                  </button>
+                  <button type="button" onClick={() => setShowDemoModal(false)}
+                    className="w-full py-2 text-xs text-[#8e9eab] hover:text-[#556067]">
+                    Cancel
+                  </button>
+                </form>
+              </div>
+            </div>
+          )}
 
           <div className="mt-6 pt-4 border-t border-[#bbcbb9] text-center">
             <p className="text-xs text-[#3c4a3d]">
