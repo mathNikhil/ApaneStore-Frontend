@@ -292,7 +292,17 @@ const LoginPage = () => {
             Continue with Facebook
           </button>
 
-          {/* OTP form — only visible to test mobiles, hidden from real users */}
+          {/* OTP toggle — only rendered when VITE_TEST_MOBILES is set (dev/staging).
+              In production the env var is empty so this entire block disappears. */}
+          {TEST_MOBILES.length > 0 && (
+            <div className="text-center mt-4">
+              <button type="button" onClick={() => setShowOtpForm(f => !f)}
+                className="text-sm text-[#8e9eab] underline hover:text-[#556067]">
+                {showOtpForm ? 'Hide mobile login' : 'Login with mobile number instead'}
+              </button>
+            </div>
+          )}
+
           {TEST_MOBILES.length > 0 && showOtpForm && (
             <div className="mt-4 pt-4 border-t border-[#e0e3e6]">
               <form onSubmit={handleOtpSubmit} className="space-y-4">
