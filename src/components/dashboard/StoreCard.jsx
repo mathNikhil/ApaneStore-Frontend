@@ -144,13 +144,25 @@ const StoreCard = ({ store, subscriptions = {}, onStoreUpdate }) => {
     };
 
     // ── password ─────────────────────────────────────────
+    const [passwordRequiresReset, setPasswordRequiresReset] = useState(false);
+    const [passwordNote, setPasswordNote] = useState(null);
+
     const handleTogglePassword = async () => {
         if (passwordVisible) { setPasswordVisible(false); return; }
         if (password) { setPasswordVisible(true); return; }
         setPasswordLoading(true);
         try {
             const result = await storeAPI.getAdminPassword(store.id);
-            if (result.success) { setPassword(result.data.password); setPasswordVisible(true); }
+            if (result.success) {
+                if (result.data.requiresReset || !result.data.password) {
+                    setPasswordRequiresReset(true);
+                    setPasswordNote(result.data.note || 'Password stored securely and cannot be retrieved. Generate a new one to share with staff.');
+                } else {
+                    setPassword(result.data.password);
+                    setPasswordNote(result.data.note || null);
+                    setPasswordVisible(true);
+                }
+            }
         } catch { console.error('Failed to fetch password'); }
         finally { setPasswordLoading(false); }
     };
@@ -160,7 +172,12 @@ const StoreCard = ({ store, subscriptions = {}, onStoreUpdate }) => {
         setPasswordLoading(true);
         try {
             const result = await storeAPI.generateAdminPassword(store.id);
-            if (result.success) { setPassword(result.data.password); setPasswordVisible(true); }
+            if (result.success) {
+                setPassword(result.data.password);
+                setPasswordNote(result.data.note || 'Save this password — it cannot be retrieved again.');
+                setPasswordRequiresReset(false);
+                setPasswordVisible(true);
+            }
         } catch { showError('Failed to generate password.'); }
         finally { setPasswordLoading(false); }
     };
@@ -387,7 +404,17 @@ const StoreCard = ({ store, subscriptions = {}, onStoreUpdate }) => {
                         ↻ Generate New
                     </button>
                 </div>
-                <p style={s.adminHint}>Share with staff to manage orders and customers. One login at a time.</p>
+                {passwordRequiresReset && (
+                    <p style={{ fontSize: '12px', color: '#b45309', marginTop: '6px', background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: '6px', padding: '6px 10px' }}>
+                        🔐 {passwordNote}
+                    </p>
+                )}
+                {passwordNote && !passwordRequiresReset && passwordVisible && (
+                    <p style={{ fontSize: '12px', color: '#b45309', marginTop: '6px', background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: '6px', padding: '6px 10px' }}>
+                        ⚠️ {passwordNote}
+                    </p>
+                )}
+                <p style={s.adminHint}>Share with staff to manage orders and customers. Owner and staff can log in simultaneously.</p>
             </div>
 
             {/* ── Add-ons accordion ── */}
