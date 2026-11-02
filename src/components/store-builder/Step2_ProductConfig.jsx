@@ -514,6 +514,7 @@ const Step2_ProductConfig = () => {
           unit: String(row['unit'] || '').trim(),
           price: String(row['price'] || '').trim(),
           gstRate: row['gst_rate'] !== undefined && row['gst_rate'] !== '' ? Number(row['gst_rate']) : null,
+          hsnCode: row['hsn_code'] !== undefined && row['hsn_code'] !== '' ? String(row['hsn_code']).trim() : null,
           inStock: row['InStock'] !== undefined && row['InStock'] !== '' ? String(row['InStock']) : '',
           csvSizeId: String(row['size_id'] || '').trim()
         })).filter(r => r.catName && r.prodName);
@@ -528,6 +529,7 @@ const Step2_ProductConfig = () => {
         const unitIdx = headers.indexOf('unit');
         const priceIdx = headers.indexOf('price');
         const gstRateIdx = headers.indexOf('gst_rate');
+        const hsnCodeIdx = headers.indexOf('hsn_code');
         const inStockIdx = headers.indexOf('instock');
         const sizeIdCsvIdx = headers.indexOf('size_id');
         if (catIdx === -1 || prodIdx === -1) {
@@ -546,6 +548,7 @@ const Step2_ProductConfig = () => {
             unit: cols[unitIdx] || '',
             price: cols[priceIdx] || '',
             gstRate: gstRateIdx !== -1 && cols[gstRateIdx] !== '' ? Number(cols[gstRateIdx]) : null,
+            hsnCode: hsnCodeIdx !== -1 && cols[hsnCodeIdx] !== '' ? cols[hsnCodeIdx].trim() : null,
             inStock: inStockIdx !== -1 ? cols[inStockIdx] : '',
             csvSizeId: sizeIdCsvIdx !== -1 ? (() => {
               const raw = (cols[sizeIdCsvIdx] || '').trim();
@@ -603,10 +606,11 @@ Continue?`;
 
           let prod = cat.products.find(p => p.name.toLowerCase() === prodName.toLowerCase());
           if (!prod) {
-            prod = { id: generateId(), name: prodName, description: '', images: [], bulkPricing: false, discount: 0, gstRate: row.gstRate ?? null, variations: [] };
+            prod = { id: generateId(), name: prodName, description: '', images: [], bulkPricing: false, discount: 0, gstRate: row.gstRate ?? null, hsnCode: row.hsnCode ?? null, variations: [] };
             cat.products.push(prod);
-          } else if (row.gstRate !== null && row.gstRate !== undefined) {
-            prod.gstRate = row.gstRate;
+          } else {
+            if (row.gstRate !== null && row.gstRate !== undefined) prod.gstRate = row.gstRate;
+            if (row.hsnCode !== null && row.hsnCode !== undefined) prod.hsnCode = row.hsnCode;
           }
 
           let vari = prod.variations.find(v => v.name.toLowerCase() === varName.toLowerCase());
@@ -673,23 +677,24 @@ Continue?`;
       }
     } catch(err) { console.warn('Could not fetch inventory:', err); }
 
-    const rows = [['category_name','product_name','variation_name','size','unit','price','gst_rate','InStock','size_id']];
+    const rows = [['category_name','product_name','variation_name','size','unit','price','gst_rate','hsn_code','InStock','size_id']];
     categories.forEach(cat => {
       (cat.products || []).filter(p => !p._archived).forEach(prod => {
         (prod.variations || []).forEach(vari => {
           (vari.sizes || []).forEach(sz => {
             const currentStock = stockMap[String(sz.id)] !== undefined ? stockMap[String(sz.id)] : 0;
-            rows.push([cat.name||'', prod.name||'', vari.name||'', sz.size||'', sz.unit||'', sz.price||'', prod.gstRate !== null && prod.gstRate !== undefined ? prod.gstRate : '', currentStock, String(sz.id||'')]);
+            rows.push([cat.name||'', prod.name||'', vari.name||'', sz.size||'', sz.unit||'', sz.price||'', prod.gstRate !== null && prod.gstRate !== undefined ? prod.gstRate : '', prod.hsnCode || '', currentStock, String(sz.id||'')]);
           });
         });
       });
     });
 
     const ws = XLSX.utils.aoa_to_sheet(rows);
-    // Force size_id column (H=index 7) as text to prevent Excel scientific notation
+    // Force size_id column (J=index 9) as text to prevent Excel scientific notation
+    // Column order: category_name, product_name, variation_name, size, unit, price, gst_rate, hsn_code, InStock, size_id
     const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
     for (let r = 1; r <= range.e.r; r++) {
-      const cellAddr = XLSX.utils.encode_cell({ r, c: 8 });
+      const cellAddr = XLSX.utils.encode_cell({ r, c: 9 });
       if (ws[cellAddr]) { ws[cellAddr].t = 's'; ws[cellAddr].v = String(ws[cellAddr].v); }
     }
     const wb = XLSX.utils.book_new();
@@ -699,14 +704,14 @@ Continue?`;
 
   const downloadCSVTemplate = () => {
     const rows = [
-      ['category_name','product_name','variation_name','size','unit','price','gst_rate','InStock'],
-      ['Shoes','Leather Shoes','Black','7','UK','654','50'],
-      ['Shoes','Leather Shoes','Black','8','UK','654','30'],
-      ['Shoes','Leather Shoes','Black','9','UK','654','20'],
-      ['Shoes','Leather Shoes','Tan','7','UK','647','15'],
-      ['Shoes','Leather Shoes','Tan','8','UK','647','10'],
-      ['Cakes','Birthday Cake','Chocolate','500','g','550','5'],
-      ['Cakes','Birthday Cake','Vanilla','500','g','500','8'],
+      ['category_name','product_name','variation_name','size','unit','price','gst_rate','hsn_code','InStock'],
+      ['Shoes','Leather Shoes','Black','7','UK','654','5','6403','50'],
+      ['Shoes','Leather Shoes','Black','8','UK','654','5','6403','30'],
+      ['Shoes','Leather Shoes','Black','9','UK','654','5','6403','20'],
+      ['Shoes','Leather Shoes','Tan','7','UK','647','5','6403','15'],
+      ['Shoes','Leather Shoes','Tan','8','UK','647','5','6403','10'],
+      ['Cakes','Birthday Cake','Chocolate','500','g','550','18','1905','5'],
+      ['Cakes','Birthday Cake','Vanilla','500','g','500','18','1905','8'],
     ];
     const ws = XLSX.utils.aoa_to_sheet(rows);
     const wb = XLSX.utils.book_new();
@@ -743,6 +748,7 @@ Continue?`;
           bulkPricing: false,
           discount: 0,
           gstRate: null,
+          hsnCode: null,
           variations: []
         };
         return {
@@ -2105,11 +2111,23 @@ Continue?`;
                                     className="bg-[#f2f4f7] border border-[#bbcbb9] rounded px-2 py-1 text-xs text-[#3c4a3d]"
                                   >
                                     <option value="">None</option>
+                                    <option value="0">0%</option>
                                     <option value="5">5%</option>
                                     <option value="12">12%</option>
                                     <option value="18">18%</option>
                                     <option value="28">28%</option>
                                   </select>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <label className="font-label-md text-label-md text-[#3c4a3d] text-xs whitespace-nowrap">HSN Code</label>
+                                  <Input
+                                    type="text"
+                                    value={product.hsnCode || ''}
+                                    onChange={(e) => setCategories(categories.map(cat => cat.id === category.id ? { ...cat, products: cat.products.map(p => p.id === product.id ? { ...p, hsnCode: e.target.value.replace(/\D/g, '').slice(0, 8) } : p) } : cat))}
+                                    className="w-24 bg-[#f2f4f7] text-center"
+                                    placeholder="e.g. 1905"
+                                    maxLength={8}
+                                  />
                                 </div>
                               </div>
                             </div>
