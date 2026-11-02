@@ -2103,31 +2103,33 @@ Continue?`;
                                   <label className="font-label-md text-label-md text-[#3c4a3d] text-xs whitespace-nowrap">Discount %</label>
                                   <Input type="number" value={product.discount || 0} onChange={(e) => updateDiscount(category.id, product.id, e.target.value)} className="w-16 bg-[#f2f4f7] text-center" min="0" max="100" />
                                 </div>
-                                <div className="flex items-center gap-2">
-                                  <label className="font-label-md text-label-md text-[#3c4a3d] text-xs whitespace-nowrap">GST Rate</label>
-                                  <select
-                                    value={product.gstRate ?? ''}
-                                    onChange={(e) => setCategories(categories.map(cat => cat.id === category.id ? { ...cat, products: cat.products.map(p => p.id === product.id ? { ...p, gstRate: e.target.value === '' ? null : Number(e.target.value) } : p) } : cat))}
-                                    className="bg-[#f2f4f7] border border-[#bbcbb9] rounded px-2 py-1 text-xs text-[#3c4a3d]"
-                                  >
-                                    <option value="">None</option>
-                                    <option value="0">0%</option>
-                                    <option value="5">5%</option>
-                                    <option value="12">12%</option>
-                                    <option value="18">18%</option>
-                                    <option value="28">28%</option>
-                                  </select>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <label className="font-label-md text-label-md text-[#3c4a3d] text-xs whitespace-nowrap">HSN Code</label>
-                                  <Input
-                                    type="text"
-                                    value={product.hsnCode || ''}
-                                    onChange={(e) => setCategories(categories.map(cat => cat.id === category.id ? { ...cat, products: cat.products.map(p => p.id === product.id ? { ...p, hsnCode: e.target.value.replace(/\D/g, '').slice(0, 8) } : p) } : cat))}
-                                    className="w-24 bg-[#f2f4f7] text-center"
-                                    placeholder="e.g. 1905"
-                                    maxLength={8}
-                                  />
+                                <div className="flex items-center gap-3 flex-nowrap">
+                                  <div className="flex items-center gap-2">
+                                    <label className="font-label-md text-label-md text-[#3c4a3d] text-xs whitespace-nowrap">GST Rate</label>
+                                    <select
+                                      value={product.gstRate ?? ''}
+                                      onChange={(e) => setCategories(categories.map(cat => cat.id === category.id ? { ...cat, products: cat.products.map(p => p.id === product.id ? { ...p, gstRate: e.target.value === '' ? null : Number(e.target.value) } : p) } : cat))}
+                                      className="bg-[#f2f4f7] border border-[#bbcbb9] rounded px-2 py-1 text-xs text-[#3c4a3d]"
+                                    >
+                                      <option value="">None</option>
+                                      <option value="0">0%</option>
+                                      <option value="5">5%</option>
+                                      <option value="12">12%</option>
+                                      <option value="18">18%</option>
+                                      <option value="28">28%</option>
+                                    </select>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <label className="font-label-md text-label-md text-[#3c4a3d] text-xs whitespace-nowrap">HSN Code</label>
+                                    <Input
+                                      type="text"
+                                      value={product.hsnCode || ''}
+                                      onChange={(e) => setCategories(categories.map(cat => cat.id === category.id ? { ...cat, products: cat.products.map(p => p.id === product.id ? { ...p, hsnCode: e.target.value.replace(/\D/g, '').slice(0, 8) } : p) } : cat))}
+                                      className="w-24 bg-[#f2f4f7] text-center"
+                                      placeholder="e.g. 1905"
+                                      maxLength={8}
+                                    />
+                                  </div>
                                 </div>
                               </div>
                             </div>
