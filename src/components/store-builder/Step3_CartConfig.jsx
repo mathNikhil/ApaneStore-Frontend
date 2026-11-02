@@ -17,6 +17,15 @@ const Step3_CartConfig = () => {
       .filter(p => VALID_GST.includes(p.gstRate))
       .map(p => `${p.name} (${p.gstRate}%)`)
   );
+  // Detect if any product has a per-product HSN code set
+  const hasPerProductHSN = (productData?.categories || []).some(cat =>
+    (cat.products || []).some(p => p.hsnCode && String(p.hsnCode).trim() !== '')
+  );
+  const perHSNProducts = (productData?.categories || []).flatMap(cat =>
+    (cat.products || [])
+      .filter(p => p.hsnCode && String(p.hsnCode).trim() !== '')
+      .map(p => `${p.name} (${p.hsnCode})`)
+  );
 
   const [settings, setSettings] = useState({
     enableDineIn: cartData.enableDineIn || false,
@@ -315,15 +324,24 @@ const Step3_CartConfig = () => {
         </div>
 
         <div className="space-y-1 mb-4">
-          <label className="font-label-md text-[#3c4a3d] ml-1 text-xs uppercase tracking-wider">HSN / SAC Code</label>
+          <label className="font-label-md text-[#3c4a3d] ml-1 text-xs uppercase tracking-wider">HSN / SAC Code (Global)</label>
           <Input
             type="text"
             placeholder="e.g. 6109 for T-shirts, 9963 for restaurants"
-            value={settings.hsnCode}
-            onChange={(e) => setSettings(prev => ({ ...prev, hsnCode: e.target.value }))}
+            value={hasPerProductHSN ? '' : settings.hsnCode}
+            onChange={(e) => !hasPerProductHSN && setSettings(prev => ({ ...prev, hsnCode: e.target.value }))}
             maxLength={8}
+            disabled={hasPerProductHSN}
+            className={hasPerProductHSN ? 'opacity-50 cursor-not-allowed' : ''}
           />
-          <p className="text-xs text-[#556067] ml-1">Required on GST tax invoice for each product</p>
+          {hasPerProductHSN ? (
+            <p className="text-xs text-[#006d2f] ml-1 font-medium">
+              ✅ Per-product HSN codes are set — global HSN is ignored on invoices.
+              {perHSNProducts.length > 0 && <span className="block text-[#556067] font-normal mt-0.5">{perHSNProducts.slice(0, 3).join(', ')}{perHSNProducts.length > 3 ? ` +${perHSNProducts.length - 3} more` : ''}</span>}
+            </p>
+          ) : (
+            <p className="text-xs text-[#556067] ml-1">Fallback HSN shown on invoice when products don't have their own HSN code</p>
+          )}
         </div>
 
         <div className="space-y-1 mb-4">
