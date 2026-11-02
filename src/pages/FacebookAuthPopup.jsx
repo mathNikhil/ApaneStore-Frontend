@@ -14,10 +14,10 @@ const FacebookAuthPopup = () => {
 
   const sendToParent = (data) => {
     if (window.opener) {
-      // SEC-032: Use specific origin instead of '*' so auth tokens can't be
-      // intercepted by a malicious page that opened this popup.
-      const targetOrigin = window.opener.location?.origin || 'https://aapnaestore.com';
-      window.opener.postMessage({ type: 'FACEBOOK_AUTH_RESULT', ...data }, targetOrigin);
+      // Reading window.opener.location throws SecurityError when opener is cross-origin
+      // (e.g. bakewala.aapnaestore.com opening this popup on aapnaestore.com).
+      // Use '*' here — the storefront listener validates event.origin on its side.
+      window.opener.postMessage({ type: 'FACEBOOK_AUTH_RESULT', ...data }, '*');
       setTimeout(() => window.close(), 300);
     }
   };
