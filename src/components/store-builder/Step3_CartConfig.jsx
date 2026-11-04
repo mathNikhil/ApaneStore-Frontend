@@ -44,6 +44,7 @@ const Step3_CartConfig = () => {
     hsnCode: cartData.hsnCode || '',
     storeState: cartData.storeState || '',
     panNumber: cartData.panNumber || '',
+    fssaiLicence: cartData.fssaiLicence || '',
     tallyStockGroup: cartData.tallyStockGroup || '',
     tabName: cartData.tabName || 'Cart',
     deliveryZones: cartData.deliveryZones || [],
@@ -402,6 +403,21 @@ const Step3_CartConfig = () => {
             maxLength={10}
           />
           <p className="text-xs text-[#556067] ml-1">Required on GST tax invoice</p>
+        </div>
+
+        <div className="space-y-1 mb-4">
+          <label className="font-label-md text-[#3c4a3d] ml-1 text-xs uppercase tracking-wider">
+            FSSAI Licence Number
+            <span className="ml-2 normal-case font-normal text-[#e65100] bg-[#fff3e0] border border-[#ffcc80] rounded px-1.5 py-0.5 text-[10px] align-middle">Food &amp; Beverage — Mandatory</span>
+          </label>
+          <Input
+            type="text"
+            placeholder="e.g. 10012345678901"
+            value={settings.fssaiLicence}
+            onChange={(e) => setSettings(prev => ({ ...prev, fssaiLicence: e.target.value.replace(/\D/g, '').slice(0, 14) }))}
+            maxLength={14}
+          />
+          <p className="text-xs text-[#556067] ml-1">14-digit FSSAI licence number — printed on all invoices and thermal bills. Required for all food &amp; beverage businesses.</p>
         </div>
 
         <div className="space-y-1 mb-4 pt-4 border-t border-[#e0e3e6]">
