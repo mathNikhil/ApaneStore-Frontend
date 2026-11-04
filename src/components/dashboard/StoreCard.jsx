@@ -324,7 +324,7 @@ const StoreCard = ({ store, subscriptions = {}, onStoreUpdate }) => {
                                 <div style={s.editGrid}>
                                     {[
                                         { step: 1, label: 'Brand',    icon: '🎨' },
-                                        { step: 2, label: 'Products', icon: '📦' },
+                                        { step: 2, label: 'Prods & Servs', icon: '📦' },
                                         { step: 3, label: 'Cart',     icon: '🛒' },
                                         { step: 4, label: 'Payment',  icon: '💳' },
                                         { step: 5, label: 'Delivery', icon: '🚚' },
