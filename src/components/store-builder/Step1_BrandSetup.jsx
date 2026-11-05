@@ -364,8 +364,8 @@ const Step1_BrandSetup = () => {
       showError('Icon must be PNG, JPG or WebP.');
       return;
     }
-    if (file.size > 2 * 1024 * 1024) {
-      showError('Icon file too large. Maximum 2 MB.');
+    if (file.size > 100 * 1024) {
+      showError('Icon file too large. Maximum 100 KB.');
       return;
     }
     // Resize to 32×32 (2× for retina) using canvas, store as data URL
@@ -1080,7 +1080,7 @@ const Step1_BrandSetup = () => {
       <div className="space-y-4 mb-6">
         <div>
           <label className="font-label-md text-label-md text-[#3c4a3d] uppercase tracking-wider text-xs block mb-1">Navigation Tabs</label>
-          <p className="text-[11px] text-[#556067]">Tap any label to rename it · drag to reorder · tap the icon to replace it</p>
+          <p className="text-[11px] text-[#556067]">Tap any label to rename it · drag to reorder · Replace any icon · square image 16×16px · max 100 KB</p>
         </div>
         <div className="space-y-2">
           {navTabs.map((tab, index) => (
