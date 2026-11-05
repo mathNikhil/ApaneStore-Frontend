@@ -97,7 +97,8 @@ export const usePreviewData = (builderData, storeId, customerToken) => {
       fonts: {
         heading: 'Inter',
         body: 'Inter',
-      }
+      },
+      navTabs: null,
     },
     products: [],
     categories: [],
@@ -240,7 +241,8 @@ export const usePreviewData = (builderData, storeId, customerToken) => {
           fonts: {
             heading: builderData.headingFont || prev.brand.fonts.heading,
             body: builderData.bodyFont || prev.brand.fonts.body,
-          }
+          },
+          navTabs: builderData.navTabs !== undefined ? builderData.navTabs : prev.brand.navTabs,
         },
         banner: {
           ...prev.banner,

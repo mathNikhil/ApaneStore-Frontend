@@ -107,6 +107,7 @@ const StorefrontApp = ({ builderData, storeId, device = 'desktop', className = '
     headingFont: builderData.brand.fonts.body || builderData.brand.fonts.heading,
     bodyFont: builderData.brand.fonts.body,
     baseFontSize: builderData.brand.baseFontSize,
+    navTabs: builderData.brand.navTabs || null,
 
     categories: builderData.products.categories,
     enableImageZoom: builderData.products.enableImageZoom,
