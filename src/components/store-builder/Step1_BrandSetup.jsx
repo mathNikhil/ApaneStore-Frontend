@@ -1150,7 +1150,7 @@ const Step1_BrandSetup = () => {
         </div>
         <button
           type="button"
-          onClick={() => setNavTabsLocal(DEFAULT_NAV_TABS)}
+          onClick={() => setNavTabsLocal(applyStoreTypeToTabs(DEFAULT_NAV_TABS.map(t => ({ ...t, customIcon: null })), isServiceStore))}
           className="text-xs text-[#556067] hover:text-[#006d2f] flex items-center gap-1 transition-colors"
         >
           <span className="material-symbols-outlined text-sm">restart_alt</span>
