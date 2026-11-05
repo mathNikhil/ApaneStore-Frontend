@@ -311,11 +311,12 @@ const Step1_BrandSetup = () => {
   const cameraInputRef = useRef(null);
 
   // ── Nav Tabs ──────────────────────────────────────────────────────────────
+  const isServiceStore = (storeType || 'product') === 'service';
   const DEFAULT_NAV_TABS = [
-    { id: 'home',    label: 'Home',    icon: 'home',          customIcon: null },
-    { id: 'cart',    label: 'Cart',    icon: 'shopping_cart', customIcon: null },
-    { id: 'orders',  label: 'Orders',  icon: 'receipt_long',  customIcon: null },
-    { id: 'profile', label: 'Profile', icon: 'person',        customIcon: null },
+    { id: 'home',    label: 'Home',                              icon: 'home',          customIcon: null },
+    { id: 'cart',    label: isServiceStore ? 'Service' : 'Cart', icon: isServiceStore ? 'spa' : 'shopping_cart', customIcon: null },
+    { id: 'orders',  label: isServiceStore ? 'Booking' : 'Orders', icon: isServiceStore ? 'event_note' : 'receipt_long', customIcon: null },
+    { id: 'profile', label: 'Profile',                           icon: 'person',        customIcon: null },
   ];
   const [navTabs, setNavTabsLocal] = useState(brandData.navTabs || DEFAULT_NAV_TABS);
   const [tabDragging, setTabDragging] = useState(null); // index being dragged
@@ -327,13 +328,22 @@ const Step1_BrandSetup = () => {
     setBrandData(prev => ({ ...prev, navTabs }));
   }, [navTabs, setBrandData]);
 
-  // Re-hydrate navTabs when an existing store loads
+  // Re-hydrate navTabs when an existing store loads.
+  // Apply service overrides on the two dynamic tabs so the editor always
+  // shows labels matching the store type, even if the DB has stale labels.
   useEffect(() => {
     if (currentStoreId && brandData.navTabs) {
-      setNavTabsLocal(brandData.navTabs);
+      const withOverrides = brandData.navTabs.map(t => {
+        if (t.id === 'cart' && !t.customIcon)
+          return { ...t, label: isServiceStore ? 'Service' : 'Cart', icon: isServiceStore ? 'spa' : 'shopping_cart' };
+        if (t.id === 'orders' && !t.customIcon)
+          return { ...t, label: isServiceStore ? 'Booking' : 'Orders', icon: isServiceStore ? 'event_note' : 'receipt_long' };
+        return t;
+      });
+      setNavTabsLocal(withOverrides);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentStoreId]);
+  }, [currentStoreId, isServiceStore]);
 
   const updateNavTab = (index, patch) => {
     setNavTabsLocal(prev => prev.map((t, i) => i === index ? { ...t, ...patch } : t));
