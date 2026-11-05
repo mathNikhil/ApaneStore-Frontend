@@ -49,6 +49,7 @@ const FinalStorePreview = () => {
                     body: brandData.bodyFont || 'Inter',
                 },
                 baseFontSize: brandData.baseFontSize || '16px',
+                navTabs: brandData.navTabs || null,
             },
             products: {
                 categories: productData.categories || [],
