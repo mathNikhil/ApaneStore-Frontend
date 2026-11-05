@@ -1080,7 +1080,7 @@ const Step1_BrandSetup = () => {
       <div className="space-y-4 mb-6">
         <div>
           <label className="font-label-md text-label-md text-[#3c4a3d] uppercase tracking-wider text-xs block mb-1">Navigation Tabs</label>
-          <p className="text-[11px] text-[#556067]">Drag to reorder · rename labels · upload a 16×16 icon per tab</p>
+          <p className="text-[11px] text-[#556067]">Tap any label to rename it · drag to reorder · tap the icon to replace it</p>
         </div>
         <div className="space-y-2">
           {navTabs.map((tab, index) => (
@@ -1134,14 +1134,17 @@ const Step1_BrandSetup = () => {
               </div>
 
               {/* Label input */}
-              <input
-                type="text"
-                value={tab.label}
-                maxLength={12}
-                onChange={e => updateNavTab(index, { label: e.target.value })}
-                className="flex-1 bg-transparent text-sm text-[#191c1e] font-medium outline-none border-b border-transparent focus:border-[#25D366] transition-colors py-0.5"
-                placeholder="Tab name"
-              />
+              <div className="flex-1 relative group/label">
+                <input
+                  type="text"
+                  value={tab.label}
+                  maxLength={12}
+                  onChange={e => updateNavTab(index, { label: e.target.value })}
+                  className="w-full bg-[#f4f6f4] hover:bg-[#edf0ed] focus:bg-white text-sm text-[#191c1e] font-medium outline-none border border-[#e0e3e6] focus:border-[#25D366] rounded-lg px-2.5 py-1.5 transition-all pr-7"
+                  placeholder="Tab name"
+                />
+                <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-[14px] text-[#aab4aa] group-focus-within/label:text-[#25D366] pointer-events-none transition-colors">edit</span>
+              </div>
 
               {/* Position badge */}
               <span className="text-[10px] text-[#aab4aa] font-medium w-5 text-right">{index + 1}</span>
