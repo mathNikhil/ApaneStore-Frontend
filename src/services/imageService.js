@@ -21,6 +21,7 @@ const IMAGE_TYPE_ROUTE_SEGMENTS = {
     CATEGORY: 'categories',
     RETURN: 'returns',
     STAFF_PHOTO: 'staff',
+    NAV_ICON: 'nav-icon',
 };
 
 const getImageTypeSegment = (imageType) => {
@@ -146,6 +147,15 @@ const imageService = {
             }
         );
         return response.data;
+    },
+
+    // Upload a nav tab icon from a data URL (canvas-resized PNG)
+    uploadNavIcon: async (storeId, tenantId, tabId, dataUrl) => {
+        // Convert data URL → Blob → File
+        const res = await fetch(dataUrl);
+        const blob = await res.blob();
+        const file = new File([blob], `nav-icon-${tabId}.png`, { type: 'image/png' });
+        return imageService.uploadImage(storeId, tenantId, 'NAV_ICON', file, tabId);
     },
 
     // Get all image requirements

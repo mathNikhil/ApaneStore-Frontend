@@ -483,8 +483,9 @@ const Step1_BrandSetup = () => {
       }
 
       const savedStoreId = saveResult.data?.data?.id || currentStoreId;
+      let needsResave = false;
 
-      // Only upload if a NEW file was actually selected.
+      // ── Upload logo if a new file was selected ────────────────────────────
       if (logoData && logoData.file) {
         const response = await imageService.uploadImage(
           savedStoreId,
@@ -500,18 +501,39 @@ const Step1_BrandSetup = () => {
         }
 
         setLogoPreview(response.data.url);
+        needsResave = true;
+      }
 
-        // Save again to persist the new logo URL now that we have it.
-        // Passing savedStoreId explicitly avoids saveStore() mistaking this
-        // for another brand-new store — the closure's own currentStoreId
-        // won't reflect the ID we just got back from the save above.
+      // ── Upload any nav tab icons that are still data URLs ─────────────────
+      const pendingIconTabs = navTabs.filter(t => t.customIcon?.startsWith('data:'));
+      if (pendingIconTabs.length > 0) {
+        const uploadedTabs = [...navTabs];
+        for (const tab of pendingIconTabs) {
+          try {
+            const iconRes = await imageService.uploadNavIcon(savedStoreId, tenantId, tab.id, tab.customIcon);
+            if (iconRes.success && iconRes.data?.url) {
+              const idx = uploadedTabs.findIndex(t => t.id === tab.id);
+              if (idx !== -1) uploadedTabs[idx] = { ...uploadedTabs[idx], customIcon: iconRes.data.url };
+            }
+          } catch (iconErr) {
+            console.warn(`Nav icon upload failed for tab "${tab.id}":`, iconErr);
+            // Non-fatal: keep the data URL as fallback
+          }
+        }
+        setNavTabsLocal(uploadedTabs);
+        // setBrandData so saveStore picks up the CDN URLs
+        setBrandData(prev => ({ ...prev, navTabs: uploadedTabs }));
+        needsResave = true;
+      }
+
+      // ── Re-save if logo URL or nav icon URLs changed ──────────────────────
+      if (needsResave) {
         saveResult = await saveStore(savedStoreId);
         if (!saveResult.success) {
-          showError(saveResult.error || 'Logo uploaded, but failed to save. Please try again.');
+          showError(saveResult.error || 'Uploaded, but failed to save. Please try again.');
           setIsUploading(false);
           return;
         }
-      } else {
       }
 
       navigate(`/store-builder/step/2?storeId=${saveResult.data?.data?.id || savedStoreId}`);
