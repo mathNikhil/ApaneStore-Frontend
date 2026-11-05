@@ -307,6 +307,7 @@ const StorefrontApp = ({ builderData, storeId, device = 'desktop', className = '
             ordersTabName={storeData.cart?.ordersTabName || 'Orders'}
             storeType={storeData.storeType || 'product'}
             device={device}
+            navTabs={storeData.brand?.navTabs || null}
           />
         </div>
       </DeviceFrameContext.Provider>

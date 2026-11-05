@@ -310,6 +310,91 @@ const Step1_BrandSetup = () => {
   const fontInputRef = useRef(null);
   const cameraInputRef = useRef(null);
 
+  // ── Nav Tabs ──────────────────────────────────────────────────────────────
+  const DEFAULT_NAV_TABS = [
+    { id: 'home',    label: 'Home',    icon: 'home',          customIcon: null },
+    { id: 'cart',    label: 'Cart',    icon: 'shopping_cart', customIcon: null },
+    { id: 'orders',  label: 'Orders',  icon: 'receipt_long',  customIcon: null },
+    { id: 'profile', label: 'Profile', icon: 'person',        customIcon: null },
+  ];
+  const [navTabs, setNavTabsLocal] = useState(brandData.navTabs || DEFAULT_NAV_TABS);
+  const [tabDragging, setTabDragging] = useState(null); // index being dragged
+  const [tabDragOver, setTabDragOver] = useState(null); // index hovered
+  const navIconRefs = useRef([]);
+
+  // Keep brandData in sync whenever navTabs changes
+  useEffect(() => {
+    setBrandData(prev => ({ ...prev, navTabs }));
+  }, [navTabs, setBrandData]);
+
+  // Re-hydrate navTabs when an existing store loads
+  useEffect(() => {
+    if (currentStoreId && brandData.navTabs) {
+      setNavTabsLocal(brandData.navTabs);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentStoreId]);
+
+  const updateNavTab = (index, patch) => {
+    setNavTabsLocal(prev => prev.map((t, i) => i === index ? { ...t, ...patch } : t));
+  };
+
+  const processNavIconFile = (file, index) => {
+    const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      showError('Icon must be PNG, JPG or WebP.');
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      showError('Icon file too large. Maximum 2 MB.');
+      return;
+    }
+    // Resize to 32×32 (2× for retina) using canvas, store as data URL
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 32;
+        canvas.height = 32;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, 32, 32);
+        const dataUrl = canvas.toDataURL('image/png');
+        updateNavTab(index, { customIcon: dataUrl });
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Drag-to-reorder for nav tabs
+  const handleTabDragStart = (e, index) => {
+    setTabDragging(index);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+  const handleTabDragOver = (e, index) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setTabDragOver(index);
+  };
+  const handleTabDrop = (e, dropIndex) => {
+    e.preventDefault();
+    if (tabDragging === null || tabDragging === dropIndex) return;
+    setNavTabsLocal(prev => {
+      const updated = [...prev];
+      const [moved] = updated.splice(tabDragging, 1);
+      updated.splice(dropIndex, 0, moved);
+      return updated;
+    });
+    setTabDragging(null);
+    setTabDragOver(null);
+  };
+  const handleTabDragEnd = () => {
+    setTabDragging(null);
+    setTabDragOver(null);
+  };
+  // ─────────────────────────────────────────────────────────────────────────
+
   // ✅ FIX: Re-hydrate the form once loadStore() actually finishes.
   // formData/logoPreview above are only captured once at mount, but loadStore()
   // is async and often hasn't resolved yet when this component first mounts —
@@ -948,6 +1033,88 @@ const Step1_BrandSetup = () => {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Nav Tabs */}
+      <div className="space-y-4 mb-6">
+        <div>
+          <label className="font-label-md text-label-md text-[#3c4a3d] uppercase tracking-wider text-xs block mb-1">Navigation Tabs</label>
+          <p className="text-[11px] text-[#556067]">Drag to reorder · rename labels · upload a 16×16 icon per tab</p>
+        </div>
+        <div className="space-y-2">
+          {navTabs.map((tab, index) => (
+            <div
+              key={tab.id}
+              draggable
+              onDragStart={e => handleTabDragStart(e, index)}
+              onDragOver={e => handleTabDragOver(e, index)}
+              onDrop={e => handleTabDrop(e, index)}
+              onDragEnd={handleTabDragEnd}
+              className={`flex items-center gap-3 bg-white border rounded-xl px-3 py-2.5 cursor-grab active:cursor-grabbing transition-all ${tabDragOver === index && tabDragging !== index ? 'border-[#25D366] shadow-md scale-[1.02]' : 'border-[#e0e3e6]'} ${tabDragging === index ? 'opacity-40' : 'opacity-100'}`}
+            >
+              {/* Drag handle */}
+              <span className="material-symbols-outlined text-[#bbcbb9] text-lg select-none">drag_indicator</span>
+
+              {/* Icon preview / upload */}
+              <div className="relative flex-shrink-0">
+                <button
+                  type="button"
+                  onClick={() => navIconRefs.current[index]?.click()}
+                  className="w-9 h-9 rounded-lg border border-[#e0e3e6] flex items-center justify-center hover:border-[#25D366] transition-colors bg-[#f8faf8] group"
+                  title="Upload custom icon"
+                >
+                  {tab.customIcon ? (
+                    <img src={tab.customIcon} alt={tab.label} className="w-5 h-5 object-contain" />
+                  ) : (
+                    <span className="material-symbols-outlined text-[#556067] text-xl">{tab.icon}</span>
+                  )}
+                  <span className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="material-symbols-outlined text-white text-sm">upload</span>
+                  </span>
+                </button>
+                <input
+                  ref={el => navIconRefs.current[index] = el}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  className="hidden"
+                  onChange={e => { const f = e.target.files?.[0]; if (f) processNavIconFile(f, index); e.target.value = ''; }}
+                />
+                {/* Reset icon */}
+                {tab.customIcon && (
+                  <button
+                    type="button"
+                    onClick={() => updateNavTab(index, { customIcon: null })}
+                    className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-[#ba1a1a] flex items-center justify-center"
+                    title="Remove custom icon"
+                  >
+                    <span className="material-symbols-outlined text-white text-[10px]">close</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Label input */}
+              <input
+                type="text"
+                value={tab.label}
+                maxLength={12}
+                onChange={e => updateNavTab(index, { label: e.target.value })}
+                className="flex-1 bg-transparent text-sm text-[#191c1e] font-medium outline-none border-b border-transparent focus:border-[#25D366] transition-colors py-0.5"
+                placeholder="Tab name"
+              />
+
+              {/* Position badge */}
+              <span className="text-[10px] text-[#aab4aa] font-medium w-5 text-right">{index + 1}</span>
+            </div>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={() => setNavTabsLocal(DEFAULT_NAV_TABS)}
+          className="text-xs text-[#556067] hover:text-[#006d2f] flex items-center gap-1 transition-colors"
+        >
+          <span className="material-symbols-outlined text-sm">restart_alt</span>
+          Reset to defaults
+        </button>
       </div>
 
       {/* Brand Preview */}

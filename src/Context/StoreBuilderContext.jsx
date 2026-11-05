@@ -72,6 +72,12 @@ export const StoreBuilderProvider = ({ children }) => {
         headingFont: 'Inter',
         bodyFont: 'Inter',
         baseFontSize: '16px',
+        navTabs: [
+            { id: 'home',    label: 'Home',    icon: 'home',          customIcon: null },
+            { id: 'cart',    label: 'Cart',    icon: 'shopping_cart', customIcon: null },
+            { id: 'orders',  label: 'Orders',  icon: 'receipt_long',  customIcon: null },
+            { id: 'profile', label: 'Profile', icon: 'person',        customIcon: null },
+        ],
     });
 
     // Step 2: Product Data
@@ -404,6 +410,7 @@ export const StoreBuilderProvider = ({ children }) => {
                     body: brandData.bodyFont || 'Inter',
                 },
                 baseFontSize: brandData.baseFontSize || '16px',
+                navTabs: brandData.navTabs || null,
                 categories: productData.categories || [],
                 productBanner: productData.banner || {},
                 bookingSettings: productData.bookingSettings || {},
@@ -611,6 +618,7 @@ export const StoreBuilderProvider = ({ children }) => {
                         headingFont: config.brand.fonts?.body || config.brand.fonts?.heading || 'Inter',
                         bodyFont: config.brand.fonts?.body || 'Inter',
                         baseFontSize: config.brand.baseFontSize || '16px',
+                        navTabs: config.brand.navTabs || null,
                     });
                 }
                 
