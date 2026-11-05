@@ -328,22 +328,31 @@ const Step1_BrandSetup = () => {
     setBrandData(prev => ({ ...prev, navTabs }));
   }, [navTabs, setBrandData]);
 
-  // Re-hydrate navTabs when an existing store loads.
-  // Apply service overrides on the two dynamic tabs so the editor always
-  // shows labels matching the store type, even if the DB has stale labels.
+  // Helper: apply service/product overrides to the two dynamic tabs.
+  // Skips tabs that have a customIcon (admin intentionally set their own icon).
+  const applyStoreTypeToTabs = useCallback((tabs, isService) => {
+    return tabs.map(t => {
+      if (t.id === 'cart' && !t.customIcon)
+        return { ...t, label: isService ? 'Service' : 'Cart', icon: isService ? 'spa' : 'shopping_cart' };
+      if (t.id === 'orders' && !t.customIcon)
+        return { ...t, label: isService ? 'Booking' : 'Orders', icon: isService ? 'event_note' : 'receipt_long' };
+      return t;
+    });
+  }, []);
+
+  // When tenant switches store type, update the two dynamic tab labels/icons immediately.
+  useEffect(() => {
+    setNavTabsLocal(prev => applyStoreTypeToTabs(prev, isServiceStore));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isServiceStore]);
+
+  // Re-hydrate navTabs when an existing store loads, applying store type overrides.
   useEffect(() => {
     if (currentStoreId && brandData.navTabs) {
-      const withOverrides = brandData.navTabs.map(t => {
-        if (t.id === 'cart' && !t.customIcon)
-          return { ...t, label: isServiceStore ? 'Service' : 'Cart', icon: isServiceStore ? 'spa' : 'shopping_cart' };
-        if (t.id === 'orders' && !t.customIcon)
-          return { ...t, label: isServiceStore ? 'Booking' : 'Orders', icon: isServiceStore ? 'event_note' : 'receipt_long' };
-        return t;
-      });
-      setNavTabsLocal(withOverrides);
+      setNavTabsLocal(applyStoreTypeToTabs(brandData.navTabs, isServiceStore));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentStoreId, isServiceStore]);
+  }, [currentStoreId]);
 
   const updateNavTab = (index, patch) => {
     setNavTabsLocal(prev => prev.map((t, i) => i === index ? { ...t, ...patch } : t));
