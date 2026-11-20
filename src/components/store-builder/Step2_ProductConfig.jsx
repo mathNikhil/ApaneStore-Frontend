@@ -1922,7 +1922,8 @@ Continue?`;
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  const link = `https://${currentSubdomain}.aapnaestore.com/product/${product.id}`;
+                                  const nameSlug = String(product.name || '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/['’]/g, '').replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60).replace(/-+$/g, '');
+const link = `https://${currentSubdomain}.aapnaestore.com/product/${nameSlug ? nameSlug + '-' : ''}${product.id}`;
                                   navigator.clipboard.writeText(link).then(() => {
                                     const btn = e.currentTarget;
                                     const orig = btn.innerHTML;
