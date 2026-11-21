@@ -15,7 +15,7 @@ const getStoreConfig = (store) => {
 
 const getStoreExpiryInfo = (store) => {
     if (store.status !== 'draft') return null;
-    const expiryDate = new Date(store.created_at);
+    const expiryDate = new Date(store.unpublished_at || store.created_at);
     expiryDate.setDate(expiryDate.getDate() + 120);
     const daysRemaining = Math.ceil((expiryDate - new Date()) / 86400000);
     return { daysRemaining, isExpired: daysRemaining <= 0, isWarning: daysRemaining <= 7 && daysRemaining > 0 };
