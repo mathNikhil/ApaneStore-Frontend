@@ -8,8 +8,30 @@ import Input from '../Common/Input';
 
 const Step7_ProfileConfig = () => {
   const navigate = useNavigate();
-  const { profileData, setProfileData, productData, brandData, currentStoreId, saveStore, storeType } = useStoreBuilder();
+  const { profileData, setProfileData, productData, brandData, currentStoreId, saveStore, storeType, currentSubdomain, storeStatus } = useStoreBuilder();
   const profileDataRef = React.useRef(false);
+
+  // Sitemap link — only real once the store is published (draft stores 404).
+  const sitemapUrl = currentSubdomain ? `https://${currentSubdomain}.aapnaestore.com/sitemap.xml` : '';
+  const sitemapReady = !!sitemapUrl && storeStatus === 'published';
+  const [sitemapCopied, setSitemapCopied] = useState(false);
+  const copySitemapUrl = async () => {
+    try {
+      await navigator.clipboard.writeText(sitemapUrl);
+    } catch (e) {
+      // clipboard API blocked (http / old browser): fall back to a hidden textarea
+      const ta = document.createElement('textarea');
+      ta.value = sitemapUrl;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); } catch (_) {}
+      document.body.removeChild(ta);
+    }
+    setSitemapCopied(true);
+    setTimeout(() => setSitemapCopied(false), 2000);
+  };
 
   var hasProducts = false;
   if (productData.categories) {
@@ -385,6 +407,48 @@ const Step7_ProfileConfig = () => {
               placeholder="e.g. ethnic wear, kurti, delhi fashion, handmade jewellery"
             />
             <p className="text-xs text-[#556067]">Add words your customers search for on Google</p>
+          </div>
+
+          <div className="space-y-2 pt-4 border-t border-[#e0e3e6]">
+            <label className="block text-label-md font-label-md text-[#3c4a3d] uppercase tracking-wider text-xs">
+              Sitemap Link <span className="text-[#8e9eab] normal-case font-normal">(lists all your products for Google)</span>
+            </label>
+            {sitemapReady ? (
+              <>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={sitemapUrl}
+                    onFocus={function(e) { e.target.select(); }}
+                    className="flex-1 min-w-0 bg-[#f2f4f7] border border-[#bbcbb9] rounded-lg px-4 py-3 text-sm text-[#191c1e] outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={copySitemapUrl}
+                    className="shrink-0 px-4 py-3 rounded-lg bg-[#006d2f] text-white text-sm font-semibold hover:opacity-90 transition-opacity"
+                  >
+                    {sitemapCopied ? 'Copied!' : 'Copy'}
+                  </button>
+                  <a
+                    href={sitemapUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="shrink-0 px-4 py-3 rounded-lg border border-[#bbcbb9] text-[#3c4a3d] text-sm font-semibold hover:bg-[#f2f4f7] transition-colors"
+                  >
+                    Open
+                  </a>
+                </div>
+                <p className="text-xs text-[#556067]">
+                  Google finds this automatically, but submitting it speeds things up and shows you any errors.
+                  In Google Search Console, open <strong>Sitemaps</strong>, paste <strong>sitemap.xml</strong> and click Submit.
+                </p>
+              </>
+            ) : (
+              <p className="text-xs text-[#8e9eab] bg-[#f2f4f7] rounded-lg px-4 py-3">
+                Your sitemap link will appear here once your store is published.
+              </p>
+            )}
           </div>
         </div>
       </Card>
