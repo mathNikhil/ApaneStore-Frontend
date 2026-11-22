@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Card from '../Common/Card';
-import { scoreStore, scoreProduct, scoreColor, SCORE_DISCLAIMER } from '../../utils/seoScore';
+import { scoreStore, scoreProduct, scoreColor, scoreLabel, SCORE_DISCLAIMER } from '../../utils/seoScore';
 
 const ICON = { done: 'check_circle', partial: 'timelapse', todo: 'radio_button_unchecked' };
 const ICON_COLOR = { done: '#006d2f', partial: '#d99a00', todo: '#8e9eab' };
@@ -93,21 +93,66 @@ export function SeoHealthMeter({ profile, productData, storeType, onGoToProducts
   );
 }
 
-// Step 2: small bar + one tip under a product's description box.
-export function ProductQualityHint({ product, storeType }) {
+// Step 2: per-product report card, like a marketplace "Score" popup.
+// Collapsed: a score chip + the single biggest fix. Expanded: every row with its points.
+export function ProductScoreCard({ product, storeType, defaultOpen = false }) {
+  const [open, setOpen] = useState(defaultOpen);
   const r = scoreProduct(product, storeType);
   const color = scoreColor(r.score);
-  const tip = r.tips[0];
+  const label = scoreLabel(r.score);
+  const topTip = r.tips[0];
+
   return (
-    <div className="mt-1.5" aria-live="polite">
-      <div className="flex items-center gap-2">
-        <span className="text-[11px] text-[#556067] whitespace-nowrap">Listing quality</span>
-        <div className="flex-1 h-1.5 rounded-full bg-[#e0e3e6] overflow-hidden">
-          <div className="h-full rounded-full transition-all duration-300" style={{ width: `${r.score}%`, backgroundColor: color }} />
+    <div className="mt-2 rounded-lg border border-[#e0e3e6] bg-white">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        aria-expanded={open}
+        className="w-full flex items-center gap-2 px-3 py-2 text-left"
+      >
+        <span className="material-symbols-outlined text-base" style={{ color }}>analytics</span>
+        <span className="text-xs font-semibold text-[#3c4a3d]">Listing score</span>
+        <span className="text-xs font-bold px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: color }}>
+          {r.score}/100
+        </span>
+        <span className="text-xs font-semibold" style={{ color }}>{label}</span>
+        <span className="ml-auto material-symbols-outlined text-base text-[#8e9eab]">{open ? 'expand_less' : 'expand_more'}</span>
+      </button>
+
+      {!open && topTip ? (
+        <p className="px-3 pb-2 -mt-1 text-xs text-[#556067]" aria-live="polite">{topTip}</p>
+      ) : null}
+
+      {open ? (
+        <div className="px-3 pb-3 border-t border-[#e0e3e6]">
+          <ul className="divide-y divide-[#f0f2f4]">
+            {r.rows.map((row) => (
+              <li key={row.key} className="py-2">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-base" style={{ color: ICON_COLOR[row.status] }}>{ICON[row.status]}</span>
+                  <span className="flex-1 text-sm text-[#191c1e]">{row.label}</span>
+                  <span className="text-sm font-semibold tabular-nums" style={{ color: row.status === 'done' ? '#006d2f' : '#3c4a3d' }}>
+                    {row.earned}/{row.max}
+                  </span>
+                </div>
+                {row.hint ? <p className="text-xs text-[#556067] ml-6 mt-0.5">{row.hint}</p> : null}
+              </li>
+            ))}
+          </ul>
+          <div className="mt-2 pt-2 border-t border-[#e0e3e6]">
+            <div className="flex items-center justify-between text-xs font-semibold text-[#191c1e] mb-1">
+              <span>Total</span><span style={{ color }}>{r.score}/100</span>
+            </div>
+            <div className="h-2 rounded-full bg-[#e0e3e6] overflow-hidden" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={r.score} aria-label={`Listing score ${r.score} out of 100`}>
+              <div className="h-full rounded-full transition-all duration-300" style={{ width: `${r.score}%`, backgroundColor: color }} />
+            </div>
+            <p className="text-[11px] text-[#8e9eab] mt-2">{SCORE_DISCLAIMER}</p>
+          </div>
         </div>
-        <span className="text-[11px] font-semibold" style={{ color }}>{r.score}%</span>
-      </div>
-      {tip ? <p className="text-xs text-[#556067] mt-1">{tip}</p> : null}
+      ) : null}
     </div>
   );
 }
+
+// Earlier name kept so an existing <ProductQualityHint .../> in Step 2 upgrades automatically.
+export const ProductQualityHint = ProductScoreCard;
