@@ -8,6 +8,7 @@ import StoreBuilderLayout from './StoreBuilderLayout';
 import Card from '../Common/Card';
 import Input from '../Common/Input';
 import Toggle from '../Common/Toggle';
+import { ProductQualityHint } from './SeoQuality';
 import imageService from '../../services/imageService';
 
 // ✅ Image Guideline Component
@@ -2097,6 +2098,7 @@ const link = `https://${currentSubdomain}.aapnaestore.com/product/${nameSlug ? n
                                   className="w-full px-3 py-2 bg-[#f2f4f7] rounded-lg border border-[#bbcbb9] font-body-md text-body-md outline-none focus:ring-2 focus:ring-[#25D366] focus:border-[#006d2f] min-h-[60px]"
                                   placeholder={effectiveStoreType === "service" ? "Enter service description..." : "Enter product description..."}
                                 />
+                                 <ProductQualityHint product={product} storeType={effectiveStoreType} />
                               </div>
                               <div className="flex flex-wrap items-center gap-4">
                                 <Toggle label="Apply same price to all sizes" checked={product.bulkPricing || false} onChange={() => toggleBulkPricing(category.id, product.id)} />
