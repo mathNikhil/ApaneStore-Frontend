@@ -50,27 +50,66 @@ function textHint(q, empty, short) {
 const isEmail = (s) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(s || '').trim());
 const digits = (s) => String(s || '').replace(/\D/g, '');
 
-// ── Per-product ─────────────────────────────────────────────────────────────
+// ── Per-product report card ─────────────────────────────────────────────────
+// Rows mirror what a tenant can actually do in Step 2. Each row has its own
+// max points; rows that don't apply (e.g. "options" on a one-option product)
+// are left out and the total is scaled to 100.
 export function scoreProduct(product, storeType = 'product') {
   const p = product || {};
-  const q = textQuality(p.description, PRODUCT_DESC);
-  const hasImage = Array.isArray(p.images) && p.images.length > 0;
   const noun = storeType === 'service' ? 'service' : 'product';
+  const rows = [];
+  const row = (key, label, max, value, hint) =>
+    rows.push({ key, label, max, earned: Math.round(max * value), value, hint: value >= 0.999 ? '' : hint,
+                status: value >= 0.999 ? 'done' : value > 0 ? 'partial' : 'todo' });
 
-  const tips = [];
-  if (q.chars === 0) {
-    tips.push(`Add a description. Say what the ${noun} is, who it is for and what makes it different.`);
-  } else if (q.chars < PRODUCT_DESC.min) {
-    tips.push(`Add about ${PRODUCT_DESC.min - q.chars} more characters. Mention size, material, flavour or use.`);
-  } else if (q.chars < PRODUCT_DESC.good) {
-    tips.push(`Almost there: ${PRODUCT_DESC.good - q.chars} more characters would make it a strong description.`);
+  // 1. Name
+  const nameWords = wordsOf(String(p.name || '').trim()).length;
+  const nameVal = nameWords >= 3 ? 1 : nameWords === 2 ? 0.67 : nameWords === 1 ? 0.33 : 0;
+  row('name', 'Name (3+ words)', 15, nameVal,
+      nameWords === 0 ? `Give the ${noun} a name.`
+      : nameWords === 1 ? 'A one-word name is hard to find. Add the type, flavour, size or material.'
+      : 'One more word helps, e.g. the size, colour or flavour.');
+
+  // 2 & 3. Photos (first image is the main one)
+  const imgs = Array.isArray(p.images) ? p.images.length : 0;
+  row('mainPhoto', 'Main photo', 15, imgs >= 1 ? 1 : 0, `Add a clear main photo of the ${noun}.`);
+  const extra = Math.max(0, imgs - 1);
+  row('morePhotos', 'More photos (2 or more)', 15, extra >= 2 ? 1 : extra === 1 ? 0.53 : 0,
+      extra === 1 ? 'Add 1 more photo from a different angle.' : 'Add 2 more photos from different angles.');
+
+  // 4. Price with unit, for every option the customer can buy
+  const sizes = (Array.isArray(p.variations) ? p.variations : []).flatMap((v) => (v && v.sizes) || []);
+  const okSize = (z) => Number(z.price) > 0 && String(z.unit || '').trim() !== '' && String(z.size || '').trim() !== '';
+  const goodSizes = sizes.filter(okSize).length;
+  row('price', 'Price with unit', 15, sizes.length ? goodSizes / sizes.length : 0,
+      sizes.length === 0 ? 'Add a price.'
+      : `${sizes.length - goodSizes} of ${sizes.length} options are missing a price, size or unit (e.g. 500 g, 1 piece).`);
+
+  // 5. Description (biggest weight: it is the text Google and customers read)
+  const dq = textQuality(p.description, PRODUCT_DESC);
+  row('description', `Description (${PRODUCT_DESC.good}+ characters)`, 30, dq.value,
+      dq.chars === 0 ? `Say what the ${noun} is, who it is for and what makes it different.`
+      : dq.issues.includes('shouting') ? 'Too many CAPITAL LETTERS. Write it in normal sentences.'
+      : dq.issues.includes('repetitive') ? 'The same words repeat a lot. Describe different details instead.'
+      : dq.chars < PRODUCT_DESC.min ? `Add about ${PRODUCT_DESC.min - dq.chars} more characters. Mention size, material, flavour or use.`
+      : `${PRODUCT_DESC.good - dq.chars} more characters would make it a strong description.`);
+
+  // 6. Options (only when there is more than one to tell apart)
+  const vars = Array.isArray(p.variations) ? p.variations : [];
+  if (vars.length > 1) {
+    const named = vars.filter((v) => String(v.name || '').trim() !== '').length / vars.length;
+    const pics = vars.filter((v) => v.image).length / vars.length;
+    row('options', 'Options named, with photos', 10, 0.6 * named + 0.4 * pics,
+        named < 1 ? 'Name every option (e.g. Paneer, Aloo) so customers and Google can tell them apart.'
+                  : 'Add a photo for each option.');
   }
-  if (q.issues.includes('shouting')) tips.push('Too much CAPITAL LETTERS. Write it like a normal sentence.');
-  if (q.issues.includes('repetitive')) tips.push('The same words repeat a lot. Describe different details instead.');
-  if (!hasImage) tips.push(`Add at least one photo of the ${noun}.`);
 
-  const score = Math.round((q.value * 0.7 + (hasImage ? 0.3 : 0)) * 100);
-  return { score, descChars: q.chars, descValue: q.value, hasImage, tips };
+  const max = rows.reduce((a, r) => a + r.max, 0);
+  const earned = rows.reduce((a, r) => a + r.earned, 0);
+  const score = Math.round((earned / max) * 100);
+  const tips = rows.filter((r) => r.status !== 'done').sort((a, b) => (b.max - b.earned) - (a.max - a.earned)).map((r) => r.hint);
+
+  return { score, earned, max, rows, tips, descChars: dq.chars, descValue: dq.value, hasImage: imgs >= 1 };
 }
 
 // ── Whole store ─────────────────────────────────────────────────────────────
@@ -132,16 +171,14 @@ export function scoreStore(profile, productData, storeType = 'product') {
   const stats = products.map((p) => ({ p, s: scoreProduct(p, storeType) }));
   const total = stats.length;
   const descAvg = total ? stats.reduce((a, x) => a + x.s.descValue, 0) / total : 0;
-  const imgShare = total ? stats.filter((x) => x.s.hasImage).length / total : 0;
+  const listingAvg = total ? stats.reduce((a, x) => a + x.s.score, 0) / total / 100 : 0;
+  const weak = stats.filter((x) => x.s.score < 60);
   const noun = isService ? 'services' : 'products';
-  const needWork = stats.filter((x) => x.s.descValue < 0.6);
 
-  add({ key: 'productDescriptions', fieldId: null, label: `${isService ? 'Service' : 'Product'} descriptions`, weight: 25, value: descAvg, goTo: 'products',
+  add({ key: 'productListings', fieldId: null, label: `${isService ? 'Service' : 'Product'} listings`, weight: 35, value: listingAvg, goTo: 'products',
         hint: total === 0 ? `Add your first ${noun} and describe each one.`
-            : needWork.length ? `${needWork.length} of ${total} ${noun} need a longer description (80+ characters).`
-            : descAvg < 1 ? `Good. A few ${noun} could use more detail.` : '' });
-  add({ key: 'productImages', fieldId: null, label: `${isService ? 'Service' : 'Product'} photos`, weight: 10, value: imgShare, goTo: 'products',
-        hint: total === 0 ? '' : imgShare < 1 ? `${total - stats.filter((x) => x.s.hasImage).length} of ${total} ${noun} have no photo.` : '' });
+            : weak.length ? `${weak.length} of ${total} ${noun} score under 60. Open Products and check each listing score.`
+            : listingAvg < 0.9 ? `Good. Open Products to polish the weaker listings.` : '' });
 
   const totalWeight = checks.reduce((a, c) => a + c.weight, 0);
   const earned = checks.reduce((a, c) => a + c.weight * c.value, 0);
@@ -155,7 +192,7 @@ export function scoreStore(profile, productData, storeType = 'product') {
   const todo = checks.filter((c) => c.status !== 'done')
     .sort((a, b) => b.weight * (1 - b.value) - a.weight * (1 - a.value));
 
-  return { score, label: scoreLabel(score), checks, todo, capped, productStats: { total, needWork: needWork.length } };
+  return { score, label: scoreLabel(score), checks, todo, capped, productStats: { total, needWork: weak.length } };
 }
 
 export function scoreLabel(score) {
