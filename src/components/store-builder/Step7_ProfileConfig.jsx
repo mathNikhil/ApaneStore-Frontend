@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStoreBuilder } from '../../Context/StoreBuilderContext';
 import StoreBuilderLayout from './StoreBuilderLayout';
+import { SeoHealthMeter } from './SeoQuality';
 import Card from '../Common/Card';
 import Input from '../Common/Input';
 
@@ -194,6 +195,13 @@ const Step7_ProfileConfig = () => {
         </div>
       )}
 
+      <SeoHealthMeter
+        profile={profile}
+        productData={productData}
+        storeType={storeType}
+        onGoToProducts={function() { navigate('/store-builder/step/2'); }}
+      />
+
       <Card className="mb-6">
         <div className="flex items-center gap-2 mb-4">
           <div className="w-10 h-10 rounded-lg bg-[#67c9af] text-[#005343] flex items-center justify-center">
@@ -217,13 +225,13 @@ const Step7_ProfileConfig = () => {
         {/* Support Email */}
         <div className="space-y-1 mb-4">
           <label className="block text-label-md font-label-md text-[#3c4a3d] uppercase tracking-wider text-xs">Support Email ID</label>
-          <Input value={profile.supportEmail} onChange={function(e) { handleChange('supportEmail', e.target.value); }} placeholder="support@domain.com" />
+          <Input id="field-supportEmail" value={profile.supportEmail} onChange={function(e) { handleChange('supportEmail', e.target.value); }} placeholder="support@domain.com" />
         </div>
 
         {/* Main Store Address */}
         <div className="mb-4">
           <label className="block text-label-md font-label-md text-[#3c4a3d] uppercase tracking-wider text-xs mb-1">Main Store Address</label>
-          <textarea value={profile.storeAddress} onChange={function(e) { handleChange('storeAddress', e.target.value); }}
+          <textarea id="field-storeAddress" value={profile.storeAddress} onChange={function(e) { handleChange('storeAddress', e.target.value); }}
             className="w-full bg-[#f2f4f7] border border-[#bbcbb9] rounded-lg px-4 py-3 focus:ring-2 focus:ring-[#25D366] focus:border-[#006d2f] outline-none transition-all resize-none mb-2"
             rows="2" placeholder="Shop No. 5, MG Road, Mumbai - 400001" />
           <div className="grid grid-cols-3 gap-2">
@@ -307,7 +315,7 @@ const Step7_ProfileConfig = () => {
         {/* About Us */}
         <div className="space-y-1 mb-4">
           <label className="block text-label-md font-label-md text-[#3c4a3d] uppercase tracking-wider text-xs">About Us</label>
-          <textarea value={profile.aboutUs} onChange={function(e) { handleChange('aboutUs', e.target.value); }}
+          <textarea id="field-aboutUs" value={profile.aboutUs} onChange={function(e) { handleChange('aboutUs', e.target.value); }}
             className="w-full bg-[#f2f4f7] border border-[#bbcbb9] rounded-lg px-4 py-3 focus:ring-2 focus:ring-[#25D366] focus:border-[#006d2f] outline-none transition-all resize-none"
             rows="4" />
         </div>
@@ -315,7 +323,7 @@ const Step7_ProfileConfig = () => {
         {/* Return Policy */}
         <div className="space-y-1">
           <label className="block text-label-md font-label-md text-[#3c4a3d] uppercase tracking-wider text-xs">Return & Exchange Policy <span className="text-[#8e9eab] normal-case font-normal">(Optional)</span></label>
-          <textarea value={profile.returnPolicy || ''} onChange={function(e) { handleChange('returnPolicy', e.target.value); }}
+          <textarea id="field-returnPolicy" value={profile.returnPolicy || ''} onChange={function(e) { handleChange('returnPolicy', e.target.value); }}
             className="w-full bg-[#f2f4f7] border border-[#bbcbb9] rounded-lg px-4 py-3 focus:ring-2 focus:ring-[#25D366] focus:border-[#006d2f] outline-none transition-all resize-none"
             rows="3" placeholder="e.g. We accept returns within 7 days of delivery. Items must be unused and in original packaging..." />
           <p className="text-xs text-[#556067]">If filled, customers will see this on your store profile page.</p>
@@ -324,7 +332,7 @@ const Step7_ProfileConfig = () => {
         {/* Shipping Info */}
         <div className="space-y-1 mt-4">
           <label className="block text-label-md font-label-md text-[#3c4a3d] uppercase tracking-wider text-xs">Shipping Information <span className="text-[#8e9eab] normal-case font-normal">(Optional)</span></label>
-          <textarea value={profile.shippingInfo || ''} onChange={function(e) { handleChange('shippingInfo', e.target.value); }}
+          <textarea id="field-shippingInfo" value={profile.shippingInfo || ''} onChange={function(e) { handleChange('shippingInfo', e.target.value); }}
             className="w-full bg-[#f2f4f7] border border-[#bbcbb9] rounded-lg px-4 py-3 focus:ring-2 focus:ring-[#25D366] focus:border-[#006d2f] outline-none transition-all resize-none"
             rows="3" placeholder="e.g. We ship within 2-3 business days. Free shipping on orders above ₹500..." />
           <p className="text-xs text-[#556067]">If filled, customers will see this on your store profile page.</p>
@@ -376,6 +384,7 @@ const Step7_ProfileConfig = () => {
               SEO Title <span className="text-[#8e9eab] normal-case font-normal">(shown on Google — max 60 chars)</span>
             </label>
             <Input
+              id="field-seoTitle"
               value={profile.seoTitle || ''}
               onChange={function(e) { handleChange('seoTitle', e.target.value.slice(0, 60)); }}
               placeholder={`${profile.storeName || 'Your Store'} - Shop Online`}
@@ -388,6 +397,7 @@ const Step7_ProfileConfig = () => {
               Meta Description <span className="text-[#8e9eab] normal-case font-normal">(shown on Google — max 160 chars)</span>
             </label>
             <textarea
+              id="field-seoDescription"
               value={profile.seoDescription || ''}
               onChange={function(e) { handleChange('seoDescription', e.target.value.slice(0, 160)); }}
               className="w-full bg-[#f2f4f7] border border-[#bbcbb9] rounded-lg px-4 py-3 focus:ring-2 focus:ring-[#25D366] focus:border-[#006d2f] outline-none transition-all resize-none text-sm"
