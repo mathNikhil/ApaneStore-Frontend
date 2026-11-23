@@ -28,7 +28,7 @@ export function SeoHealthMeter({ profile, productData, storeType, onGoToProducts
     <Card className="mb-6">
       <div className="flex items-start justify-between gap-4 mb-3">
         <div>
-          <h2 className="font-headline-md text-headline-md text-[#191c1e] uppercase text-base">Store Quality Score</h2>
+          <h2 className="font-headline-md text-headline-md text-[#191c1e] uppercase text-base">SEO Score</h2>
           <p className="text-xs text-[#556067] mt-1">
             Complete, helpful pages are easier for customers to trust and for Google to understand.
           </p>
