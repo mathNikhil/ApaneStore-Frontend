@@ -111,7 +111,7 @@ export function ProductScoreCard({ product, storeType, defaultOpen = false }) {
         className="w-full flex items-center gap-2 px-3 py-2 text-left"
       >
         <span className="material-symbols-outlined text-base" style={{ color }}>analytics</span>
-        <span className="text-xs font-semibold text-[#3c4a3d]">Listing score</span>
+        <span className="text-xs font-semibold text-[#3c4a3d]">SEO score</span>
         <span className="text-xs font-bold px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: color }}>
           {r.score}/100
         </span>
