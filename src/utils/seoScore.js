@@ -177,7 +177,7 @@ export function scoreStore(profile, productData, storeType = 'product') {
 
   add({ key: 'productListings', fieldId: null, label: `${isService ? 'Service' : 'Product'} listings`, weight: 35, value: listingAvg, goTo: 'products',
         hint: total === 0 ? `Add your first ${noun} and describe each one.`
-            : weak.length ? `${weak.length} of ${total} ${noun} score under 60. Open Products and check each SEO score.`
+            : weak.length ? `${weak.length} of ${total} ${noun} score under 60. Open Products and check each Listing score.`
             : listingAvg < 0.9 ? `Good. Open Products to polish the weaker listings.` : '' });
 
   const totalWeight = checks.reduce((a, c) => a + c.weight, 0);
