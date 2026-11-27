@@ -13,6 +13,7 @@ import PricingSection from './profile-sections/PricingSection';
 import InvoiceList from './Invoice/InvoiceList';
 import ReferSection from './profile-sections/ReferSection';
 import DataDeletionSection from './profile-sections/DataDeletionSection';
+import FaqSection from './profile-sections/FaqSection';
 
 const NAV_ITEMS = [
   { key: 'about',     label: 'About AapnaEstore', icon: 'info'           },
@@ -21,6 +22,7 @@ const NAV_ITEMS = [
   { key: 'terms',     label: 'Terms & Conditions',icon: 'description'    },
   { key: 'platform',  label: 'Platform Policy',   icon: 'policy'         },
   { key: 'pricing',   label: 'Pricing Plans',     icon: 'payments'       },
+  { key: 'faq',       label: 'FAQ',               icon: 'help'           },
 ];
 
 const getSectionComponent = (key) => {
@@ -32,6 +34,7 @@ const getSectionComponent = (key) => {
     case 'terms':    return <TermsSection />;
     case 'platform': return <PlatformSection />;
     case 'pricing':  return <PricingSection />;
+    case 'faq':      return <FaqSection />;
     case 'data-deletion': return <DataDeletionSection />;
     case 'invoices': return <InvoiceList />;
 
@@ -114,7 +117,7 @@ const ProfilePage = () => {
   }
 
   // Public sections — visible to all, protected sections need login
-  const PUBLIC_SECTIONS = ['about', 'privacy', 'refund', 'terms', 'platform', 'pricing'];
+  const PUBLIC_SECTIONS = ['about', 'privacy', 'refund', 'terms', 'platform', 'pricing', 'faq'];
   const PROTECTED_SECTIONS_NAV = ['profile', 'invoices', 'refer'];
 
   return (
