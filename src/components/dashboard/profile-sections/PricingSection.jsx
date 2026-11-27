@@ -167,7 +167,11 @@ const PricingSection = () => {
         <p>• For billing queries contact: nikhil.mathur1215@gmail.com</p>
       </div>
     </div>
-        {/* ── Footer ── */}
+
+  );
+};
+export default PricingSection;
+       {/* ── Footer ── */}
     <div className="max-w-4xl mx-auto px-4 py-7 border-t border-[#c8e8d2]">
       <p className="text-xs text-[#556b5c]">© 2026 Nikhil Mathur HUF · AapnaEstore</p>
       <p className="text-xs mt-2 space-x-3"><a href="/profile/faq" className="text-[#006d2f] underline">FAQ</a><a href="/profile/pricing" className="text-[#006d2f] underline">Pricing</a><a href="/profile/refund" className="text-[#006d2f] underline">Refund Policy</a><a href="/profile/terms" className="text-[#006d2f] underline">Terms</a><a href="/profile/privacy" className="text-[#006d2f] underline">Privacy</a></p>
@@ -175,8 +179,4 @@ const PricingSection = () => {
 
   </div>
 );
-  );
-};
-export default PricingSection;
-  
   
