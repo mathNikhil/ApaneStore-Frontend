@@ -24,6 +24,7 @@ import PublishCongratulations from './components/publish-flow/PublishCongratulat
 import PublishAlreadyLive from './components/publish-flow/PublishAlreadyLive';
 import PublishQuickConfirm from './components/publish-flow/PublishQuickConfirm';
 import QRPaymentReturn from './pages/QRPaymentReturn';
+import SiteFooter from './components/Common/SiteFooter';
 
 // Super Admin Imports
 import AdminLogin from './pages/admin/AdminLogin';
@@ -101,6 +102,7 @@ function App() {
             <Route path="/store/:storeId/settings/notifications" element={<ProtectedRoute><NotificationsSettings /></ProtectedRoute>} />
                 <Route path="/store/:storeId/settings/email-templates" element={<ProtectedRoute><EmailTemplatesPage /></ProtectedRoute>} />
           </Routes>
+          <SiteFooter />
         </BrowserRouter>
       </StoreBuilderProvider>
     </AuthProvider>
