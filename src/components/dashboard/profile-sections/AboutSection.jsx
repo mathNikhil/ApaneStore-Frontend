@@ -1,4 +1,5 @@
 import React from 'react';
+
 /* ── small primitives ── */
 const Label = ({ children }) => (
   <p className="text-xs font-bold tracking-widest uppercase text-[#006d2f] mb-2">{children}</p>
@@ -578,5 +579,9 @@ const AboutSection = () => (
         <p className="text-[11px] text-green-200">+91 98184 10640 · Mon–Sat 9 AM–6 PM · aapnaestore@gmail.com</p>
       </div>
     </div>
+
+
+  </div>
 );
+
 export default AboutSection;
