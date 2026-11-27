@@ -167,10 +167,8 @@ const PricingSection = () => {
         <p>• For billing queries contact: nikhil.mathur1215@gmail.com</p>
       </div>
     </div>
-
   );
-};
-export default PricingSection;
+
        {/* ── Footer ── */}
     <div className="max-w-4xl mx-auto px-4 py-7 border-t border-[#c8e8d2]">
       <p className="text-xs text-[#556b5c]">© 2026 Nikhil Mathur HUF · AapnaEstore</p>
@@ -179,4 +177,5 @@ export default PricingSection;
 
   </div>
 );
-  
+  };
+export default PricingSection;
