@@ -1,5 +1,4 @@
-ƒimport React from 'react';
-
+import React from 'react';
 /* ── small primitives ── */
 const Label = ({ children }) => (
   <p className="text-xs font-bold tracking-widest uppercase text-[#006d2f] mb-2">{children}</p>
@@ -583,9 +582,8 @@ const AboutSection = () => (
     {/* ── Footer ── */}
     <div className="max-w-4xl mx-auto px-4 py-7 border-t border-[#c8e8d2]">
       <p className="text-xs text-[#556b5c]">© 2026 Nikhil Mathur HUF · AapnaEstore</p>
-      <p className="text-xs mt-2 space-x-3"><a href="/profile/faq" className="text-[#006d2f] underline">FAQ</a><a href="/profile/pricing" className="text-[#006d2f] underline">Pricing</a><a href="/profile/refund" className="text-[#006d2f] underline">Refund Policy</a><a href="/profile/terms" className="text-[#006d2f] underline">Terms</a><a href="/profile/privacy" className="text-[#006d2f] underline">Privacy</a></p>
-    </div>
-
+            <p className="text-xs mt-2 space-x-3"><a href="/profile/faq" className="text-[#006d2f] underline">FAQ</a><a href="/profile/pricing" className="text-[#006d2f] underline">Pricing</a><a href="/profile/refund" className="text-[#006d2f] underline">Refund Policy</a><a href="/profile/terms" className="text-[#006d2f] underline">Terms</a><a href="/profile/privacy" className="text-[#006d2f] underline">Privacy</a></p>
+    
   </div>
 );
 
