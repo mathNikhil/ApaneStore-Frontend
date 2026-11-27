@@ -579,5 +579,4 @@ const AboutSection = () => (
       </div>
     </div>
 );
-
 export default AboutSection;
